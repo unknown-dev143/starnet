@@ -34,7 +34,9 @@ const CAPS = [
   { id: 'workbench',    probe: 'shell.exec',      have: 'run shell commands and verify code', object: 'a WORKBENCH' },
   { id: 'memory',       probe: 'notebook.write',  have: 'keep long-term memory, reusable skills, and recall conversation history', object: 'a NOTEBOOK' },   // task plans ride the computer now (taskplan freebie, 2026-08-17)
   { id: 'studio',       probe: 'image_generate',  have: 'generate and analyze images', object: 'a STUDIO' },
-  { id: 'jukebox',      probe: 'spotify_play',    have: 'search and control Spotify', object: 'a JUKEBOX' }
+  { id: 'jukebox',      probe: 'spotify_play',    have: 'search and control Spotify', object: 'a JUKEBOX' },
+  { id: 'audiolab',     probe: 'audio_generate',  have: 'generate music/audio locally, no key needed', object: 'an AUDIO LAB' },
+  { id: 'cinema',       probe: 'video_generate',  have: 'generate short video clips (billed per clip)', object: 'a CINEMA' }
 ];
 
 // The powers a Commander most often assumes an agent has -> highest over-promise risk -> nag if absent.

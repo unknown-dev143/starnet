@@ -306,12 +306,19 @@ const sharedSpecialties = require('../shared/specialties.js');   // Class Loadou
 // the [ORCHESTRATION] teamNote never drift from the Recruitment Bay (single source of truth).
 const SPECIALIST_CLASSES = (sharedSpecialties.BUILTINS || []).map(s => ({ id: s.id, tagline: s.tagline || '' }));
 
-// ---- Skynet→StarNet env back-compat ------------------------------------------------------------
-// The project was renamed Skynet → StarNet; its env vars moved SKYNET_* → STARNET_*. ENV() reads the
-// NEW name first and falls back to the LEGACY one, so existing launch configs / shells / the desktop
-// shell keep working unchanged. Membership test (not truthiness) so a deliberately-empty STARNET_X
-// still wins over a set SKYNET_X — preserving each downstream var's exact empty-vs-unset semantics.
-function ENV(suffix) { const k = 'STARNET_' + suffix; return (k in process.env) ? process.env[k] : process.env['SKYNET_' + suffix]; }
+// ---- Skynet→StarNet→SpaceStation env back-compat ------------------------------------------------
+// The project was renamed Skynet → StarNet, and this fork renames it again StarNet → SpaceStation.
+// Env vars moved SKYNET_* → STARNET_* → SPACESTATION_*. ENV() reads the NEWEST name first and falls
+// back through each older one in turn, so existing launch configs / shells / the desktop shell keep
+// working unchanged. Membership test (not truthiness) so a deliberately-empty SPACESTATION_X still
+// wins over a set STARNET_X or SKYNET_X — preserving each downstream var's exact empty-vs-unset semantics.
+function ENV(suffix) {
+  const spacestationKey = 'SPACESTATION_' + suffix;
+  if (spacestationKey in process.env) return process.env[spacestationKey];
+  const starnetKey = 'STARNET_' + suffix;
+  if (starnetKey in process.env) return process.env[starnetKey];
+  return process.env['SKYNET_' + suffix];
+}
 
 const PORT = Number(ENV('PORT') || process.env.PORT) || 8787;
 const API_TOKEN = String(ENV('API_TOKEN') || crypto.randomBytes(32).toString('hex'));
@@ -387,13 +394,20 @@ function defaultWorkspaces() {
   const base = process.env.LOCALAPPDATA || process.env.APPDATA            // Windows: %LOCALAPPDATA% (machine-local app data)
     || process.env.XDG_DATA_HOME                                          // Linux XDG
     || path.join(os.homedir() || '.', '.local', 'share');                 // POSIX fallback
-  // Skynet→StarNet rename back-compat: prefer the NEW dir; if it doesn't exist yet but the OLD one does, keep
-  // using the old one IN PLACE (no move) so existing data is never lost and any old-code process that still
-  // looks for \Skynet\ keeps sharing the same data (no split-brain). Fresh installs land under \StarNet\.
-  const neu = path.join(base, 'StarNet', 'workspaces');
-  const old = path.join(base, 'Skynet', 'workspaces');   // legacy pre-rename location — read in place, never renamed
-  try { if (!fs.existsSync(neu) && fs.existsSync(old)) return old; } catch (_) {}
-  return neu;
+  // Skynet→StarNet→SpaceStation rename back-compat: prefer the NEWEST dir; if it doesn't exist yet, fall
+  // back through each older one IN PLACE (no move) so existing data is never lost and any old-code process
+  // still pointed at an earlier name keeps sharing the same data (no split-brain). Fresh installs land
+  // under \SpaceStation\.
+  const spacestationDir = path.join(base, 'SpaceStation', 'workspaces');
+  const starnetDir = path.join(base, 'StarNet', 'workspaces');   // mid-generation location — read in place, never renamed
+  const skynetDir = path.join(base, 'Skynet', 'workspaces');     // original legacy location — read in place, never renamed
+  try {
+    if (!fs.existsSync(spacestationDir)) {
+      if (fs.existsSync(starnetDir)) return starnetDir;
+      if (fs.existsSync(skynetDir)) return skynetDir;
+    }
+  } catch (_) {}
+  return spacestationDir;
 }
 const WORKSPACES = ENV('WORKSPACES') ? path.resolve(ENV('WORKSPACES')) : defaultWorkspaces();
 const outputArtifacts = makeOutputArtifacts({ fsp, fs, pathMod: path, root: WORKSPACES, crypto });
@@ -412,10 +426,10 @@ if (startupWorkspaceRecovery && startupWorkspaceRecovery.lockUnavailable) {
   // A LIVE concurrent process holds the parent-level recovery lock — it may be renaming this very
   // workspace right now. Opening stores here would race that rename, so refuse the boot outright,
   // matching the owner-claim refusal below (same fail-closed semantics, same exit code).
-  console.error('✗ StarNet refused to open this workspace because another process is recovering it.');
+  console.error('✗ SpaceStation refused to open this workspace because another process is recovering it.');
   console.error('  workspace: ' + WORKSPACES);
   console.error('  safety code: ' + String(startupWorkspaceRecovery.code || 'RECOVERY_LOCK_UNAVAILABLE'));
-  console.error('  Close the other StarNet process and retry. StarNet will not risk concurrent writes.');
+  console.error('  Close the other SpaceStation process and retry. SpaceStation will not risk concurrent writes.');
   process.exit(73);
 }
 if (startupWorkspaceRecovery && startupWorkspaceRecovery.applied) {
@@ -435,7 +449,7 @@ const devWorkspaceSafety = DEV_MODE
   ? classifyWorkspace(WORKSPACES, { path: path, env: process.env, platform: process.platform, homedir: () => os.homedir() })
   : { protected: false };
 if (devWorkspaceSafety.protected) {
-  console.error('✗ StarNet refused to run DEV/QA against a canonical user workspace.');
+  console.error('✗ SpaceStation refused to run DEV/QA against a canonical user workspace.');
   console.error('  workspace: ' + WORKSPACES);
   console.error('  safety code: DEV_WORKSPACE_PROTECTED');
   console.error('  Set STARNET_WORKSPACES to a dedicated scratch directory and retry.');
@@ -452,11 +466,11 @@ const workspaceOwnerClaim = workspaceOwner.acquire(WORKSPACES);
 if (!workspaceOwnerClaim.ok) {
   const holderPid = workspaceOwnerClaim.holder && workspaceOwnerClaim.holder.valid
     ? workspaceOwnerClaim.holder.pid : 'unverified';
-  console.error('✗ StarNet refused to open this workspace because another process may own it.');
+  console.error('✗ SpaceStation refused to open this workspace because another process may own it.');
   console.error('  workspace: ' + WORKSPACES);
   console.error('  holder PID: ' + holderPid);
   console.error('  safety code: ' + String(workspaceOwnerClaim.code || 'WORKSPACE_OWNER_UNAVAILABLE'));
-  console.error('  Close the other StarNet process and retry. StarNet will not risk concurrent writes.');
+  console.error('  Close the other SpaceStation process and retry. SpaceStation will not risk concurrent writes.');
   process.exit(73);
 }
 // Synchronous and idempotent: covers ordinary returns and every process.exit path. SIGKILL/TerminateProcess
@@ -8773,7 +8787,7 @@ server.listen(PORT, '127.0.0.1', () => {
   const url = 'http://127.0.0.1:' + PORT;
   const bar = '═'.repeat(58);
   console.log('\n' + bar);
-  console.log('  ▲ STARNET — THE FULL APP IS RUNNING (UI + agent engine).');
+  console.log('  ▲ SPACESTATION — THE FULL APP IS RUNNING (UI + agent engine).');
   console.log('     Open in your browser:  ' + url);
   console.log('     This one process IS the complete product — the UI you see and');
   console.log('     the agents/web-search/tools behind it are all served from here.');

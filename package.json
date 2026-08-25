@@ -1,8 +1,8 @@
 {
-  "name": "starnet-harness",
+  "name": "spacestation-harness",
   "version": "0.10.10",
   "private": true,
-  "description": "A local-first, gamified desktop harness for building and running real AI-agent teams.",
+  "description": "A local-first, gamified desktop harness for building and running real AI-agent teams. (Fork of StarNet, renamed SpaceStation.)",
   "license": "MIT",
   "author": "Andrew Sims",
   "repository": {

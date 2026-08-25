@@ -32,7 +32,9 @@
     { id: 'orchestrator', label: 'TASK DELEGATION',          glyph: '🕸', desc: 'Delegate subtasks to summoned crew, summon new agents, and schedule routines.' },
     { id: 'studio',       label: 'MEDIA STUDIO',             glyph: '🎨', desc: 'Generate images from text and analyse images — on the key the agent already uses.' },
     { id: 'memory',       label: 'MEMORY NOTEBOOK',          glyph: '📓', desc: 'The agent’s private memory and saved skills.' },   // task plans moved to the computer (taskplan freebie, 2026-08-17)
-    { id: 'jukebox',      label: 'JUKEBOX (SPOTIFY)',        glyph: '♫',  desc: 'Search and control your Spotify — play, pause, queue, “what’s playing”.' }
+    { id: 'jukebox',      label: 'JUKEBOX (SPOTIFY)',        glyph: '♫',  desc: 'Search and control your Spotify — play, pause, queue, “what’s playing”.' },
+    { id: 'audiolab',     label: 'AUDIO LAB (LOCAL)',        glyph: '🎵', desc: 'Generate music/audio from a text prompt on a local ACE-Step server — no key, no per-call cost.' },
+    { id: 'cinema',       label: 'CINEMA (VIDEO)',           glyph: '🎬', desc: 'Generate short video clips from a text prompt — on the OpenRouter key you already connected. Billed per clip.' }
   ];
 
   // capId -> the objectType whose grants carry that capId (the prop that must be placed to grant it).

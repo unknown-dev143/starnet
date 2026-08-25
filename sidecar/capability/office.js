@@ -25,7 +25,9 @@
       { instanceId: 'cab1', objectType: 'cabinet' },
       { instanceId: 'nb1', objectType: 'notebook' },
       { instanceId: 'studio1', objectType: 'studio' },      // STUDIO: image generation + vision analysis (OpenRouter)
-      { instanceId: 'jukebox1', objectType: 'jukebox' }     // JUKEBOX: Spotify (inert until connected in TOOLSETS)
+      { instanceId: 'jukebox1', objectType: 'jukebox' },    // JUKEBOX: Spotify (inert until connected in TOOLSETS)
+      { instanceId: 'audiolab1', objectType: 'audiolab' },  // AUDIOLAB: local ACE-Step music/audio generation (no key)
+      { instanceId: 'cinema1', objectType: 'cinema' }       // CINEMA: OpenRouter video generation (billed, same key as STUDIO)
     ];
   }
 

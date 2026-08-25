@@ -297,6 +297,18 @@
       { capId: 'jukebox', tool: 'spotify_next', scope: 'execute', requiresConsent: true, network: true },
       { capId: 'jukebox', tool: 'spotify_previous', scope: 'execute', requiresConsent: true, network: true },
       { capId: 'jukebox', tool: 'spotify_queue', scope: 'execute', requiresConsent: true, network: true }
+    ],
+    // AUDIOLAB (local ACE-Step): text-> music/audio generation on a LOCAL server, no API key, no per-call
+    // cost. audio_generate WRITES a file into the agent's workspace, so it is consent-gated like
+    // image_generate/fs.write. (see tools/builtin/audio.js)
+    audiolab: [
+      { capId: 'audiolab', tool: 'audio_generate', scope: 'write', requiresConsent: true, network: true }
+    ],
+    // CINEMA (OpenRouter video): text -> short video clips, on the SAME connected key as image
+    // generation. Billed per OpenRouter's video pricing (NOT free, unlike audiolab). Writes a
+    // file, so it's consent-gated the same way image_generate/audio_generate are.
+    cinema: [
+      { capId: 'cinema', tool: 'video_generate', scope: 'write', requiresConsent: true, network: true }
     ]
   };
 
