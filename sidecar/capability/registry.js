@@ -329,6 +329,12 @@
     // todo update). See tools/builtin/briefing.js.
     briefingroom: [
       { capId: 'briefingroom', tool: 'report_publish', scope: 'write', requiresConsent: false, network: false }
+    ],
+    // PRINT SHOP: checks a design image against real print-on-demand pixel requirements (300 DPI
+    // standard, 120-150 for large-format) before Printify/Printful upload, and can upscale to fix
+    // a shortfall. No network call, no API key. See tools/builtin/printprep.js.
+    printshop: [
+      { capId: 'printshop', tool: 'print_prep', scope: 'write', requiresConsent: true, network: false }
     ]
   };
 
