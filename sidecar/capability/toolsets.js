@@ -36,7 +36,8 @@
     { id: 'audiolab',     label: 'AUDIO LAB (LOCAL)',        glyph: '🎵', desc: 'Generate music/audio from a text prompt on a local ACE-Step server — no key, no per-call cost.' },
     { id: 'cinema',       label: 'CINEMA (VIDEO)',           glyph: '🎬', desc: 'Generate short video clips from a text prompt — on the OpenRouter key you already connected. Billed per clip.' },
     { id: 'editingbay',   label: 'EDITING BAY',              glyph: '🎞️', desc: 'Assemble a finished long-form video from generated audio + a still image (the lofi/study-video format). Needs local ffmpeg — free, no key.' },
-    { id: 'publishinghouse', label: 'PUBLISHING HOUSE',      glyph: '📖', desc: 'Turn structured written content into a real, finished .docx document — chapters, reports, scripts. Free, local, no key.' }
+    { id: 'publishinghouse', label: 'PUBLISHING HOUSE',      glyph: '📖', desc: 'Turn structured written content into a real, finished .docx document — chapters, reports, scripts. Free, local, no key.' },
+    { id: 'briefingroom', label: 'BRIEFING ROOM',            glyph: '📋', desc: 'Save a dated morning/evening status report as markdown. Free, local, no key. Pair with a routine for 8am/7pm scheduling.' }
   ];
 
   // capId -> the objectType whose grants carry that capId (the prop that must be placed to grant it).

@@ -29,7 +29,8 @@
       { instanceId: 'audiolab1', objectType: 'audiolab' },  // AUDIOLAB: local ACE-Step music/audio generation (no key)
       { instanceId: 'cinema1', objectType: 'cinema' },       // CINEMA: OpenRouter video generation (billed, same key as STUDIO)
       { instanceId: 'editingbay1', objectType: 'editingbay' }, // EDITING BAY: local ffmpeg video assembly (free, needs ffmpeg installed)
-      { instanceId: 'publishinghouse1', objectType: 'publishinghouse' } // PUBLISHING HOUSE: local docx generation (free, needs `docx` npm package)
+      { instanceId: 'publishinghouse1', objectType: 'publishinghouse' }, // PUBLISHING HOUSE: local docx generation (free, needs `docx` npm package)
+      { instanceId: 'briefingroom1', objectType: 'briefingroom' } // BRIEFING ROOM: dated morning/evening status reports (free, local)
     ];
   }
 

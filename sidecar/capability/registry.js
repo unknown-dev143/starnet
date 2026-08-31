@@ -323,6 +323,12 @@
     // missing. See tools/builtin/publish.js.
     publishinghouse: [
       { capId: 'publishinghouse', tool: 'doc_publish', scope: 'write', requiresConsent: true, network: false }
+    ],
+    // BRIEFING ROOM: formats and saves a dated morning/evening status report. No network call,
+    // no consent needed (it's a low-risk local write of agent-authored content, same tier as a
+    // todo update). See tools/builtin/briefing.js.
+    briefingroom: [
+      { capId: 'briefingroom', tool: 'report_publish', scope: 'write', requiresConsent: false, network: false }
     ]
   };
 
