@@ -36,7 +36,8 @@ const CAPS = [
   { id: 'studio',       probe: 'image_generate',  have: 'generate and analyze images', object: 'a STUDIO' },
   { id: 'jukebox',      probe: 'spotify_play',    have: 'search and control Spotify', object: 'a JUKEBOX' },
   { id: 'audiolab',     probe: 'audio_generate',  have: 'generate music/audio locally, no key needed', object: 'an AUDIO LAB' },
-  { id: 'cinema',       probe: 'video_generate',  have: 'generate short video clips (billed per clip)', object: 'a CINEMA' }
+  { id: 'cinema',       probe: 'video_generate',  have: 'generate short video clips (billed per clip)', object: 'a CINEMA' },
+  { id: 'editingbay',   probe: 'video_compose',   have: 'assemble a full video from generated audio + an image (free, needs local ffmpeg)', object: 'an EDITING BAY' }
 ];
 
 // The powers a Commander most often assumes an agent has -> highest over-promise risk -> nag if absent.

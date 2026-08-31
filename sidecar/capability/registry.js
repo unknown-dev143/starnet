@@ -309,6 +309,13 @@
     // file, so it's consent-gated the same way image_generate/audio_generate are.
     cinema: [
       { capId: 'cinema', tool: 'video_generate', scope: 'write', requiresConsent: true, network: true }
+    ],
+    // EDITING BAY (local ffmpeg): assembles a finished long-form video from an already-generated
+    // audio track + still image — the classic lofi/study-video format. No API cost (needs a local
+    // ffmpeg install), no network call — but still writes a file, so it's consent-gated the same
+    // way every other generation tool here is. See tools/builtin/compose.js.
+    editingbay: [
+      { capId: 'editingbay', tool: 'video_compose', scope: 'write', requiresConsent: true, network: false }
     ]
   };
 
