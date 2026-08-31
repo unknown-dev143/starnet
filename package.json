@@ -163,6 +163,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
+    "docx": "^9.7.1",
     "kokoro-js": "^1.2.1",
     "node-pty": "^1.1.0",
     "ogg-opus-decoder": "^1.7.3"

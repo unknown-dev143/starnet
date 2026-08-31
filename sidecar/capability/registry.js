@@ -316,6 +316,13 @@
     // way every other generation tool here is. See tools/builtin/compose.js.
     editingbay: [
       { capId: 'editingbay', tool: 'video_compose', scope: 'write', requiresConsent: true, network: false }
+    ],
+    // PUBLISHING HOUSE (local docx generation): assembles structured written content (title +
+    // headed sections) into a real .docx file. No network call, no API key, no cost. Uses the
+    // "docx" npm package — the first bundled dependency in this fork; run npm install if it's
+    // missing. See tools/builtin/publish.js.
+    publishinghouse: [
+      { capId: 'publishinghouse', tool: 'doc_publish', scope: 'write', requiresConsent: true, network: false }
     ]
   };
 
