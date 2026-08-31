@@ -335,6 +335,12 @@
     // a shortfall. No network call, no API key. See tools/builtin/printprep.js.
     printshop: [
       { capId: 'printshop', tool: 'print_prep', scope: 'write', requiresConsent: true, network: false }
+    ],
+    // LISTING DESK: validates a proposed Etsy listing (title/tags/description) against Etsy's real
+    // documented hard constraints before API submission. Read-only, no network, no consent needed.
+    // See tools/builtin/listingdesk.js.
+    listingdesk: [
+      { capId: 'listingdesk', tool: 'etsy_listing_check', scope: 'read', requiresConsent: false, network: false }
     ]
   };
 
