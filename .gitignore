@@ -10,6 +10,9 @@ Desktop.ini
 *.log
 .tmp/
 
+# editor/backup artifacts — never source, never mirrored into the website embed
+*.bak
+
 # machine-local Claude settings
 .claude/settings.local.json
 

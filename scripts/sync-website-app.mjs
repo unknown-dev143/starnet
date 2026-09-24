@@ -80,7 +80,11 @@ function expectedFor(rel) {
   return rel === 'index.html' ? Buffer.from(embedIndexHtml(raw.toString('utf8')), 'utf8') : raw;
 }
 
-const srcFiles = walk(SRC);
+// .bak files are editor/backup artifacts, not app source, and must never be published into the
+// public embed. Filtered from the SOURCE side only: a .bak that already sits in website/app is
+// therefore absent from srcSet and falls into the `removed` pass below, so it gets deleted rather
+// than left behind as stale weight.
+const srcFiles = walk(SRC).filter((rel) => !rel.endsWith('.bak'));
 const destFiles = new Set(walk(DEST));
 const written = [];
 const stale = [];
