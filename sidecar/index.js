@@ -170,6 +170,10 @@ const businessTemplates = require('./business-templates.js');                  /
 const { makeBusinessTasksStore } = require('./business-tasks-store.js');       // Business OS P2: the §9 TASK & PROJECT ENGINE — isolated per business, dependencies are real edges
 const { makeMakerRoutes } = require('./maker-routes.js');                      // Business OS P2: the /api/opportunities + /api/validation + /api/templates surface, incl. the PROMOTE creation workflow
 const { makeTaskRoutes } = require('./task-routes.js');                        // Business OS P2: the /api/businesses/:id/tasks + /api/tasks surface — a MODULE, mounted into ROUTES
+const { makeBusinessAgentsStore } = require('./business-agents-store.js');     // Business OS P3: the §7 AGENT REGISTRY — a role + a real class + §13 grants + a context scope (P7: a configuration, not a mind)
+const { makeBusinessMemory } = require('./business-memory.js');                // Business OS P3: the §9 FOUR-SCOPE MEMORY — user/business/project/agent, isolated by key, provenance required (P1/P6)
+const { makeAgentMessagesStore } = require('./agent-messages-store.js');       // Business OS P3: §7 team COMMUNICATION — addressed, typed, business-scoped, append-only
+const { makeAgentRoutes } = require('./agent-routes.js');                      // Business OS P3: the /api/roles + /api/permissions + /api/agents + memory + messages surface
 const { makePathTrust } = require('./pathtrust.js');            // NS-5: conversational path-trust guard
 // Tool-result images (browser.screenshot / browser.vision -> real pixels in the prompt). ON by default; set
 // SKYNET_TOOL_IMAGES=0 for a text-only endpoint that rejects image content parts.
@@ -3022,6 +3026,68 @@ const taskRoutes = makeTaskRoutes({
   tasks: tasksStore,
   businesses: businessesStore,
   templates: businessTemplates,
+  activity: businessActivityStore,
+  readBody,
+  emit: (name, payload) => chanEmit(name, payload)
+});
+
+/* ---- BUSINESS OS (Phase 3): the AI TEAM's three stores.
+   §7's virtual team needs three durable things: who was hired (the registry), what the business REMEMBERS
+   (§9's four scopes), and what the team SAID to each other (§7 communication). Each is a SEPARATE file with
+   its own namespace and its own fail-closed write path — same resilient load/save pair as the Phase 2 stores
+   above (fsync-before-rename + a .bak last-known-good).
+
+   ISOLATION (P6) on LOAD, stated because it is not obvious and is the whole point of these stores: an agent
+   with no businessId, a memory entry with no scope/ownerId, and a message with no businessId are all DROPPED
+   at load rather than kept. None of them could be read back through any scoped route, and a memory row in
+   particular has no owner to attribute it to — keeping it would only let the file grow with rows that no
+   business can see, list, or delete. */
+const AGENTS_FILE = path.join(WORKSPACES, 'agents.json');
+function loadAgents() {
+  try {
+    const raw = loadResilient(AGENTS_FILE, 'agents');
+    const arr = raw && Array.isArray(raw.agents) ? raw.agents : [];
+    return arr.filter(a => a && typeof a.id === 'string' && a.id && typeof a.businessId === 'string' && a.businessId);
+  } catch (e) { return []; }
+}
+const agentRecords = loadAgents();
+function persistAgents(recs) { saveResilient(AGENTS_FILE, { version: 1, agents: recs }); }   // throws on failure
+const agentsStore = makeBusinessAgentsStore({ records: agentRecords, persist: persistAgents, now: () => Date.now() });
+
+const MEMORY_FILE = path.join(WORKSPACES, 'business-memory.json');
+function loadMemoryEntries() {
+  try {
+    const raw = loadResilient(MEMORY_FILE, 'memory');
+    const arr = raw && Array.isArray(raw.entries) ? raw.entries : [];
+    // a row with no scope or no owner is unattributable: it belongs to no one and cannot be read or forgotten.
+    return arr.filter(e => e && typeof e.id === 'string' && e.id && typeof e.scope === 'string' && e.scope && typeof e.ownerId === 'string' && e.ownerId);
+  } catch (e) { return []; }
+}
+const memoryRecords = loadMemoryEntries();
+function persistMemory(recs) { saveResilient(MEMORY_FILE, { version: 1, entries: recs }); }
+const businessMemoryStore = makeBusinessMemory({ records: memoryRecords, persist: persistMemory, now: () => Date.now() });
+
+const MESSAGES_FILE = path.join(WORKSPACES, 'agent-messages.json');
+function loadAgentMessages() {
+  try {
+    const raw = loadResilient(MESSAGES_FILE, 'messages');
+    const arr = raw && Array.isArray(raw.messages) ? raw.messages : [];
+    return arr.filter(m => m && typeof m.id === 'string' && m.id && typeof m.businessId === 'string' && m.businessId);
+  } catch (e) { return []; }
+}
+const messageRecords = loadAgentMessages();
+function persistMessages(recs) { saveResilient(MESSAGES_FILE, { version: 1, messages: recs }); }
+const agentMessagesStore = makeAgentMessagesStore({ records: messageRecords, persist: persistMessages, now: () => Date.now() });
+
+// The Phase 3 HTTP surface, mounted into ROUTES below. `emit` is the SAME lazy-wrapper trick as businessRoutes
+// (chanEmit is a `const` declared far below; handing it over by value would be a TDZ ReferenceError at boot).
+// It needs businesses (every route is business-scoped) and tasks (assignment writes the task's assignedAgent).
+const agentRoutes = makeAgentRoutes({
+  agents: agentsStore,
+  memory: businessMemoryStore,
+  messages: agentMessagesStore,
+  tasks: tasksStore,
+  businesses: businessesStore,
   activity: businessActivityStore,
   readBody,
   emit: (name, payload) => chanEmit(name, payload)
@@ -8489,6 +8555,9 @@ const ROUTES = [
   // task-routes' rows can sit after it safely. If that anchor is ever loosened, THIS is the line that breaks.
   ...makerRoutes.routes,
   ...taskRoutes.routes,
+  // ---- BUSINESS OS (Phase 3). Same rule again: its own module, mounted here. Its business-scoped rows use
+  // qrx (the GETs carry ?scope/?owner/?kind/?with), so they match the query-stripped path — see agent-routes.js.
+  ...agentRoutes.routes,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },

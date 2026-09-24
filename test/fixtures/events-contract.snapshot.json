@@ -1,4 +1,17 @@
 {
+  "agent.assigned": {
+    "required": [
+      "agentId",
+      "businessId",
+      "taskId"
+    ],
+    "properties": [
+      "agentId",
+      "businessId",
+      "role",
+      "taskId"
+    ]
+  },
   "agent.compact": {
     "required": [
       "agentId",
@@ -30,6 +43,50 @@
       "tokensIn",
       "tokensOut",
       "usd"
+    ]
+  },
+  "agent.fired": {
+    "required": [
+      "agentId",
+      "businessId",
+      "name"
+    ],
+    "properties": [
+      "agentId",
+      "businessId",
+      "name"
+    ]
+  },
+  "agent.hired": {
+    "required": [
+      "agentId",
+      "businessId",
+      "name",
+      "role",
+      "specialty"
+    ],
+    "properties": [
+      "agentId",
+      "businessId",
+      "name",
+      "role",
+      "specialty"
+    ]
+  },
+  "agent.message": {
+    "required": [
+      "businessId",
+      "from",
+      "kind",
+      "messageId",
+      "to"
+    ],
+    "properties": [
+      "businessId",
+      "from",
+      "kind",
+      "messageId",
+      "to"
     ]
   },
   "agent.reasoning": {
@@ -136,6 +193,19 @@
       "summary"
     ]
   },
+  "agent.updated": {
+    "required": [
+      "agentId",
+      "businessId"
+    ],
+    "properties": [
+      "agentId",
+      "businessId",
+      "changed",
+      "role",
+      "status"
+    ]
+  },
   "budget.threshold": {
     "required": [
       "cap",
@@ -184,6 +254,40 @@
       "actor",
       "businessId",
       "name"
+    ]
+  },
+  "business.memory.forgotten": {
+    "required": [
+      "businessId",
+      "id",
+      "kind",
+      "ownerId",
+      "scope"
+    ],
+    "properties": [
+      "businessId",
+      "id",
+      "kind",
+      "ownerId",
+      "scope"
+    ]
+  },
+  "business.memory.written": {
+    "required": [
+      "businessId",
+      "id",
+      "kind",
+      "ownerId",
+      "scope",
+      "source"
+    ],
+    "properties": [
+      "businessId",
+      "id",
+      "kind",
+      "ownerId",
+      "scope",
+      "source"
     ]
   },
   "business.paused": {

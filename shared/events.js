@@ -300,6 +300,49 @@
     }),
     'task.deleted': obj(['businessId', 'taskId'], { businessId: str, taskId: str, title: str }),
 
+    /* ---- business OS (ADDITIVE, 2026-09-24, Phase 3: the AI Team) ----
+       Seven NEW names only. As with the Phase 1 and Phase 2 blocks, nothing existing was renamed, removed
+       or retyped, so this is a pure addition and every earlier consumer stays valid.
+
+       NOTE ON THE `agent.*` NAMESPACE. The contract already carries `agent.run.start` / `agent.token` /
+       `agent.cost` etc. for STATION runs, all keyed on `agentId` + `runId`. The events below are the
+       BUSINESS TEAM's lifecycle — a hired role agent, not a running one — so they carry `businessId` and no
+       `runId`, and they are never emitted by the run loop. The distinction is deliberate: a business agent
+       is a configuration (§7/P7), and conflating its hire with a run would make the two look like the same
+       thing to every listener.
+
+         agent.hired      — a role agent joined a business. `role` is one of §7's twelve and `specialty` is
+                            the SharedSpecialties class filling it.
+         agent.updated    — a patch moved something. `changed` names the fields ([], never a generic claim).
+                            A pause (§19) rides here as changed:['status'].
+         agent.fired      — the agent was removed. Emitted only AFTER the row is gone.
+         agent.assigned   — a task (§9) was given to an agent. The store refuses a cross-business pair (P6),
+                            so this event can only ever name two ends of the SAME business.
+         agent.message    — one agent-to-agent (or agent-to-user) message (§7 communication).
+         business.memory.written   — a §9 memory entry was recorded. `scope` is one of the four §9 scopes;
+                            `source` is its provenance (P1 — a memory with no source is refused by the store).
+         business.memory.forgotten — a memory entry was removed. `businessId` is '' for a user-scope entry,
+                            which belongs to no business. */
+    'agent.hired': obj(['businessId', 'agentId', 'role', 'specialty', 'name'], {
+      businessId: str, agentId: str, role: str, specialty: str, name: str
+    }),
+    'agent.updated': obj(['businessId', 'agentId'], {
+      businessId: str, agentId: str, role: str, status: str, changed: { type: 'array' }
+    }),
+    'agent.fired': obj(['businessId', 'agentId', 'name'], { businessId: str, agentId: str, name: str }),
+    'agent.assigned': obj(['businessId', 'taskId', 'agentId'], {
+      businessId: str, taskId: str, agentId: str, role: str
+    }),
+    'agent.message': obj(['businessId', 'messageId', 'from', 'to', 'kind'], {
+      businessId: str, messageId: str, from: str, to: str, kind: str
+    }),
+    'business.memory.written': obj(['businessId', 'id', 'scope', 'ownerId', 'kind', 'source'], {
+      businessId: str, id: str, scope: str, ownerId: str, kind: str, source: str
+    }),
+    'business.memory.forgotten': obj(['businessId', 'id', 'scope', 'ownerId', 'kind'], {
+      businessId: str, id: str, scope: str, ownerId: str, kind: str
+    }),
+
     // ---- reserved (P3 mutation API) ----
     'worldChange': obj(['seq'], { seq: int, dirtyTiles: { type: 'array' } }),
 

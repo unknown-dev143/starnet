@@ -33,6 +33,7 @@
 <link rel="stylesheet" href="css/titlebar.css"><!-- custom window chrome (Windows desktop shell): themed titlebar + MIN/MAX/CLOSE; inert unless body.sn-chrome (titlebar.js) -->
 <link rel="stylesheet" href="css/businesscenter.css"><!-- BUSINESS COMMAND CENTER (Business OS Phase 1): scoped .bc-* styles for the business list, activity log and create form (businesscenter.js) -->
 <link rel="stylesheet" href="css/businessmaker.css"><!-- BUSINESS MAKER (Business OS Phase 2): scoped .bm-* styles for the opportunity radar, the §4 evidence table, the validation lab and the plan preview (businessmaker.js) -->
+<link rel="stylesheet" href="css/aiteam.css"><!-- AI TEAM (Business OS Phase 3): scoped .tm-* styles for the roster, the §13 tier catalogue, the memory browser and the team messages (aiteam.js) -->
 
 </head>
 <body class="theme-amber">
@@ -634,6 +635,9 @@
              actually know, try to kill the idea, and only then create the business. Title must stay in step
              with windows/maker.js. -->
         <button class="bb" data-term="maker" data-hint="maker"><span class="bb-i">◈</span><span class="bb-tx"><b>BUSINESS MAKER</b><small>find, test &amp; start a new business — evidence first, then commit</small></span></button>
+        <!-- AI TEAM (Business OS Phase 3): §7's twelve roles, §13's permission tiers, §9's four-scope memory
+             and the team's messages. Title must stay in step with windows/team.js. -->
+        <button class="bb" data-term="team" data-hint="team"><span class="bb-i">▚</span><span class="bb-tx"><b>AI TEAM</b><small>hire role agents, set what they may do alone &amp; what they remember</small></span></button>
       </div>
     </div>
     <div class="bb-group" data-group="build">
@@ -825,6 +829,8 @@ document.write('<script src="' + ((window.__STARNET_API__ || '') + '/shared/spec
 <script src="app/windows/business.js"></script><!-- BUSINESS — the Business Command Center window slot (list · activity · new business); MUST load after businesscenter.js and stationui.js -->
 <script src="app/businessmaker.js"></script><!-- BUSINESS OS engine (Phase 2): pure evidence/field/validation/plan shaping + the Business Maker console mount; Node-loadable, so it is unit-tested headless -->
 <script src="app/windows/maker.js"></script><!-- BUSINESS MAKER — the reverse-funnel window slot (radar · evidence · validation · plan & promote); MUST load after businessmaker.js and stationui.js -->
+<script src="app/aiteam.js"></script><!-- BUSINESS OS engine (Phase 3): pure role/agent/permission/memory/message shaping + the AI Team console mount; Node-loadable, so it is unit-tested headless -->
+<script src="app/windows/team.js"></script><!-- AI TEAM — the team window slot (team · hire · memory · messages); MUST load after aiteam.js and stationui.js -->
 <script src="app/navdock.js"></script>
 <script src="app/chatresize.js"></script>
 <script src="app/leftrail.js"></script><!-- hide/show the CREW rail (◂ in the rail header · ▸ CREW drawer tab on the stage edge); persisted per machine -->
