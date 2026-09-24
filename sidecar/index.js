@@ -183,6 +183,10 @@ const { makeBusinessDocumentsStore } = require('./business-documents-store.js');
 const { makeBusinessKnowledge } = require('./business-knowledge.js');          // Business OS P4: §15 KNOWLEDGE CENTER — the library memory's source:'document' points at
 const { makeBusinessExperimentsStore } = require('./business-experiments-store.js'); // Business OS P4: §14 EXPERIMENT LAB — a conclusion needs an ended run, two arms, graded evidence
 const { makeManagerRoutes } = require('./manager-routes.js');                  // Business OS P4: the /api/manager + projects + finance + metrics + crm + content + docs + knowledge + experiments surface
+const { makeBusinessAutomationStore } = require('./business-automation-store.js'); // Business OS P5: §12 AUTOMATION HUB — the rule catalogue (trigger · conditions · actions · enable switch · failure recovery) and the bounded run log
+const { makeBusinessApprovalsStore } = require('./business-approvals-store.js');   // Business OS P5: §13 APPROVAL QUEUE — a pending request can only exist with a §26 block behind it (P1), and a decision is final
+const { makeBusinessAutomationEngine } = require('./business-automation-engine.js'); // Business OS P5: the DRIVER — bus event → run, with a bounded cascade depth, per-rule cooldown and a §19 halt
+const { makeAutomationRoutes } = require('./automation-routes.js');            // Business OS P5: the /api/automations + /api/approvals + hub-control surface
 const { makePathTrust } = require('./pathtrust.js');            // NS-5: conversational path-trust guard
 // Tool-result images (browser.screenshot / browser.vision -> real pixels in the prompt). ON by default; set
 // SKYNET_TOOL_IMAGES=0 for a text-only endpoint that rejects image content parts.
@@ -3236,6 +3240,109 @@ const managerRoutes = makeManagerRoutes({
   readBody,
   emit: (name, payload) => chanEmit(name, payload)
 });
+
+/* ---- BUSINESS OS (Phase 5) — the AUTOMATION HUB's two stores, its engine, and its HTTP surface ----
+   Same resilient load/save pair as every store above (fsync-before-rename + a .bak last-known-good).
+
+   ISOLATION (P6) ON LOAD, same rule as the Phase 1-4 stores: a row with no businessId is DROPPED rather
+   than kept — it could never be read back through any business-scoped route, so keeping it would only let
+   the file grow with rows no business can see, list or delete. The automation file carries TWO row
+   families (rules + the bounded run log) in one snapshot, exactly like business-finance.json, so a torn
+   write can never leave a run pointing at a rule that was not written. */
+const BIZ_AUTOMATION_FILE = path.join(WORKSPACES, 'business-automation.json');
+function loadAutomation() {
+  try {
+    const raw = loadResilient(BIZ_AUTOMATION_FILE, 'automation');
+    const rl = raw && Array.isArray(raw.rules) ? raw.rules : [];
+    const rn = raw && Array.isArray(raw.runs) ? raw.runs : [];
+    return {
+      rules: rl.filter(r => r && typeof r.id === 'string' && r.id && typeof r.businessId === 'string' && r.businessId),
+      runs: rn.filter(r => r && typeof r.ruleId === 'string' && r.ruleId && typeof r.businessId === 'string' && r.businessId)
+    };
+  } catch (e) { return { rules: [], runs: [] }; }
+}
+const automationRaw = loadAutomation();
+function persistAutomation(snap) {
+  saveResilient(BIZ_AUTOMATION_FILE, { version: 1, rules: snap.rules, runs: snap.runs });
+}
+const automationStore = makeBusinessAutomationStore({
+  rules: automationRaw.rules, runs: automationRaw.runs,
+  persist: persistAutomation, now: () => Date.now(),
+  permissions: require('./business-permissions.js')
+});
+
+const BIZ_APPROVALS_FILE = path.join(WORKSPACES, 'business-approvals.json');
+function loadApprovals() {
+  try {
+    const raw = loadResilient(BIZ_APPROVALS_FILE, 'approvals');
+    const arr = raw && Array.isArray(raw.approvals) ? raw.approvals : [];
+    return arr.filter(a => a && typeof a.id === 'string' && a.id && typeof a.businessId === 'string' && a.businessId);
+  } catch (e) { return []; }
+}
+const approvalRecords = loadApprovals();
+function persistApprovals(recs) { saveResilient(BIZ_APPROVALS_FILE, { version: 1, approvals: recs }); }
+const approvalsStore = makeBusinessApprovalsStore({
+  records: approvalRecords, persist: persistApprovals, now: () => Date.now(),
+  permissions: require('./business-permissions.js')
+});
+
+/* §19's hub stand-down is DURABLE, exactly like cronHalted / loopsHalted: an E-STOP that lifted on the
+   next restart would let autonomous work resume without the human who stopped it saying so. It lifts only
+   through POST /api/automation/resume (or an autonomy-dial re-write). */
+const AUTOMATION_HALT_FILE = path.join(WORKSPACES, 'automation-halted.json');
+function loadAutomationHalted() {
+  try { const raw = loadResilient(AUTOMATION_HALT_FILE, 'automation-halt'); return !!(raw && raw.halted); } catch (_) { return false; }
+}
+function saveAutomationHalted(v) {
+  const intended = { halted: !!v };
+  const r = saveJsonVerified({ save: () => saveResilient(AUTOMATION_HALT_FILE, intended), load: () => loadResilient(AUTOMATION_HALT_FILE, 'automation-halt'), proof: got => JSON.stringify(got) === JSON.stringify(intended) });
+  if (!r.ok) throw new Error('automation halt durable read-back failed: ' + r.error);
+}
+
+const automationEngine = makeBusinessAutomationEngine({
+  automation: automationStore,
+  approvals: approvalsStore,
+  permissions: require('./business-permissions.js'),
+  activity: businessActivityStore,
+  businesses: businessesStore,
+  tasks: tasksStore,
+  crm: crmStore,
+  finance: financeStore,
+  metrics: metricsStore,
+  projects: bizProjectsStore,
+  documents: documentsStore,
+  content: contentStore,
+  halted: loadAutomationHalted(),
+  now: () => Date.now(),
+  // lazy wrapper — chanEmit is a `const` declared far below, so handing it over by value would be a TDZ
+  // ReferenceError at boot. Same trick the Phase 1-4 route modules use.
+  emit: (name, payload) => chanEmit(name, payload),
+  // the engine counts a throwing log sink itself (stats().logErrors), so no try/catch is needed here.
+  log: (entry) => { console.warn('[automation]', entry.kind, JSON.stringify(entry.detail)); }
+});
+
+/* The hub's halt control, in ONE place. Both the E-STOP (handleHalt) and POST /api/automation/resume go
+   through it, so the RAM flag and the durable stamp can never disagree — the same shape as the cron/loops
+   halt helpers. `persisted` is reported honestly rather than assumed: a failed disk write still stops the
+   hub in THIS process, but it is not a restart-durability claim. */
+function automationHaltControl(on) {
+  const r = on ? automationEngine.halt() : automationEngine.resume();
+  let persisted = true;
+  try { saveAutomationHalted(!!on); }
+  catch (e) { persisted = false; console.warn('[automation] halt persist failed:', (e && e.message) || e); }
+  return { halted: !!on, dropped: r.dropped || 0, persisted: persisted };
+}
+
+const automationRoutes = makeAutomationRoutes({
+  automation: automationStore,
+  approvals: approvalsStore,
+  engine: automationEngine,
+  businesses: businessesStore,
+  activity: businessActivityStore,
+  readBody,
+  setHalted: automationHaltControl,
+  emit: (name, payload) => chanEmit(name, payload)
+});
 // the LIVE blessed-root set = every `path:*` grant, stripped of the prefix. Derived fresh each read so a
 // grant OR a revoke (through /api/permissions) takes effect on the very next fs call with no restart.
 function blessedRoots() { const out = []; for (const k of grantsPermanent) if (k.indexOf('path:') === 0) out.push(k.slice(5)); return out; }
@@ -3943,9 +4050,21 @@ const sse = makeSseHub();
 // Full-payload channel logging is opt-in (STARNET_DEBUG_CHANNELS=1): every COMMS/workitem/queue event
 // otherwise printed a whole JSON line to stdout on normal operation. Default = event name only.
 const DEBUG_CHANNEL_LOGS = String(process.env.STARNET_DEBUG_CHANNELS || '') === '1';
+/* EVENT SUBSCRIBERS — a SECOND consumer of the same bus, and the seam §12's automation hub triggers on.
+   The hub needs to SEE every emitted event to use it as a "when X happens", and this is the one place
+   that already sees all of them; giving it its own notification channel would mean two lists of emitters
+   that can drift apart. A subscriber is called AFTER the SSE broadcast (so the HUD is never delayed by a
+   slow consumer) with the VALIDATED + REDACTED payload, and a throwing subscriber is caught and logged —
+   a bug in one consumer must never stop the HUD receiving an event, or break the emit path itself. */
+const chanSubscribers = [];
+function onChanEvent(fn) { if (typeof fn === 'function') chanSubscribers.push(fn); }
 const chanBus = { emit: (name, payload) => {
   try { if (DEBUG_CHANNEL_LOGS) console.log('[channel]', name, JSON.stringify(payload)); } catch (_) {}
   try { sse.broadcast(name, payload); } catch (_) {}
+  for (const fn of chanSubscribers) {
+    try { fn(name, payload); }
+    catch (e) { failNote('channel.subscriber', e); }   // a bug in one consumer is visible (throttled warn + counter), and never stops the emit path
+  }
 } };
 /* THE STATION BRIDGE — how a sidecar tool asks the live page to do a page thing (open a session, switch
    agent, delegate). Rides the SAME SSE hub the HUD already listens on, so there is no second channel to keep
@@ -3954,6 +4073,12 @@ const stationBridge = makeStationBridge({ emit: (name, payload) => { try { sse.b
 
 const chanEmitValidated = makeEmitter(chanBus, e => console.warn('[channel-event]', e.kind, e.event, (e.errors || []).join(';')));
 const chanEmit = (name, payload) => { try { return chanEmitValidated(name, redact(payload)); } catch (_) {} };
+
+/* THE AUTOMATION HUB'S SUBSCRIPTION (§12). Registered here, immediately after chanEmit, because this is
+   the first point at which both the bus and the engine exist — the engine was built far above (it must
+   precede the route table), and the bus is declared here. Every business event the station emits now
+   reaches the hub, which is what makes "when X happens → do Y" real rather than a polling loop. */
+onChanEvent((name, payload) => { automationEngine.handleEvent(name, payload); });
 
 // H2.2: the SINGLETON background-process manager — persists across runs so a backgrounded dev server survives the
 // run that started it. shell.bg.exit fires AFTER the originating run's NDJSON stream closed, so it rides the
@@ -8703,9 +8828,15 @@ const ROUTES = [
   // qrx (the GETs carry ?scope/?owner/?kind/?with), so they match the query-stripped path — see agent-routes.js.
   ...agentRoutes.routes,
   // ---- BUSINESS OS (Phase 4). Same rule again: its own module, mounted here. Its business-scoped rows use
-  // qrx (their GETs carry ?stage/?kind/?currency/?q/?metric/…), so they match the query-stripped path — see
-  // manager-routes.js. The project-delete row is anchored, so /api/projects/:id cannot swallow a longer path.
+  // rx with a query-tolerant tail — NOT qrx. (The rows used to be qrx; that was the bug manager-routes.js's
+  // header documents: index.js's dispatch only fills the match array for rx rows, so a qrx row reached its
+  // handler with match === null and every business-scoped route 404'd while looking correct.) The
+  // project-delete row is anchored, so /api/projects/:id cannot swallow a longer path.
   ...managerRoutes.routes,
+  // ---- BUSINESS OS (Phase 5). Same rule again: its own module, mounted here. Same rx + query-tolerant-tail
+  // discipline as Phase 4, for the same reason. Its rows are namespaced (/api/automations, /api/approvals,
+  // /api/automation/…) so none of them can shadow a Phase 1-4 path.
+  ...automationRoutes.routes,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },
@@ -17680,9 +17811,14 @@ function handleHalt(req, res) {
   try { terminalStops = terminalSessions.stopAll(); } catch (_) {}  // E-STOP covers interactive terminal trees too
   try { inputGuard.observe('halt').catch(() => {}); } catch (_) {}   // diagnostic only: never release an unowned global clip
   try { subagents.interruptAll(); } catch (_) {}   // Phase 1: E-STOP aborts watchable background workers too
+  // PHASE 5 SYMMETRY: the AUTOMATION HUB gets the same durable stand-down. Without it an automation would
+  // keep firing on the very next business event after the Commander hit E-STOP — unattended work the panel
+  // says it stopped. The flag is RAM-owned immediately and stamped to disk so it survives a restart; it
+  // lifts only on POST /api/automation/resume (or a deliberate re-enable), never on its own.
+  const automationHub = automationHaltControl(true);
   try { cronLock.release(); } catch (_) {}  // G4.3: drop any cron lock this process holds so an E-STOP mid-tick never wedges the next tick (standalone halt-block addition; G2 will add connectors.close here)
   res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ halted, cronAborted, beatAborted, loopAborted, terminalStops, nightshiftHaltPersisted, cronHaltPersisted, loopsHaltPersisted }));   // honest counts + per-subsystem restart-durability receipts
+  res.end(JSON.stringify({ halted, cronAborted, beatAborted, loopAborted, terminalStops, nightshiftHaltPersisted, cronHaltPersisted, loopsHaltPersisted, automationDropped: automationHub.dropped, automationHaltPersisted: automationHub.persisted }));   // honest counts + per-subsystem restart-durability receipts
 }
 
 // POST /api/channels/telegram/connect { token, key?, model, provider? } — the Messaging tab hands over the

@@ -35,6 +35,12 @@
   const STATUSES = ['todo', 'doing', 'blocked', 'review', 'done', 'cancelled'];
   const PRIORITIES = ['low', 'normal', 'high', 'critical'];
   const APPROVALS = ['not-required', 'pending', 'approved', 'rejected'];
+  /* ORIGINS — WHERE a task came from, which is a provenance fact (P1) and not a label. Three values, and
+     the third was added by Business OS Phase 5: until then an automation had no way to make a task, so
+     'user' and 'plan' covered every case. Now that the automation hub (§12) can create one, recording it
+     as 'user' would be a lie — a person reading the board would think they had written it. It is passed as
+     an ARGUMENT to create(), never read out of `meta`, so a request body cannot claim it. */
+  const ORIGINS = ['user', 'plan', 'automation'];
   // The only classes an effort number may carry. Kept identical to the P1 vocabulary elsewhere.
   const EFFORT_EVIDENCE = ['verified', 'analysis', 'assumption', 'estimate', 'prediction', 'unknown'];
 
@@ -102,7 +108,7 @@
       approval: r.approval || 'not-required',
       logs: (Array.isArray(r.logs) ? r.logs : []).map(l => ({ at: l.at != null ? l.at : null, text: l.text || '', kind: l.kind || 'note' })),
       attachments: strList(r.attachments),
-      origin: r.origin === 'plan' ? 'plan' : 'user',
+      origin: ORIGINS.indexOf(r.origin) >= 0 ? r.origin : 'user',
       createdAt: r.createdAt != null ? r.createdAt : null,
       updatedAt: r.updatedAt != null ? r.updatedAt : null
     });
@@ -220,7 +226,10 @@
       return { ok: true, status: status, priority: priority, approval: approval, deadline: dl, estimated: est, actual: act };
     }
 
-    function create(businessId, meta) {
+    /* create(businessId, meta, origin). `origin` is a separate ARGUMENT rather than a `meta` field on
+       purpose: meta comes straight from a request body on the HTTP path, and provenance must not be
+       claimable by the caller. Defaults to 'user'; anything unrecognised also lands on 'user'. */
+    function create(businessId, meta, origin) {
       meta = meta || {};
       const b = biz(businessId);
       if (!b) return { ok: false, reason: 'a businessId is required (isolation is by key — never implied)' };
@@ -232,7 +241,7 @@
       const dc = checkDeps(b, deps, null);
       if (!dc.ok) return dc;
 
-      const row = build(b, meta, nextSeq(b), 'user');
+      const row = build(b, meta, nextSeq(b), ORIGINS.indexOf(origin) >= 0 ? origin : 'user');
       row.status = v.status; row.priority = v.priority; row.approval = v.approval;
       row.deadline = v.deadline; row.estimated = v.estimated; row.actual = v.actual;
 
@@ -417,11 +426,11 @@
     }
 
     return {
-      STATUSES, PRIORITIES, APPROVALS, EFFORT_EVIDENCE, LIMIT: limit,
+      STATUSES, PRIORITIES, APPROVALS, ORIGINS, EFFORT_EVIDENCE, LIMIT: limit,
       list, get, has, count, summary, blockers,
       create, materialise, update, setStatus, addLog, attach, remove, clear
     };
   }
 
-  return { makeBusinessTasksStore, STATUSES, PRIORITIES, APPROVALS, DEFAULT_LIMIT };
+  return { makeBusinessTasksStore, STATUSES, PRIORITIES, APPROVALS, ORIGINS, DEFAULT_LIMIT };
 });

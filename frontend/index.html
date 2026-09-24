@@ -35,6 +35,7 @@
 <link rel="stylesheet" href="css/businessmaker.css"><!-- BUSINESS MAKER (Business OS Phase 2): scoped .bm-* styles for the opportunity radar, the §4 evidence table, the validation lab and the plan preview (businessmaker.js) -->
 <link rel="stylesheet" href="css/aiteam.css"><!-- AI TEAM (Business OS Phase 3): scoped .tm-* styles for the roster, the §13 tier catalogue, the memory browser and the team messages (aiteam.js) -->
 <link rel="stylesheet" href="css/businessmanager.css"><!-- BUSINESS MANAGER (Business OS Phase 4): scoped .mg-* styles for finance, analytics, CRM, content, documents/knowledge and experiments (businessmanager.js). NOTE: .bm-* belongs to businessmaker.css (Phase 2) — this one is .mg- so the two consoles cannot collide. -->
+<link rel="stylesheet" href="css/businessautomation.css"><!-- BUSINESS AUTOMATION (Business OS Phase 5): scoped .ba-* styles for the business lane of the AUTOMATION hub — the rule list, the builder and the §13 approval queue (businessautomation.js). NOTE: .bc-*/.bm-*/.mg-* belong to Phases 1/2/4 — this one is .ba- so the consoles cannot collide. -->
 
 </head>
 <body class="theme-amber">
@@ -838,6 +839,7 @@ document.write('<script src="' + ((window.__STARNET_API__ || '') + '/shared/spec
 <script src="app/windows/team.js"></script><!-- AI TEAM — the team window slot (team · hire · memory · messages); MUST load after aiteam.js and stationui.js -->
 <script src="app/businessmanager.js"></script><!-- BUSINESS OS engine (Phase 4): pure label/option/row/guard shaping + the Business Manager console mount; Node-loadable, so it is unit-tested headless -->
 <script src="app/windows/manager.js"></script><!-- BUSINESS MANAGER — the run-the-business window slot (overview · projects · finance · analytics · customers · content · library · experiments); MUST load after businessmanager.js and stationui.js -->
+<script src="app/businessautomation.js"></script><!-- BUSINESS OS engine (Phase 5): pure trigger/condition/action/guard/row shaping + the business lane it registers into the AUTOMATION window; Node-loadable, so it is unit-tested headless. MUST load after app/windows/automation.js (the lane registry) and stationui.js. -->
 <script src="app/navdock.js"></script>
 <script src="app/chatresize.js"></script>
 <script src="app/leftrail.js"></script><!-- hide/show the CREW rail (◂ in the rail header · ▸ CREW drawer tab on the stage edge); persisted per machine -->

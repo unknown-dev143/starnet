@@ -424,6 +424,60 @@
       businessId: str, experimentId: str, conclusion: str
     }),
 
+    /* ---- business OS (ADDITIVE, 2026-09-24, Phase 5: Automation) ----
+       Ten NEW names only. As with the Phase 1-4 blocks, nothing existing was renamed, removed or retyped,
+       and no field was added to an existing event — this is a pure addition, so every earlier consumer
+       stays valid.
+
+       WHAT THESE ARE. §12's automation hub is the first part of the business layer that runs WITHOUT a
+       user in the loop, so its events exist to make that autonomy observable rather than mysterious:
+         business.automation.created/updated/enabled/disabled/removed — the rule catalogue changing. `enabled`
+                                 and `disabled` are separate names, not one event with a boolean, because a
+                                 listener that wants to know "did an automation just stop" should not have to
+                                 test a field. `disabled` carries `reason` — which is how an AUTO-disable
+                                 (the failure threshold) is told apart from a deliberate switch-off.
+         business.automation.ran      — one fire. `trigger` names the event that caused it and `actions` is
+                                        how many actions the rule carries, so the console can say "fired on
+                                        business.contact.added, 2 actions" without re-reading the rule.
+         business.automation.notified — §12's "low inventory → notify" action. `text` is the line the user
+                                        asked to be told, verbatim.
+         business.approval.requested  — a §13 review-tier action the hub wanted to take and did NOT take.
+                                        `tier` travels so a listener never has to reclassify the action.
+         business.approval.decided    — the user's Approve/Reject. `decision` is the closed
+                                        'approved'|'rejected' vocabulary, never a free string.
+         automation.halted            — §19's hub stand-down. Deliberately NOT business-scoped: the E-STOP
+                                        governs the whole hub, and giving it a businessId would let a
+                                        listener believe a per-business pause had been pressed. `dropped` is
+                                        how many queued runs the halt actually discarded — a real count. */
+    'business.automation.created': obj(['businessId', 'automationId', 'name', 'trigger'], {
+      businessId: str, automationId: str, name: str, trigger: str
+    }),
+    'business.automation.updated': obj(['businessId', 'automationId'], {
+      businessId: str, automationId: str, trigger: str, changed: { type: 'array' }
+    }),
+    'business.automation.enabled': obj(['businessId', 'automationId', 'name'], {
+      businessId: str, automationId: str, name: str
+    }),
+    'business.automation.disabled': obj(['businessId', 'automationId', 'name', 'reason'], {
+      businessId: str, automationId: str, name: str, reason: str
+    }),
+    'business.automation.removed': obj(['businessId', 'automationId', 'name'], {
+      businessId: str, automationId: str, name: str
+    }),
+    'business.automation.ran': obj(['businessId', 'automationId', 'trigger', 'ok', 'actions'], {
+      businessId: str, automationId: str, trigger: str, ok: bool, actions: int
+    }),
+    'business.automation.notified': obj(['businessId', 'automationId', 'text'], {
+      businessId: str, automationId: str, text: str
+    }),
+    'business.approval.requested': obj(['businessId', 'approvalId', 'automationId', 'action', 'tier'], {
+      businessId: str, approvalId: str, automationId: str, action: str, tier: str
+    }),
+    'business.approval.decided': obj(['businessId', 'approvalId', 'action', 'tier', 'decision'], {
+      businessId: str, approvalId: str, action: str, tier: str, decision: str
+    }),
+    'automation.halted': obj(['halted'], { halted: bool, dropped: int }),
+
     // ---- reserved (P3 mutation API) ----
     'worldChange': obj(['seq'], { seq: int, dirtyTiles: { type: 'array' } }),
 

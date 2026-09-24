@@ -25,7 +25,7 @@
     focus:        'the kind of work an agent is configured to prioritize, such as code, research, or operations.',
     provider:     'the service that supplies a model, such as OpenRouter, OpenAI, Anthropic, or a local server.',
     run:          'one bounded attempt to finish a message or task, with its own stop, cost, and result.',
-    approval:     'your explicit yes or no before a watched agent performs a sensitive action.',
+    approval:     'your explicit yes or no before a watched agent — or an automation — performs a sensitive action. Each request carries what it wants to do, why it fired and the evidence behind it; a decision is final.',
     transcript:   'the durable conversation record for one chat thread, including what happened after restarts.',
     deliverable:  'a finished file or output from real work — open it from DELIVERABLES to inspect the result.',
     artifact:     'a file produced or checked by a run, recorded with its path and verification evidence.',
@@ -58,7 +58,7 @@
     sidecar:      'the small local program that actually runs your agents — the app talks to it in the background.',
     // the WORK vocabulary, each on ONE axis (UX confusion audit 2026-07-15: recipe=WHAT to run,
     // routine=WHEN it runs, task=WHERE live work sits, quest=progress/suggestions — never a place work lives).
-    automation:   'the home of standing work — ROUTINES (any job on a schedule) and LOOPS (one objective, repeated until it’s done) share this one panel.',
+    automation:   'the home of standing work — ROUTINES (any job on a schedule), LOOPS (one objective, repeated until it’s done) and BUSINESS RULES (when something happens in a business, do this) share this one panel. A business rule only ever touches its own business, and anything that reaches outside the station waits for your yes.',
     routine:      'a recipe or job put on a schedule (every morning, hourly) — WHEN work runs; manage them under ∞ AUTOMATION.',
     loop:         'one objective an agent keeps working at, stopping each time for your yes or no — UNTIL it is done, not on a clock. Your verdict is what starts the next pass; it costs nothing while it waits. Manage them under ∞ AUTOMATION.',
     recipe:       'a ready-made job an agent can run right now — WHAT to run; launching one lands it on the ☑ TASK BOARD.',

@@ -206,6 +206,15 @@
       "status"
     ]
   },
+  "automation.halted": {
+    "required": [
+      "halted"
+    ],
+    "properties": [
+      "dropped",
+      "halted"
+    ]
+  },
   "budget.threshold": {
     "required": [
       "cap",
@@ -231,6 +240,130 @@
       "detail",
       "result",
       "seq"
+    ]
+  },
+  "business.approval.decided": {
+    "required": [
+      "action",
+      "approvalId",
+      "businessId",
+      "decision",
+      "tier"
+    ],
+    "properties": [
+      "action",
+      "approvalId",
+      "businessId",
+      "decision",
+      "tier"
+    ]
+  },
+  "business.approval.requested": {
+    "required": [
+      "action",
+      "approvalId",
+      "automationId",
+      "businessId",
+      "tier"
+    ],
+    "properties": [
+      "action",
+      "approvalId",
+      "automationId",
+      "businessId",
+      "tier"
+    ]
+  },
+  "business.automation.created": {
+    "required": [
+      "automationId",
+      "businessId",
+      "name",
+      "trigger"
+    ],
+    "properties": [
+      "automationId",
+      "businessId",
+      "name",
+      "trigger"
+    ]
+  },
+  "business.automation.disabled": {
+    "required": [
+      "automationId",
+      "businessId",
+      "name",
+      "reason"
+    ],
+    "properties": [
+      "automationId",
+      "businessId",
+      "name",
+      "reason"
+    ]
+  },
+  "business.automation.enabled": {
+    "required": [
+      "automationId",
+      "businessId",
+      "name"
+    ],
+    "properties": [
+      "automationId",
+      "businessId",
+      "name"
+    ]
+  },
+  "business.automation.notified": {
+    "required": [
+      "automationId",
+      "businessId",
+      "text"
+    ],
+    "properties": [
+      "automationId",
+      "businessId",
+      "text"
+    ]
+  },
+  "business.automation.ran": {
+    "required": [
+      "actions",
+      "automationId",
+      "businessId",
+      "ok",
+      "trigger"
+    ],
+    "properties": [
+      "actions",
+      "automationId",
+      "businessId",
+      "ok",
+      "trigger"
+    ]
+  },
+  "business.automation.removed": {
+    "required": [
+      "automationId",
+      "businessId",
+      "name"
+    ],
+    "properties": [
+      "automationId",
+      "businessId",
+      "name"
+    ]
+  },
+  "business.automation.updated": {
+    "required": [
+      "automationId",
+      "businessId"
+    ],
+    "properties": [
+      "automationId",
+      "businessId",
+      "changed",
+      "trigger"
     ]
   },
   "business.contact.added": {

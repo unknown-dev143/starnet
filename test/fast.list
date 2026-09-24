@@ -436,6 +436,11 @@ test/business-knowledge.test.js
 test/business-experiments-store.test.js
 test/manager-routes.test.js
 test/businessmanager.test.js
+test/business-automation-store.test.js
+test/business-approvals-store.test.js
+test/business-automation-engine.test.js
+test/automation-routes.test.js
+test/businessautomation.test.js
 test/projectbless.test.js
 test/folderpick.test.js
 test/pathtrust.test.js

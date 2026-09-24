@@ -1,0 +1,163 @@
+/* STARNET — businessautomation.css : the AUTOMATION hub's BUSINESS lane (Business OS Phase 5).
+   businessautomation.js registers three sections into the existing AUTOMATION window (the lane
+   registry in app/windows/automation.js) — ACTIVE AUTOMATIONS, BUILD AN AUTOMATION and WAITING ON YOU.
+   Everything is scoped under .ba-* so nothing here can leak into another console.
+   NOTE: .bc-* (Phase 1 businesscenter), .bm-* (Phase 2 businessmaker) and .mg-* (Phase 4
+   businessmanager) are all TAKEN — every stylesheet in frontend/css/ is global once index.html
+   loads it, so a shared prefix would restyle the other console. .ba- is this file's alone. */
+
+/* ---------- status lines ---------- */
+.ba-hubline {
+  color: var(--ph-bright); font-size: 12px; letter-spacing: 1px;
+  padding: 7px 9px; margin: 8px 0 0; border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+/* the hub line is the first thing read in the section, so its three states are unmistakable:
+   LISTENING (ok) · something switched itself off (warn) · STOPPED (bad). Colour is never the only
+   signal — the sentence itself always says which of the three it is. */
+.ba-hubline.ba-ok { color: var(--ok, #7bc88a); box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.ba-hubline.ba-warn { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.ba-hubline.ba-bad { color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+
+.ba-msg { margin: 7px 0 0; font-size: 12px; letter-spacing: .5px; }
+.ba-msg:empty { display: none; }
+.ba-ok-t { color: var(--ok, #7bc88a); }
+.ba-bad-t { color: var(--bad); }
+.ba-note {
+  margin: 0 0 10px; padding: 8px 10px; border-radius: 3px;
+  color: var(--ph); font-size: 12px; line-height: 1.5;
+  border-left: 2px solid var(--ph-dim);
+  background: var(--ph-faint, rgba(255,255,255,.03));
+}
+.ba-note b { color: var(--ph-bright); font-weight: 600; }
+.ba-sub { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; padding: 3px 0; }
+.ba-empty { color: var(--ph-dim); font-size: 12px; padding: 9px 0; }
+.ba-lab { color: var(--ph-dim); font-size: 10px; letter-spacing: 2px; padding: 4px 0 2px; display: block; }
+
+/* ---------- the business picker bar ---------- */
+.ba-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 0 4px; }
+.ba-bar .ba-lab { padding: 0; }
+.ba-in {
+  font: inherit; font-size: 12px; color: var(--ph); background: transparent;
+  border: 1px solid var(--ph-dim); border-radius: 2px; padding: 3px 6px;
+}
+.ba-in:hover { border-color: var(--ph); }
+.ba-in:focus { outline: none; border-color: var(--ph-bright); }
+select.ba-in option { color: #000; }
+.ba-biz { min-width: 160px; }
+.ba-bar .bb { margin-left: auto; }
+.ba-bar .bb + .bb { margin-left: 0; }
+
+/* ---------- the builder form ---------- */
+.ba-form { display: flex; flex-direction: column; gap: 3px; padding: 4px 0 0; }
+.ba-name, #ba-name { width: 100%; box-sizing: border-box; }
+.ba-form .ba-in { width: 100%; box-sizing: border-box; }
+.ba-trigger-note { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; padding: 2px 0 4px; }
+
+/* a condition row: field · operator · value · remove */
+.ba-conds, .ba-acts { display: flex; flex-direction: column; gap: 4px; padding: 3px 0; }
+.ba-cond, .ba-act {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 5px 7px; border-radius: 3px;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+.ba-cond .ba-cf { flex: 1 1 130px; }
+.ba-cond .ba-co { flex: 1 1 110px; }
+.ba-cond .ba-cv { flex: 1 1 120px; }
+.ba-act .ba-aa { flex: 1 1 200px; }
+/* the ✕ on a row is a REMOVE, so it reads as a stop: it never looks like the row's primary action */
+.ba-cx, .ba-ax {
+  font: inherit; font-size: 12px; cursor: pointer; line-height: 1;
+  color: var(--bad); background: transparent; border: 1px solid var(--bad);
+  padding: 4px 8px; border-radius: 2px;
+}
+.ba-cx:hover, .ba-ax:hover { color: #000; background: var(--bad); }
+
+/* an action's parameter fields, drawn from the catalogue's required/optional lists */
+.ba-aparams { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; padding-top: 4px; }
+.ba-pf { display: flex; flex-direction: column; gap: 2px; flex: 1 1 160px; }
+.ba-pf > span { color: var(--ph-dim); font-size: 10px; letter-spacing: 1px; }
+.ba-pv { width: 100%; box-sizing: border-box; }
+
+/* ---------- the live preview ---------- */
+.ba-preview { padding: 8px 0 2px; }
+.ba-prev-line {
+  color: var(--ph); font-size: 12px; letter-spacing: .5px;
+  padding: 2px 0; line-height: 1.45;
+}
+.ba-prev-line b { color: var(--ph-bright); }
+.ba-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0 0; }
+
+/* ---------- the rule list ---------- */
+.ba-list { display: flex; flex-direction: column; gap: 7px; padding: 5px 0 0; }
+.ba-card {
+  padding: 8px 10px; border-radius: 3px;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+.ba-card.ba-dim { opacity: .55; }
+.ba-card-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ba-card-h b { color: var(--ph-bright); font-size: 13px; font-weight: 600; }
+.ba-card-b { padding-top: 5px; }
+.ba-when { color: var(--ph); font-size: 12px; letter-spacing: .5px; padding: 1px 0; }
+.ba-stat { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; padding: 3px 0 0; }
+.ba-acts-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+
+/* status chips — colour is never the only signal; every chip also prints its label. */
+.ba-chip {
+  font-size: 10px; letter-spacing: 1.5px; padding: 1px 6px; border-radius: 2px;
+  color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim);
+}
+.ba-chip.ba-ok { color: var(--ok, #7bc88a); box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.ba-chip.ba-dim { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+/* an action that ASKS FIRST reads gold — the same "held for you" colour the Manager uses for a guess */
+.ba-chip.ba-warn { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+/* a §26 block with an unlabelled or unknown evidence class is a REFUSAL, not a warning */
+.ba-chip.ba-bad { color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+
+/* ---------- dry-run output & run history ---------- */
+.ba-testout, .ba-runsout {
+  margin-top: 7px; padding: 7px 9px; border-radius: 3px;
+  border-left: 2px solid var(--ph-dim);
+  background: var(--ph-faint, rgba(255,255,255,.02));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.06));
+}
+.ba-runs { display: flex; flex-direction: column; gap: 2px; }
+.ba-run {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding: 3px 0; font-size: 12px;
+  border-left: 2px solid var(--ok, #7bc88a); padding-left: 7px;
+}
+.ba-run.ba-run-bad { border-left-color: var(--bad); }
+.ba-run-t { color: var(--ph-dim); font-size: 11px; min-width: 74px; }
+.ba-run-e { color: var(--ph); letter-spacing: .5px; }
+.ba-run-s { color: var(--ph-bright); }
+.ba-run.ba-run-bad .ba-run-s { color: var(--bad); }
+.ba-run-r { color: var(--gold); font-size: 11px; }
+
+/* ---------- the §13 approval queue: what · why · evidence, then the decision ---------- */
+.ba-ap { border-left: 2px solid var(--gold); }
+.ba-why { color: var(--ph); font-size: 12px; line-height: 1.5; padding: 2px 0; }
+.ba-why .ba-lab { display: inline; padding: 0 4px 0 0; }
+.ba-ev { list-style: none; margin: 5px 0 0; padding: 0; }
+.ba-ev li {
+  color: var(--ph); font-size: 12px; line-height: 1.45; padding: 2px 0 2px 9px;
+  border-left: 1px solid var(--ph-faint, rgba(255,255,255,.14));
+}
+.ba-evcls { color: var(--ph-bright); font-size: 11px; letter-spacing: .5px; }
+.ba-evsrc { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; }
+
+/* the two decisions. APPROVE & RUN is the affirmative and reads bright; REJECT is a plain stop. */
+.ba-approve {
+  font: inherit; font-size: 11px; letter-spacing: 1px; cursor: pointer;
+  color: var(--ok, #7bc88a); background: transparent; border: 1px solid var(--ok, #7bc88a);
+  padding: 3px 10px; border-radius: 2px;
+}
+.ba-approve:hover { color: #000; background: var(--ok, #7bc88a); }
+.ba-reject {
+  font: inherit; font-size: 11px; letter-spacing: 1px; cursor: pointer;
+  color: var(--bad); background: transparent; border: 1px solid var(--bad);
+  padding: 3px 10px; border-radius: 2px;
+}
+.ba-reject:hover { color: #000; background: var(--bad); }
