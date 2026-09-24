@@ -478,6 +478,62 @@
     }),
     'automation.halted': obj(['halted'], { halted: bool, dropped: int }),
 
+    /* ---- Phase 6: the AI WORKER (§13's action permission tiers × the station's own tool gates) ----
+       Seven NEW names only. As with every earlier phase block, nothing existing was renamed, removed or
+       retyped, and no field was added to an existing event — a pure addition, so every earlier consumer stays
+       valid.
+
+       WHY THESE EXIST. A work order is the one place in the business layer where an agent reaches REAL station
+       software — files, the web, the notebook, the code runner — so its events are the audit trail §18 asks
+       for. They are deliberately finer-grained than the automation block: an automation that fires is one
+       fact, but a work order that holds step 3 of 4 while refusing step 4 is several facts, and a listener
+       that only saw "finished" could not tell the two apart.
+
+         business.workorder.planned        — the order was written. It has NOT run: creating and running are
+                                            separate acts (§19), and `dryRun` travels so a listener never
+                                            mistakes a classification for a job. The four counts (`run`,
+                                            `ask`, `deny`, `unwired`) are the plan's verdicts.
+         business.workorder.step.refused   — a step the worker will not take. `unwired` is the field that
+                                            separates the two reasons: false means §13 refused it (a
+                                            restricted action), true means the policy would have allowed it
+                                            but the worker has no route to that tool. Different fixes.
+         business.workorder.step.held      — a step waiting on a human. `approvalId` is EMPTY when the wait is
+                                            the runtime consent gate rather than a §13 request, which is how
+                                            the console knows there is nothing for the user to approve.
+         business.workorder.step.approved  — the owner said yes and the step then ran. `status` is what
+                                            actually happened to it (executed / failed / refused) — an
+                                            approval is permission, not a promise, and the two must not be
+                                            conflated.
+         business.workorder.step.rejected  — the owner said no. The step is refused and the order re-derives.
+         business.workorder.finished       — the order settled, with the four terminal counts. `status` is the
+                                            store's DERIVED verdict, not a value any caller supplied.
+         business.workorder.removed        — the order was deleted. `expiredApprovals` is how many pending §13
+                                            requests were retired with it — a real count, because a request
+                                            outliving the order behind it would be an approval nobody could
+                                            honour. */
+    'business.workorder.planned': obj(['businessId', 'orderId', 'agentId', 'steps', 'dryRun', 'run', 'ask', 'deny', 'unwired'], {
+      businessId: str, orderId: str, agentId: str, steps: int, dryRun: bool,
+      run: int, ask: int, deny: int, unwired: int
+    }),
+    'business.workorder.step.refused': obj(['businessId', 'orderId', 'seq', 'tool', 'action', 'tier', 'why', 'unwired'], {
+      businessId: str, orderId: str, seq: int, tool: str, action: str, tier: str, why: str, unwired: bool
+    }),
+    'business.workorder.step.held': obj(['businessId', 'orderId', 'seq', 'tool', 'action', 'tier', 'approvalId', 'why'], {
+      businessId: str, orderId: str, seq: int, tool: str, action: str, tier: str, approvalId: str, why: str
+    }),
+    'business.workorder.step.approved': obj(['businessId', 'orderId', 'seq', 'tool', 'approvalId', 'by', 'status', 'orderStatus'], {
+      businessId: str, orderId: str, seq: int, tool: str, approvalId: str, by: str, status: str, orderStatus: str
+    }),
+    'business.workorder.step.rejected': obj(['businessId', 'orderId', 'seq', 'tool', 'approvalId', 'by', 'orderStatus'], {
+      businessId: str, orderId: str, seq: int, tool: str, approvalId: str, by: str, orderStatus: str
+    }),
+    'business.workorder.finished': obj(['businessId', 'orderId', 'status', 'executed', 'held', 'refused', 'failed'], {
+      businessId: str, orderId: str, status: str, executed: int, held: int, refused: int, failed: int
+    }),
+    'business.workorder.removed': obj(['businessId', 'orderId', 'expiredApprovals'], {
+      businessId: str, orderId: str, expiredApprovals: int
+    }),
+
     // ---- reserved (P3 mutation API) ----
     'worldChange': obj(['seq'], { seq: int, dirtyTiles: { type: 'array' } }),
 

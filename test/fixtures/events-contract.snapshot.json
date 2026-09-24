@@ -699,6 +699,148 @@
       "stage"
     ]
   },
+  "business.workorder.finished": {
+    "required": [
+      "businessId",
+      "executed",
+      "failed",
+      "held",
+      "orderId",
+      "refused",
+      "status"
+    ],
+    "properties": [
+      "businessId",
+      "executed",
+      "failed",
+      "held",
+      "orderId",
+      "refused",
+      "status"
+    ]
+  },
+  "business.workorder.planned": {
+    "required": [
+      "agentId",
+      "ask",
+      "businessId",
+      "deny",
+      "dryRun",
+      "orderId",
+      "run",
+      "steps",
+      "unwired"
+    ],
+    "properties": [
+      "agentId",
+      "ask",
+      "businessId",
+      "deny",
+      "dryRun",
+      "orderId",
+      "run",
+      "steps",
+      "unwired"
+    ]
+  },
+  "business.workorder.removed": {
+    "required": [
+      "businessId",
+      "expiredApprovals",
+      "orderId"
+    ],
+    "properties": [
+      "businessId",
+      "expiredApprovals",
+      "orderId"
+    ]
+  },
+  "business.workorder.step.approved": {
+    "required": [
+      "approvalId",
+      "businessId",
+      "by",
+      "orderId",
+      "orderStatus",
+      "seq",
+      "status",
+      "tool"
+    ],
+    "properties": [
+      "approvalId",
+      "businessId",
+      "by",
+      "orderId",
+      "orderStatus",
+      "seq",
+      "status",
+      "tool"
+    ]
+  },
+  "business.workorder.step.held": {
+    "required": [
+      "action",
+      "approvalId",
+      "businessId",
+      "orderId",
+      "seq",
+      "tier",
+      "tool",
+      "why"
+    ],
+    "properties": [
+      "action",
+      "approvalId",
+      "businessId",
+      "orderId",
+      "seq",
+      "tier",
+      "tool",
+      "why"
+    ]
+  },
+  "business.workorder.step.refused": {
+    "required": [
+      "action",
+      "businessId",
+      "orderId",
+      "seq",
+      "tier",
+      "tool",
+      "unwired",
+      "why"
+    ],
+    "properties": [
+      "action",
+      "businessId",
+      "orderId",
+      "seq",
+      "tier",
+      "tool",
+      "unwired",
+      "why"
+    ]
+  },
+  "business.workorder.step.rejected": {
+    "required": [
+      "approvalId",
+      "businessId",
+      "by",
+      "orderId",
+      "orderStatus",
+      "seq",
+      "tool"
+    ],
+    "properties": [
+      "approvalId",
+      "businessId",
+      "by",
+      "orderId",
+      "orderStatus",
+      "seq",
+      "tool"
+    ]
+  },
   "capdenied": {
     "required": [
       "agentId",

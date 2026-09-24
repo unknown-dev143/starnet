@@ -62,6 +62,11 @@
     routine:      'a recipe or job put on a schedule (every morning, hourly) — WHEN work runs; manage them under ∞ AUTOMATION.',
     loop:         'one objective an agent keeps working at, stopping each time for your yes or no — UNTIL it is done, not on a clock. Your verdict is what starts the next pass; it costs nothing while it waits. Manage them under ∞ AUTOMATION.',
     recipe:       'a ready-made job an agent can run right now — WHAT to run; launching one lands it on the ☑ TASK BOARD.',
+    /* Business OS (Phase 6). The WORKER is described by what it can and cannot reach, because that is the
+       question a user actually has: this is the one console an agent does real station work from. */
+    worker:       'a work order — an agent doing real station work (reading and writing files, searching the web, keeping notes) for one business. Each step carries two verdicts: the §13 TIER of what the action means, and the runtime FLOOR of what the tool does to your machine. Both must be satisfied, so a harmless-looking action whose tool writes still stops for a person. Planning an order does not run it; RUN is a separate press.',
+    workorder:    'one job you hand the WORKER: an intent in words plus a list of tool steps, each with a reason. Its status is worked out from what the steps actually did — an order is only DONE when every step ran, PARTIAL when some did, and BLOCKED while one waits on you.',
+    floor:        'the runtime’s own requirement for what a tool does to your machine, read from the tool’s declaration — READ / WRITE / EXECUTE. It is separate from the §13 tier: a safe action whose tool writes is still held, because the two systems judge different things.',
     task:         'a planned piece of work created on the board or launched from a recipe or goal — it appears on the ☑ TASK BOARD and opens as a COMMS session.',
     quest:        'a suggestion or progress marker from the station — accepting one starts real work; it is never a second to-do list.',
     // Business OS (Phase 1). The per-business stop is deliberately described as SCOPED: it is not the E-STOP,

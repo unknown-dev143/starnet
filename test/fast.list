@@ -441,6 +441,11 @@ test/business-approvals-store.test.js
 test/business-automation-engine.test.js
 test/automation-routes.test.js
 test/businessautomation.test.js
+test/business-worker-policy.test.js
+test/business-workorders-store.test.js
+test/business-worker.test.js
+test/worker-routes.test.js
+test/businessworker.test.js
 test/projectbless.test.js
 test/folderpick.test.js
 test/pathtrust.test.js

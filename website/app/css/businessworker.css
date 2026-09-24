@@ -1,0 +1,79 @@
+/* frontend/css/businessworker.css — the AI WORKER console (Business OS Phase 6).
+
+   Scoped .wk-*, which is free: .bc-*/.bm-*/.tm-*/.mg-*/.ba-* already belong to Phases 1/2/3/4/5. Every
+   stylesheet in frontend/css/ is GLOBAL once index.html loads it, so two consoles sharing a prefix would
+   restyle each other — this file's names are disjoint by construction.
+
+   TWO VISUAL IDEAS CARRY THE PHASE'S MEANING, and they are not decoration:
+     1. A step shows BOTH permission answers — the §13 tier chip and, when it is stricter, a FLOOR chip. They
+        are coloured differently so "the action is safe" and "the mechanism needs a person" never read as one
+        green light.
+     2. A row for a tool the worker cannot reach is dimmed and marked NOT WIRED. "The policy would allow this"
+        and "the worker has no route to it" are different problems, so they must not look alike. */
+.wk-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.wk-headline { font-size: 12px; opacity: .85; }
+.wk-head-btns { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+.wk-sec { margin: 14px 0; padding-top: 10px; border-top: 1px solid var(--line, #e2e2e6); }
+.wk-sec h3 { font-size: 11px; letter-spacing: .08em; margin: 0 0 8px; opacity: .7; }
+.wk-note { font-size: 11px; opacity: .7; margin: 0 0 8px; line-height: 1.5; }
+.wk-empty { font-size: 12px; opacity: .6; margin: 6px 0; line-height: 1.5; }
+.wk-summary { font-size: 11px; opacity: .7; margin-bottom: 8px; }
+
+/* ---- chips ---- */
+.wk-chip { display: inline-block; font-size: 9px; letter-spacing: .06em; padding: 1px 5px; border-radius: 999px; margin-left: 5px; vertical-align: middle; border: 1px solid transparent; }
+.wk-safe { background: #e8f5ec; color: #17603a; border-color: #bfe0cb; }
+.wk-review { background: #fff4e0; color: #7a4a06; border-color: #f0d6a8; }
+.wk-restricted { background: #fdeaea; color: #8a1f1f; border-color: #f2c2c2; }
+/* the runtime's floor, shown only when it is STRICTER than the tier — never a redundant second chip */
+.wk-floor { background: #eef0fb; color: #333a7a; border-color: #c6cbea; }
+.wk-unwired { background: #f0f0f2; color: #5a5a63; border-color: #d8d8dd; }
+
+.wk-planned { background: #f0f0f2; color: #5a5a63; border-color: #d8d8dd; }
+.wk-running { background: #e7f0fb; color: #1c4a80; border-color: #c2d7f0; }
+.wk-done { background: #e8f5ec; color: #17603a; border-color: #bfe0cb; }
+.wk-partial { background: #fff4e0; color: #7a4a06; border-color: #f0d6a8; }
+.wk-blocked { background: #fdeaea; color: #8a1f1f; border-color: #f2c2c2; }
+.wk-failed { background: #fdeaea; color: #8a1f1f; border-color: #f2c2c2; }
+.wk-pending { background: #f0f0f2; color: #5a5a63; border-color: #d8d8dd; }
+.wk-executed { background: #e8f5ec; color: #17603a; border-color: #bfe0cb; }
+.wk-held { background: #fff4e0; color: #7a4a06; border-color: #f0d6a8; }
+.wk-refused { background: #fdeaea; color: #8a1f1f; border-color: #f2c2c2; }
+.wk-skipped { background: #f0f0f2; color: #5a5a63; border-color: #d8d8dd; }
+
+/* ---- orders ---- */
+.wk-order-wrap { margin-bottom: 12px; }
+.wk-order { border: 1px solid var(--line, #e2e2e6); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
+.wk-order-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+.wk-meta { font-size: 10px; opacity: .6; margin: 3px 0 6px; }
+.wk-steps { list-style: none; margin: 0; padding: 0; }
+.wk-step { border-left: 3px solid var(--line, #e2e2e6); padding: 5px 0 5px 8px; margin-bottom: 5px; }
+.wk-step.wk-executed { border-left-color: #4fa97a; }
+.wk-step.wk-held { border-left-color: #d8a13a; }
+.wk-step.wk-refused, .wk-step.wk-failed { border-left-color: #c95252; }
+.wk-step-top { display: flex; align-items: center; gap: 2px; font-size: 11px; flex-wrap: wrap; }
+.wk-why { font-size: 11px; opacity: .8; margin-top: 2px; }
+.wk-reason { font-size: 10px; opacity: .65; margin-top: 2px; line-height: 1.45; }
+.wk-result { font-size: 10px; margin-top: 3px; padding: 4px 6px; background: #f7f7f9; border-radius: 4px; white-space: pre-wrap; word-break: break-word; }
+
+/* ---- approvals ---- */
+.wk-approval { border: 1px solid #f0d6a8; background: #fffdf7; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+.wk-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+/* ---- the plan builder ---- */
+.wk-drafts { display: flex; flex-direction: column; gap: 5px; margin: 8px 0; }
+.wk-draft { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.wk-d-tool { max-width: 190px; }
+.wk-d-why { flex: 1 1 220px; min-width: 160px; }
+.wk-d-args { flex: 1 1 200px; min-width: 150px; }
+.wk-opt-unwired { opacity: .55; }
+
+/* ---- catalog ---- */
+.wk-cat { width: 100%; border-collapse: collapse; font-size: 11px; }
+.wk-cat th { text-align: left; font-size: 9px; letter-spacing: .08em; opacity: .6; padding: 4px 6px; border-bottom: 1px solid var(--line, #e2e2e6); }
+.wk-cat td { padding: 4px 6px; border-bottom: 1px solid #f0f0f2; vertical-align: middle; }
+.wk-unwired-row { opacity: .5; }
+
+.wk-msg { font-size: 11px; margin-top: 6px; min-height: 14px; line-height: 1.5; word-break: break-word; }
+.wk-ok-t { color: #17603a; }
+.wk-bad-t { color: #8a1f1f; }

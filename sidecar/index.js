@@ -187,6 +187,10 @@ const { makeBusinessAutomationStore } = require('./business-automation-store.js'
 const { makeBusinessApprovalsStore } = require('./business-approvals-store.js');   // Business OS P5: §13 APPROVAL QUEUE — a pending request can only exist with a §26 block behind it (P1), and a decision is final
 const { makeBusinessAutomationEngine } = require('./business-automation-engine.js'); // Business OS P5: the DRIVER — bus event → run, with a bounded cascade depth, per-rule cooldown and a §19 halt
 const { makeAutomationRoutes } = require('./automation-routes.js');            // Business OS P5: the /api/automations + /api/approvals + hub-control surface
+const { makeBusinessWorkOrders } = require('./business-workorders-store.js');  // Business OS P6: §13/§18 the AI WORKER's work-order record — what was asked, by which agent, and per-step what actually happened
+const workerPolicy = require('./business-worker-policy.js');                   // Business OS P6: THE BRIDGE — a tool's §13 action, plus the composed verdict of BOTH permission systems
+const { makeBusinessWorker } = require('./business-worker.js');                // Business OS P6: the RUNNER — dispatches safe steps through the REAL tool registry, holds review, refuses restricted
+const { makeWorkerRoutes } = require('./worker-routes.js');                    // Business OS P6: the /api/workorders surface
 const { makePathTrust } = require('./pathtrust.js');            // NS-5: conversational path-trust guard
 // Tool-result images (browser.screenshot / browser.vision -> real pixels in the prompt). ON by default; set
 // SKYNET_TOOL_IMAGES=0 for a text-only endpoint that rejects image content parts.
@@ -3341,6 +3345,163 @@ const automationRoutes = makeAutomationRoutes({
   activity: businessActivityStore,
   readBody,
   setHalted: automationHaltControl,
+  emit: (name, payload) => chanEmit(name, payload)
+});
+
+/* ============================ BUSINESS OS PHASE 6 — THE AI WORKER ============================
+   §13's AI Worker: a business agent operating real station software under strict permission boundaries.
+
+   THE ONE-OFF REGISTRY, AND WHY IT IS A FUNCTION. The station's tool registry is assembled INSIDE a single
+   agent run (`runOnce`) and a lot of what it registers closes over per-run state — the run's path trust, its
+   abort signal, its redactor, its surface. Reproducing that at module level would be a second copy of ~31
+   registration calls that would drift from the first, which is this project's named P4 failure. So the worker
+   does NOT try to mirror it. It builds a deliberate SUBSET, on demand, using the same constructors and the
+   same module-level dependencies the run path uses — exactly the shape `handleAutonomyWrite` already
+   established for "a privileged operation that needs tools outside a run" (see its header: "the security
+   comes from REUSE, never a hand-rolled allow").
+
+   IT IS A FUNCTION, NOT A CONST, FOR TWO REASONS. (1) TDZ: several dependencies below (`executionEnvironment`,
+   `connectors`, `serviceKeys`, `stationBridge`) are declared further down this file, so building the registry
+   eagerly here would throw at boot. A function body is only evaluated when a work order actually runs.
+   (2) A fresh registry per invocation means a tool cannot carry state from one work order into the next.
+
+   WHAT IS DELIBERATELY ABSENT, AND WHY THAT IS A FEATURE. shell, terminal, browser, computer, desktop,
+   spotify, the media generators, routines and loops are NOT registered here. Every one of them is either
+   §13-restricted (shell/terminal/computer/desktop — the policy refuses those before dispatch, so their
+   absence is a SECOND, independent fence behind it) or needs an external service the worker has no business
+   reaching unattended. External comms (`channel.send`) is the one honest gap: the policy classifies it
+   `external_comms` (review) and holds it, but the worker has no route to it, so the runner REFUSES such a step
+   with a reason that says exactly that rather than filing an approval it could not then honour. The console
+   shows each tool's `wired` flag from /api/worker/catalog, so this is visible before an order is written
+   rather than discovered when one runs. */
+function makeWorkerRegistry() {
+  const reg = makeRegistry();
+  // research (§13 safe) — the worker reads the open web. `surface: 'autonomous'` is the honest label: a work
+  // order runs without a person watching, so the web tools' own unattended rules apply on top of §13.
+  makeWebTools({
+    openrouter: null,
+    surface: 'autonomous',
+    redact: redact,
+    reader: stationWebReader,
+    politeness: stationWebPoliteness,
+    resolveServiceKey: (name, sfc) => serviceKeysMod.resolveForRequest(serviceKeys, name, sfc),
+    readWorkspaceFile: async (aid, rel) => {
+      const { abs } = await fsJail.resolveInside(aid, rel, { scope: 'read' });
+      return fsp.readFile(abs);
+    },
+    jinaKey: (() => {
+      try { const r = serviceKeysMod.resolveForRequest(serviceKeys, 'JINA_API_KEY', 'autonomous'); return r.ok ? r.value : ''; }
+      catch (_) { return ''; }
+    })()
+  }).register(reg);
+  makeConnectorTools({ connectors: connectors, serviceKeys: () => serviceKeys, connectorCatalog: connectorCatalog, keysCatalog: serviceKeysCatalog }).register(reg);
+  makeStationInspectTool({ inspect: () => harnessSnapshotForRun({ agentId: 'business-worker', surface: 'autonomous', trigger: 'workorder' }) }).register(reg);
+  // read + write of the agent's OWN workspace. `pathTrust` is omitted deliberately (the same choice
+  // handleAutonomyWrite makes): without it every path is judged by the fs-jail alone, which is the stricter
+  // of the two, and there is no per-run path grant for a work order to inherit.
+  makeFsTools({ fsp, pathMod: path, root: WORKSPACES, environment: executionEnvironment, limits: { writeBytes: 1 << 20, readReturn: 24000 }, redact, docExtract, imageWire, editDiagnostics: lspManager }).register(reg);
+  makeNotebookTools({ store: notebookStore, clock: { now: () => Date.now() }, redact }).register(reg);
+  makeRecallTool({ transcriptStore }).register(reg);
+  makeSkillTools({ store: skillStore, gate: skillGate }).register(reg);
+  Todo.makeTodoTool({ store: notebookStore }).register(reg);
+  DeliverableTool.makeDeliverableTool({ notes: deliverableNotes }).register(reg);
+  makeCodeTools({}).register(reg);
+  makeVerifyTool({ spawn: childSpawn, fs: fs, pathMod: path, root: WORKSPACES, environment: executionEnvironment, redact: redact, clock: { now: () => Date.now() } }).register(reg);
+  makeQuestTools({ store: questStore, clock: { now: () => Date.now() }, activeGoal: () => commanderGoals.get() }).register(reg);
+  makeStationTools({ station: stationBridge }).register(reg);
+  return reg;
+}
+
+// the names the worker's registry carries — read from the registry itself, never a hand-kept list, so the
+// policy catalogue's `wired` flag cannot drift from what the registry actually registered.
+function workerToolNames() {
+  try { return makeWorkerRegistry().list().map(t => t.name); } catch (e) { return null; }
+}
+
+/* THE REAL DESCRIPTOR for a tool the worker carries — INCLUDING ITS `scope`, which the policy's SCOPE_FLOOR
+   needs in order to escalate a step the table alone would under-classify. Read from the same registry that
+   will dispatch the call, so a tool's own declaration is never restated (and therefore never able to drift)
+   here. Returning null is honest and safe: the policy then classifies from the table alone, which is the
+   stricter reading for every tool in the table except the fs writes — and those are the ones whose escalation
+   this exists to preserve. */
+function workerToolInfo(name) {
+  try { return makeWorkerRegistry().get(name) || null; } catch (e) { return null; }
+}
+
+const BIZ_WORKORDERS_FILE = path.join(WORKSPACES, 'business-workorders.json');
+function loadWorkOrders() {
+  try {
+    const raw = loadResilient(BIZ_WORKORDERS_FILE, 'workorders');
+    const arr = raw && Array.isArray(raw.workorders) ? raw.workorders : [];
+    return arr.filter(r => r && typeof r.id === 'string' && r.id && typeof r.businessId === 'string' && r.businessId);
+  } catch (e) { return []; }
+}
+const workOrderRecords = loadWorkOrders();
+function persistWorkOrders(recs) { saveResilient(BIZ_WORKORDERS_FILE, { version: 1, workorders: recs }); }
+const workOrdersStore = makeBusinessWorkOrders({
+  records: workOrderRecords, persist: persistWorkOrders, now: () => Date.now()
+});
+
+const businessWorker = makeBusinessWorker({
+  workorders: workOrdersStore,
+  policy: workerPolicy,
+  permissions: require('./business-permissions.js'),
+  approvals: approvalsStore,
+  agents: agentsStore,
+  // the REAL dispatcher, built per call — see makeWorkerRegistry's header. Every station gate (user-control
+  // authority, capability, schema, the consent broker, hooks) applies to a worker step because it IS a
+  // registry dispatch, not a bypass.
+  dispatch: (call, ctx) => makeWorkerRegistry().dispatch(call, ctx),
+  available: workerToolNames,
+  // the tool's OWN declaration (scope / requiresConsent / network), so the policy's SCOPE_FLOOR is load-bearing
+  // rather than decorative — without this the table's `draft` for fs.write could never escalate to `review`.
+  describe: workerToolInfo,
+  now: () => Date.now(),
+  // lazy wrapper — chanEmit is declared far below (the Phase 5 TDZ lesson)
+  emit: (name, payload) => chanEmit(name, payload),
+  log: (entry) => { console.warn('[worker]', entry.kind, JSON.stringify(entry.detail)); }
+});
+
+/* THE RUNTIME CONSENT GATE FOR A WORKER STEP.
+   §13 decides whether the ACTION is permitted; this is the OTHER axis — the tool's own declaration — and it is
+   answered by the REAL broker, built from the same constructor and the same host-owned grants `handleAutonomy
+   Write` uses (see its header: "the security comes from REUSE, never a hand-rolled allow"). So a worker write
+   is judged by the user's own durable decisions — a permanent `cabinet:write` grant, FULL ACCESS, the hardline
+   floor that keeps .env/.git unwritable — and by nothing this module invented. There is deliberately NO
+   `prompt` function: a work order runs on an HTTP request, there is no human on the other end of a socket to
+   ask, and inventing one would mean fabricating a yes.
+
+   WHAT `attended` THEREFORE MEANS, PRECISELY. Unattended (the default) does not consult the broker at all, so
+   a consent-requiring step is HELD rather than run. Attended consults it, which is what lets a DURABLE grant
+   the user already made take effect. It does not mean "a person answered just now" — no code path here can
+   promise that, and the route does not claim it does. */
+function workerConsentFor(order) {
+  const agentId = (order && order.agentId) ? String(order.agentId) : 'business-worker';
+  const sessionKey = 'workorder-' + ((order && order.id) || 'adhoc');
+  // makeConsentBroker returns the consent FUNCTION itself, not an object — calling `.consent()` on it throws.
+  const consent = makeConsentBroker({
+    bypass: () => FULL_ACCESS || masterBypassOn(),
+    hardline: hardlineFloor,
+    sessionKey: sessionKey,
+    grantsSession: grantsSession,
+    grantsPermanent: grantsPermanent,
+    persist: persistAllowlist,
+    surface: 'autonomous'
+  });
+  return function (call, tool) {
+    try { return consent(call, tool); } catch (e) {
+      return { allow: false, scope: '', reason: 'consent error: ' + ((e && e.message) || e) };
+    }
+  };
+}
+
+const workerRoutes = makeWorkerRoutes({
+  workorders: workOrdersStore,
+  worker: businessWorker,
+  approvals: approvalsStore,
+  businesses: businessesStore,
+  readBody,
+  consentFor: workerConsentFor,
   emit: (name, payload) => chanEmit(name, payload)
 });
 // the LIVE blessed-root set = every `path:*` grant, stripped of the prefix. Derived fresh each read so a
@@ -8837,6 +8998,11 @@ const ROUTES = [
   // discipline as Phase 4, for the same reason. Its rows are namespaced (/api/automations, /api/approvals,
   // /api/automation/…) so none of them can shadow a Phase 1-4 path.
   ...automationRoutes.routes,
+  // ---- BUSINESS OS (Phase 6). Same rule again: its own module, mounted here, same rx + query-tolerant-tail
+  // discipline. Its rows are namespaced (/api/workorders, /api/worker/…) so none can shadow a Phase 1-5 path.
+  // NOTE the ordering against Phase 5: /api/worker/approvals/… and /api/approvals/… are DIFFERENT prefixes, so
+  // the two approval deciders cannot capture each other's ids.
+  ...workerRoutes.routes,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },
