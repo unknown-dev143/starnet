@@ -148,6 +148,67 @@
       "usd"
     ]
   },
+  "business.activity": {
+    "required": [
+      "action",
+      "businessId"
+    ],
+    "properties": [
+      "action",
+      "actorKind",
+      "approval",
+      "businessId",
+      "detail",
+      "result",
+      "seq"
+    ]
+  },
+  "business.created": {
+    "required": [
+      "businessId",
+      "name"
+    ],
+    "properties": [
+      "actor",
+      "businessId",
+      "name",
+      "stage",
+      "template"
+    ]
+  },
+  "business.deleted": {
+    "required": [
+      "businessId"
+    ],
+    "properties": [
+      "actor",
+      "businessId",
+      "name"
+    ]
+  },
+  "business.paused": {
+    "required": [
+      "businessId"
+    ],
+    "properties": [
+      "actor",
+      "businessId",
+      "halted",
+      "name"
+    ]
+  },
+  "business.updated": {
+    "required": [
+      "businessId"
+    ],
+    "properties": [
+      "actor",
+      "businessId",
+      "changed",
+      "name",
+      "stage"
+    ]
+  },
   "capdenied": {
     "required": [
       "agentId",
@@ -504,6 +565,52 @@
     "required": [],
     "properties": []
   },
+  "opportunity.created": {
+    "required": [
+      "opportunityId",
+      "title"
+    ],
+    "properties": [
+      "opportunityId",
+      "origin",
+      "stage",
+      "template",
+      "title"
+    ]
+  },
+  "opportunity.deleted": {
+    "required": [
+      "opportunityId"
+    ],
+    "properties": [
+      "opportunityId",
+      "title"
+    ]
+  },
+  "opportunity.promoted": {
+    "required": [
+      "businessId",
+      "opportunityId"
+    ],
+    "properties": [
+      "businessId",
+      "opportunityId",
+      "tasksCreated",
+      "title"
+    ]
+  },
+  "opportunity.updated": {
+    "required": [
+      "opportunityId"
+    ],
+    "properties": [
+      "changed",
+      "opportunityId",
+      "origin",
+      "stage",
+      "title"
+    ]
+  },
   "parcel": {
     "required": [],
     "properties": []
@@ -639,6 +746,44 @@
       "title"
     ]
   },
+  "task.created": {
+    "required": [
+      "businessId",
+      "taskId",
+      "title"
+    ],
+    "properties": [
+      "businessId",
+      "origin",
+      "priority",
+      "status",
+      "taskId",
+      "title"
+    ]
+  },
+  "task.deleted": {
+    "required": [
+      "businessId",
+      "taskId"
+    ],
+    "properties": [
+      "businessId",
+      "taskId",
+      "title"
+    ]
+  },
+  "task.updated": {
+    "required": [
+      "businessId",
+      "taskId"
+    ],
+    "properties": [
+      "businessId",
+      "changed",
+      "status",
+      "taskId"
+    ]
+  },
   "taskbrief.settled": {
     "required": [
       "agentId",
@@ -669,6 +814,20 @@
       "callId",
       "name",
       "runId"
+    ]
+  },
+  "validation.recorded": {
+    "required": [
+      "method",
+      "opportunityId",
+      "validationId"
+    ],
+    "properties": [
+      "evidenceCount",
+      "method",
+      "opportunityId",
+      "validationId",
+      "verdict"
     ]
   },
   "verify.result": {

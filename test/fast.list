@@ -176,6 +176,7 @@ test/servicekeys-catalog.test.js
 test/tools.test.js
 test/capgate.test.js
 test/capdrift.test.js
+test/cap-tool-registration.test.js
 test/capsummary.test.js
 test/boot-security.test.js
 test/sidecar-fixture.test.js
@@ -409,6 +410,15 @@ test/autonomy-write.test.js
 test/autonotify.test.js
 test/permgrants.test.js
 test/projects-store.test.js
+test/businesses-store.test.js
+test/business-activity-store.test.js
+test/business-routes.test.js
+test/businesscenter.test.js
+test/business-templates.test.js
+test/business-tasks-store.test.js
+test/maker-routes.test.js
+test/task-routes.test.js
+test/businessmaker.test.js
 test/projectbless.test.js
 test/folderpick.test.js
 test/pathtrust.test.js

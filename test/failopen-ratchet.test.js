@@ -155,7 +155,6 @@ const SYNC_BASELINE = {
   'execution-settings.js': 1,
   'failopen.js': 2,
   'folderpick.js': 1,
-  'halt.js': 1,
   'harness-import.js': 1,
   'http-body.js': 2,
   'index.js': 379,

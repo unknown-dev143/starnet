@@ -1,0 +1,153 @@
+/* STARNET — businessmaker.css : the BUSINESS MAKER (Business OS Phase 2).
+   Themed through the shared phosphor vars so it inherits every theme; businessmaker.js builds the DOM.
+   Everything is scoped under .bm-* so nothing here can leak into another window. */
+
+/* ---------- the summary strip + status lines ---------- */
+.bm-sum {
+  color: var(--ph-bright); font-size: 13px; letter-spacing: 1px;
+  padding: 0 0 8px; border-bottom: 1px solid var(--ph-faint, rgba(255,255,255,.08));
+}
+.bm-err {
+  margin: 8px 0 0; padding: 5px 9px; border-radius: 3px; font-size: 13px;
+  color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad);
+}
+.bm-note { margin: 9px 0 0; color: var(--ph-dim); font-size: 12px; letter-spacing: .5px; }
+.bm-empty { color: var(--ph-dim); font-size: 13px; padding: 10px 0; }
+
+/* ---------- the opportunity radar ---------- */
+.bm-rows { display: flex; flex-direction: column; gap: 6px; padding: 9px 0 0; }
+.bm-row {
+  display: flex; align-items: flex-start; gap: 10px; justify-content: space-between;
+  padding: 7px 9px; border-radius: 3px; cursor: pointer;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+.bm-row:hover { box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.bm-row.bm-sel { box-shadow: inset 0 0 0 1px var(--ph); }
+.bm-row.bm-promoted { box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.bm-row-main { min-width: 0; flex: 1 1 auto; }
+.bm-row-name { color: var(--ph-bright); font-size: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.bm-row-sub { color: var(--ph-dim); font-size: 12px; letter-spacing: .5px; margin-top: 2px; }
+.bm-row-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.bm-row-warn { color: var(--gold); font-size: 12px; margin-top: 4px; }
+.bm-row-act { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+
+/* ---------- chips ---------- */
+.bm-chip {
+  font-size: 10px; letter-spacing: 1.5px; padding: 1px 5px; border-radius: 2px;
+  color: var(--ph); box-shadow: inset 0 0 0 1px var(--ph-dim);
+}
+.bm-chip.bm-prov { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.12)); }
+.bm-chip.bm-miss { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.12)); margin-right: 4px; }
+
+/* evidence classes: strong classes read brighter, weak ones dimmer. The colour carries meaning, so it is
+   never the ONLY signal — every chip also prints its class name. */
+.bm-chip.bm-ev-verified, .bm-chip.bm-ev-analysis { color: var(--ph-bright); box-shadow: inset 0 0 0 1px var(--ph-bright); }
+.bm-chip.bm-ev-assumption, .bm-chip.bm-ev-estimate, .bm-chip.bm-ev-prediction { color: var(--ph); }
+.bm-chip.bm-ev-unknown, .bm-chip.bm-ev-none { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.12)); }
+
+/* opportunity stages */
+.bm-chip.bm-stage-promoted { color: var(--ok, #7bc88a); box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.bm-chip.bm-stage-rejected { color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.bm-chip.bm-stage-validating { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.bm-chip.bm-stage-ready { color: var(--ph-bright); box-shadow: inset 0 0 0 1px var(--ph-bright); }
+.bm-chip.bm-stage-archived { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+
+/* verdicts */
+.bm-chip.bm-vd-supported { color: var(--ok, #7bc88a); box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.bm-chip.bm-vd-contradicted { color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.bm-chip.bm-vd-pending, .bm-chip.bm-vd-inconclusive { color: var(--ph-dim); }
+.bm-chip.bm-plan-stage { color: var(--ph-dim); }
+.bm-chip.bm-plan-pri.bm-pri-high { color: var(--ph-bright); }
+.bm-chip.bm-plan-pri.bm-pri-critical { color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.bm-chip.bm-plan-pri.bm-pri-low { color: var(--ph-dim); }
+.bm-chip.bm-plan-appr { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+
+/* ---------- controls ---------- */
+.bm-form select, .bm-form input, .bm-form textarea,
+.bm-in {
+  font: inherit; font-size: 12px; color: var(--ph); background: transparent;
+  border: 1px solid var(--ph-dim); border-radius: 2px; padding: 2px 5px;
+}
+.bm-form input, .bm-form textarea, .bm-in-text, .bm-in-src, .bm-r-ev, .bm-r-sup, .bm-r-con { width: 100%; box-sizing: border-box; }
+.bm-form textarea, .bm-in-text, .bm-r-ev, .bm-r-sup, .bm-r-con { resize: vertical; font-family: inherit; }
+.bm-form select:hover, .bm-form input:hover, .bm-in:hover { border-color: var(--ph); }
+.bm-form select option, .bm-in-ev option, .bm-r-vd option { color: #000; }
+
+.bm-del, .bm-new, .bm-open, .bm-save-field, .bm-v-open, .bm-r-save, .bm-pr-go, .bm-p-preview, .bm-p-goal-btn {
+  font: inherit; font-size: 11px; letter-spacing: 1px; cursor: pointer;
+  color: var(--ph-bright); background: transparent; border: 1px solid var(--ph);
+  padding: 3px 9px; border-radius: 2px;
+}
+.bm-del { color: var(--bad); border-color: var(--bad); }
+.bm-del:hover { color: var(--ph-bright); background: var(--bad); }
+.bm-open, .bm-new, .bm-save-field, .bm-v-open, .bm-r-save, .bm-pr-go, .bm-p-preview, .bm-p-goal-btn { padding: 4px 12px; font-size: 12px; }
+.bm-open:hover, .bm-new:hover, .bm-save-field:hover, .bm-v-open:hover, .bm-r-save:hover, .bm-pr-go:hover, .bm-p-preview:hover, .bm-p-goal-btn:hover { background: var(--ph-faint, rgba(255,255,255,.06)); }
+.bm-pr-go { border-color: var(--ok, #7bc88a); color: var(--ok, #7bc88a); }
+.bm-pr-go:hover { background: var(--ok, #7bc88a); color: #000; }
+.bm-del[disabled], .bm-new[disabled], .bm-open[disabled], .bm-save-field[disabled],
+.bm-v-open[disabled], .bm-r-save[disabled], .bm-pr-go[disabled], .bm-p-preview[disabled], .bm-p-goal-btn[disabled] { opacity: .5; cursor: default; }
+
+/* ---------- the create form ---------- */
+.bm-form { display: flex; flex-wrap: wrap; gap: 9px; padding-top: 10px; }
+.bm-f { display: flex; flex-direction: column; gap: 3px; flex: 1 1 190px; }
+.bm-f.bm-f-wide { flex: 1 1 100%; }
+.bm-f.bm-f-inline { flex-direction: row; align-items: center; gap: 6px; }
+.bm-f > span { color: var(--ph-dim); font-size: 11px; letter-spacing: 2px; }
+.bm-f-actions { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; margin-top: 3px; }
+.bm-f-status, .bm-field-status, .bm-v-status, .bm-r-status, .bm-pr-status, .bm-p-status { font-size: 12px; color: var(--ph-dim); }
+.bm-bad { color: var(--bad); }
+.bm-good { color: var(--ok, #7bc88a); }
+
+/* ---------- the §4 field table ---------- */
+.bm-missing { padding: 8px 0 2px; color: var(--ph-dim); font-size: 12px; letter-spacing: .5px; }
+.bm-fields { display: flex; flex-direction: column; gap: 8px; padding-top: 9px; }
+.bm-field {
+  padding: 7px 9px; border-radius: 3px;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+.bm-field.bm-field-open { box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.14)); }
+.bm-field-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.bm-field-lbl { color: var(--ph-bright); font-size: 11px; letter-spacing: 2px; }
+.bm-src { color: var(--ph-dim); font-size: 11px; }
+.bm-field-text { color: var(--ph); font-size: 13px; margin-top: 4px; white-space: pre-wrap; }
+.bm-field-edit { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.bm-in-text { flex: 1 1 260px; }
+.bm-in-ev { flex: 0 0 auto; }
+.bm-in-src { flex: 1 1 150px; }
+.bm-field-status { flex: 0 0 auto; align-self: center; }
+
+/* ---------- the validation lab ---------- */
+.bm-runs { display: flex; flex-direction: column; gap: 5px; padding: 9px 0 0; }
+.bm-run {
+  padding: 6px 9px; border-radius: 3px; cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+  border-left: 2px solid var(--ph-dim);
+}
+.bm-run.bm-sel { box-shadow: inset 0 0 0 1px var(--ph); }
+.bm-run-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.bm-run-method { color: var(--ph-bright); font-size: 12px; }
+.bm-run-rel { color: var(--ph-dim); font-size: 11px; margin-left: auto; }
+.bm-run-hyp { color: var(--ph); font-size: 13px; margin-top: 3px; }
+.bm-run-sub { color: var(--ph-dim); font-size: 11px; margin-top: 2px; letter-spacing: .5px; }
+.bm-record {
+  margin-top: 12px; padding: 9px; border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--ph-dim);
+}
+.bm-record-head { color: var(--ph-bright); font-size: 11px; letter-spacing: 2px; padding-bottom: 6px; }
+
+/* ---------- the plan preview ---------- */
+.bm-plan { display: flex; flex-direction: column; gap: 3px; padding: 9px 0 0; }
+.bm-plan-row {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  padding: 4px 7px; border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.07));
+}
+.bm-plan-n { color: var(--ph-dim); font-size: 11px; min-width: 18px; text-align: right; }
+.bm-plan-title { color: var(--ph-bright); font-size: 13px; flex: 1 1 auto; }
+.bm-plan-eff { color: var(--ph-dim); font-size: 11px; }
+
+/* ---------- promote ---------- */
+.bm-promote { margin-top: 14px; padding: 9px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.bm-promote-head { color: var(--ph-bright); font-size: 11px; letter-spacing: 2px; padding-bottom: 6px; }

@@ -12,7 +12,11 @@
    Pairs with StarNet's existing routines.js scheduling — set up a routine to run this at 8am and
    7pm rather than building a second scheduler here.
 
-   makeBriefingTools({ fsp, pathMod, root }) -> { reportTool, register(reg), _internals }
+   makeBriefingTools({ fsp, pathMod, root, now }) -> { reportTool, register(reg), _internals }
+
+   `now` is an INJECTED clock (a () => Date). The report date/time must come from it, never from an ambient
+   `new Date()` — backend logic may not touch ambient time (test/lint-determinism.js), and the composition
+   root (sidecar/index.js) is the one place allowed to construct a real Date.
 
    Node 18+. No dependencies. Reuses the fs.js workspace jail, same as every sibling tool. */
 'use strict';
@@ -26,8 +30,9 @@
 
   function makeBriefingTools(deps) {
     deps = deps || {};
-    const fsp = deps.fsp, P = deps.pathMod, ROOT = deps.root;
+    const fsp = deps.fsp, P = deps.pathMod, ROOT = deps.root, now = deps.now;
     if (!fsp || !P || !ROOT) throw new Error('briefing.js requires { fsp, pathMod, root }');
+    if (typeof now !== 'function') throw new Error('briefing.js requires { now } — an injected clock; ambient time is banned by lint-determinism');
     const jail = fsMod.makeFsTools({ fsp, pathMod: P, root: ROOT })._internals;
 
     function emitDeliverable(ctx, aid, rel) {
@@ -63,9 +68,9 @@
         const summary = String(args.summary || '').trim();
         if (!summary) throw new Error('summary is required');
 
-        const now = new Date();
-        const dateStr = now.toISOString().slice(0, 10);
-        const timeStr = now.toTimeString().slice(0, 5);
+        const at = now();   // INJECTED clock — never an ambient new Date() (lint-determinism)
+        const dateStr = at.toISOString().slice(0, 10);
+        const timeStr = at.toTimeString().slice(0, 5);
 
         let md = '# ' + (type === 'morning' ? 'Morning Brief' : 'Evening Digest') + ' — ' + dateStr + '\n\n';
         md += '_' + timeStr + '_\n\n';

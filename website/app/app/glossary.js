@@ -64,6 +64,10 @@
     recipe:       'a ready-made job an agent can run right now — WHAT to run; launching one lands it on the ☑ TASK BOARD.',
     task:         'a planned piece of work created on the board or launched from a recipe or goal — it appears on the ☑ TASK BOARD and opens as a COMMS session.',
     quest:        'a suggestion or progress marker from the station — accepting one starts real work; it is never a second to-do list.',
+    // Business OS (Phase 1). The per-business stop is deliberately described as SCOPED: it is not the E-STOP,
+    // and copy that blurred the two would make a user think pausing one business froze the whole station.
+    business:     'a venture you run on the station — it keeps its own stage and its own activity log, and setting it to PAUSED stops its work without halting the rest of the station.',
+    maker:        'where an idea becomes a business — you write down what you claim to know, label HOW you know it, try to prove yourself wrong, and only then create the business. Nothing here is scored for you; you get the counts and the labels, and you decide.',
     skill:        'something an agent CAN do — some skills only switch on once their gear is on station. Browse them under ⇄ ABILITIES ▸ SKILL LIBRARY.',
     toolset:      'a family of tools you can switch on or off for agents (web, files, terminal…) — the switches live in the TOOLSETS section of ⇄ ABILITIES.',
     capability:   'the same tool families as TOOLSETS, read-only — what an agent is equipped with right now; each agent’s readout is the SKILLS tab of its dossier.',

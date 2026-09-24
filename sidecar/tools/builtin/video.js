@@ -20,8 +20,11 @@
    GET /api/v1/videos/models before depending on it; this file surfaces the real error text
    from OpenRouter if the slug is wrong rather than failing silently.
 
-   makeVideoTools({ openrouter:{apiKey, baseUrl?}, fsp, pathMod, root, fetchImpl?, model? })
+   makeVideoTools({ openrouter:{apiKey, baseUrl?}, fsp, pathMod, root, fetchImpl?, model?, now? })
      -> { generateTool, register(reg), _internals }
+
+   `now` is an INJECTED clock (a () => ms). The poll deadline must read it, never an ambient Date.now() —
+   backend logic may not touch ambient time (test/lint-determinism.js).
 
    Node 18+ (global fetch). No dependencies. Reuses the fs.js workspace jail, same as image.js. */
 'use strict';
@@ -30,6 +33,13 @@
   else { root.SK = root.SK || {}; root.SK.tools = root.SK.tools || {}; (root.SK.tools.builtin = root.SK.tools.builtin || {}).video = factory(root.SK.tools.builtin.fs); }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (fsMod) {
   'use strict';
+
+  // tagged fail-open for the value-default catches below (house convention — see sidecar/failopen.js).
+  // Guarded require so the browser build (which has no `require`) still loads; the fallback returns a
+  // handler that yields the SAME default value, so behaviour is identical in both environments.
+  const { swallow } = (typeof require === 'function')
+    ? require('../../failopen.js')
+    : { swallow: (tag, rv) => () => rv };
 
   const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
   const DEFAULT_MODEL = 'bytedance/seedance-2.0-fast'; // cost/speed-optimized tier — VERIFY via /api/v1/videos/models
@@ -52,8 +62,9 @@
     const apiKey = or.apiKey || deps.apiKey || '';
     const baseUrl = String(or.baseUrl || OPENROUTER_BASE).replace(/\/+$/, '');
     const model = deps.model || DEFAULT_MODEL;
-    const fsp = deps.fsp, P = deps.pathMod, ROOT = deps.root;
+    const fsp = deps.fsp, P = deps.pathMod, ROOT = deps.root, now = deps.now;
     if (!fsp || !P || !ROOT) throw new Error('video.js requires { fsp, pathMod, root }');
+    if (typeof now !== 'function') throw new Error('video.js requires { now } — an injected clock; ambient time is banned by lint-determinism');
     const doFetch = deps.fetchImpl || (typeof fetch !== 'undefined' ? fetch : null);
     if (!doFetch) throw new Error('video.js requires global fetch (Node 18+) or deps.fetchImpl');
     const jail = fsMod.makeFsTools({ fsp, pathMod: P, root: ROOT })._internals;
@@ -78,7 +89,7 @@
       const res = await withTimeout(signal => doFetch(baseUrl + '/videos', {
         method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body), signal
       }), 30000);
-      const data = await res.json().catch(() => null);
+      const data = await res.json().catch(swallow('cinema.submit.read', null));
       if (!res.ok) {
         const msg = (data && (data.error && data.error.message || data.message)) || ('http ' + res.status);
         throw new Error('CINEMA could not submit video job (model "' + model + '"): ' + msg +
@@ -90,12 +101,12 @@
     }
 
     async function pollJob(id) {
-      const deadline = Date.now() + MAX_WAIT_MS;
-      while (Date.now() < deadline) {
+      const deadline = now() + MAX_WAIT_MS;
+      while (now() < deadline) {
         const res = await withTimeout(signal => doFetch(baseUrl + '/videos/' + encodeURIComponent(id), {
           headers: authHeaders(), signal
         }), 20000);
-        const data = await res.json().catch(() => null);
+        const data = await res.json().catch(swallow('cinema.poll.read', null));
         if (!res.ok) throw new Error('CINEMA polling failed: http ' + res.status + ' ' + JSON.stringify(data).slice(0, 200));
         const status = data && data.status;
         if (status === 'completed' || status === 'succeeded') return data;

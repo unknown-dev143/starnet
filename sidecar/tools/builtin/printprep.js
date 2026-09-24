@@ -35,6 +35,8 @@
 
   const { execFile } = require('node:child_process');
   const { promisify } = require('node:util');
+  // tagged fail-open for the best-effort cleanup unlink below (house convention — see sidecar/failopen.js).
+  const { swallow } = require('../../failopen.js');
 
   const DEFAULT_DPI = 300;
   const MAX_OUTPUT_BYTES = 100 * 1024 * 1024; // Printify's own stated PNG/JPEG cap
@@ -165,7 +167,7 @@
 
         const stat = await fsp.stat(outAbs);
         if (stat.size > MAX_OUTPUT_BYTES) {
-          await fsp.unlink(outAbs).catch(() => {});
+          await fsp.unlink(outAbs).catch(swallow('printprep.tmp.unlink'));
           throw new Error('upscaled file exceeds Printify\'s 100MB limit (' + stat.size + ' bytes)');
         }
 

@@ -231,6 +231,75 @@
        POST /api/station/ack. Carries no result: this is the REQUEST half only. */
     'station.command': obj(['id', 'verb'], { id: str, verb: str, args: any }),
 
+    /* ---- business OS (ADDITIVE, 2026-09-24, Phase 1: the Business Command Center) ----
+       Five NEW names only. No existing event or field above was renamed, removed, or retyped, so every
+       consumer written against the pre-business contract stays valid — the contract is additive-only by
+       rule, and this block is why that rule exists.
+
+       businessId is the businesses-store slug ('neighborhood-notes'), the same id every business-scoped
+       route and store keys on. `actor` is the provenance string ('user' | 'ai'), never a guess. `changed`
+       names the fields a PATCH actually altered ([] when nothing moved) so the frontend can say WHAT
+       changed instead of blinking a generic "updated". `halted` on business.paused is the number of
+       in-flight runs the pause actually aborted — a real count, not a claim.
+
+       business.activity mirrors ONE row of the per-business audit log (§20) verbatim, so the Command
+       Center's ACTIVITY pane is a live feed rather than a poll. `seq` is the store's per-business
+       monotonic counter, which is why the feed never depends on the wall clock to order itself. */
+    'business.created': obj(['businessId', 'name'], {
+      businessId: str, name: str, template: str, stage: str, actor: str
+    }),
+    'business.updated': obj(['businessId'], {
+      businessId: str, name: str, stage: str, changed: { type: 'array' }, actor: str
+    }),
+    'business.deleted': obj(['businessId'], { businessId: str, name: str, actor: str }),
+    // the per-business E-STOP (§21): this business was set to stage 'paused'. Distinct from
+    // business.updated because it carries a consequence — `halted` is how many runs it stopped.
+    'business.paused': obj(['businessId'], { businessId: str, name: str, halted: int, actor: str }),
+    'business.activity': obj(['businessId', 'action'], {
+      businessId: str, action: str, result: str, approval: str, detail: str, actorKind: str, seq: int
+    }),
+
+    /* ---- business OS (ADDITIVE, 2026-09-24, Phase 2: the Business Maker) ----
+       Eight NEW names only. As with the Phase 1 block above, nothing existing was renamed, removed or
+       retyped, so this is a pure addition and every pre-Phase-2 consumer stays valid.
+
+       The Maker runs a REVERSE funnel — evaluate first, commit second — so these events follow an
+       opportunity through that funnel and stop at the moment it becomes a business:
+         opportunity.*  — a claim set about a business that does not exist yet (§4/§22). `origin` is the
+                          provenance ('user' | 'ai'), never a guess. `changed` names the fields a PATCH
+                          actually moved ([] when nothing did).
+         validation.*   — one run of one §5 method against one opportunity. `verdict` is the store's
+                          closed vocabulary ('pending'|'inconclusive'|'supported'|'contradicted') and
+                          `evidenceCount` is how many evidence items the run actually carries — the two
+                          together are what let the UI show that a verdict had something behind it, since
+                          the store REFUSES a verdict without verified/analysis evidence (P2).
+         task.*         — the §9 Task & Project Engine. Every task names its business, because there is no
+                          global task list. `origin` is 'plan' when the task came from a template plan and
+                          'user' when it was written by hand, so a generated plan is never passed off as
+                          hand-made. */
+    'opportunity.created': obj(['opportunityId', 'title'], {
+      opportunityId: str, title: str, template: str, stage: str, origin: str
+    }),
+    'opportunity.updated': obj(['opportunityId'], {
+      opportunityId: str, title: str, stage: str, changed: { type: 'array' }, origin: str
+    }),
+    // the creation workflow: this opportunity BECAME a business. `tasksCreated` is the real count the
+    // template plan materialised into (§6 -> §9), so the UI can say what the promotion actually produced.
+    'opportunity.promoted': obj(['opportunityId', 'businessId'], {
+      opportunityId: str, title: str, businessId: str, tasksCreated: int
+    }),
+    'opportunity.deleted': obj(['opportunityId'], { opportunityId: str, title: str }),
+    'validation.recorded': obj(['opportunityId', 'validationId', 'method'], {
+      opportunityId: str, validationId: str, method: str, verdict: str, evidenceCount: int
+    }),
+    'task.created': obj(['businessId', 'taskId', 'title'], {
+      businessId: str, taskId: str, title: str, status: str, priority: str, origin: str
+    }),
+    'task.updated': obj(['businessId', 'taskId'], {
+      businessId: str, taskId: str, status: str, changed: { type: 'array' }
+    }),
+    'task.deleted': obj(['businessId', 'taskId'], { businessId: str, taskId: str, title: str }),
+
     // ---- reserved (P3 mutation API) ----
     'worldChange': obj(['seq'], { seq: int, dirtyTiles: { type: 'array' } }),
 

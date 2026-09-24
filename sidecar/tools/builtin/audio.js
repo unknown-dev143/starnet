@@ -24,6 +24,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (fsMod) {
   'use strict';
 
+  // tagged fail-open for the value-default catch below (house convention — see sidecar/failopen.js).
+  // Guarded require so the browser build (which has no `require`) still loads; the fallback returns a
+  // handler that yields the SAME default value, so behaviour is identical in both environments.
+  const { swallow } = (typeof require === 'function')
+    ? require('../../failopen.js')
+    : { swallow: (tag, rv) => () => rv };
+
   const DEFAULT_BASE_URL = 'http://localhost:7860';
   const DEFAULT_DURATION_SEC = 30;
   const MAX_DURATION_SEC = 240;
@@ -65,7 +72,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
           signal
-        }).then(async r => ({ status: r.status, json: await r.json().catch(() => null) })), timeoutMs);
+        }).then(async r => ({ status: r.status, json: await r.json().catch(swallow('audio.response.read', null)) })), timeoutMs);
       } catch (e) {
         throw new Error('AUDIOLAB could not reach ACE-Step at ' + baseUrl + ' (' + (e && e.message || e) +
           '). Is it running locally? Set ACE_STEP_URL if it is on a different host/port.');

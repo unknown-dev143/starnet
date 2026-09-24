@@ -1,0 +1,93 @@
+/* STARNET — businesscenter.css : the BUSINESS COMMAND CENTER (Business OS Phase 1).
+   Themed through the shared phosphor vars so it inherits every theme; businesscenter.js builds the DOM.
+   Everything is scoped under .bc-* so nothing here can leak into another window. */
+
+/* ---------- the summary strip + status lines ---------- */
+.bc-sum {
+  color: var(--ph-bright); font-size: 13px; letter-spacing: 1px;
+  padding: 0 0 8px; border-bottom: 1px solid var(--ph-faint, rgba(255,255,255,.08));
+}
+.bc-err {
+  margin: 8px 0 0; padding: 5px 9px; border-radius: 3px; font-size: 13px;
+  color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad);
+}
+.bc-note { margin: 9px 0 0; color: var(--ph-dim); font-size: 12px; letter-spacing: .5px; }
+.bc-empty { color: var(--ph-dim); font-size: 13px; padding: 10px 0; }
+.bc-lbl { color: var(--ph-dim); font-size: 11px; letter-spacing: 2px; }
+
+/* ---------- the business list ---------- */
+.bc-rows { display: flex; flex-direction: column; gap: 6px; padding: 9px 0 0; }
+.bc-row {
+  display: flex; align-items: flex-start; gap: 10px; justify-content: space-between;
+  padding: 7px 9px; border-radius: 3px; cursor: pointer;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+.bc-row:hover { box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.bc-row.bc-sel { box-shadow: inset 0 0 0 1px var(--ph); }
+.bc-row.bc-paused { box-shadow: inset 0 0 0 1px var(--gold); }
+/* ARMED: the first press of PAUSE was refused and is waiting for the second. The hairline is the only signal
+   that this row is mid-confirmation, so it must be visible in every theme — hence --gold, not a new colour. */
+.bc-row.bc-armed { box-shadow: inset 0 0 0 2px var(--gold); background: var(--ph-faint, rgba(255,255,255,.06)); }
+.bc-row-main { min-width: 0; flex: 1 1 auto; }
+.bc-row-name { color: var(--ph-bright); font-size: 14px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.bc-row-sub { color: var(--ph-dim); font-size: 12px; letter-spacing: .5px; margin-top: 2px; }
+.bc-row-warn { color: var(--gold); font-size: 12px; margin-top: 4px; }
+.bc-row-act { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+
+/* stage + provenance chips */
+.bc-chip {
+  font-size: 10px; letter-spacing: 1.5px; padding: 1px 5px; border-radius: 2px;
+  color: var(--ph); box-shadow: inset 0 0 0 1px var(--ph-dim);
+}
+.bc-chip.bc-prov { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.12)); }
+.bc-chip.bc-stage-paused { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.bc-chip.bc-stage-live { color: var(--ok, #7bc88a); box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.bc-chip.bc-stage-archived { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+
+/* ---------- controls ---------- */
+.bc-stage, .bc-pick, .bc-f select, .bc-f input, .bc-f textarea {
+  font: inherit; font-size: 12px; color: var(--ph); background: transparent;
+  border: 1px solid var(--ph-dim); border-radius: 2px; padding: 2px 5px;
+}
+.bc-f input, .bc-f textarea { width: 100%; box-sizing: border-box; }
+.bc-f textarea { resize: vertical; }
+.bc-stage:hover, .bc-pick:hover { border-color: var(--ph); }
+.bc-stage option, .bc-pick option, .bc-f select option { color: #000; }
+.bc-del, .bc-create {
+  font: inherit; font-size: 11px; letter-spacing: 1px; cursor: pointer;
+  color: var(--bad); background: transparent; border: 1px solid var(--bad);
+  padding: 2px 7px; border-radius: 2px;
+}
+.bc-del:hover { color: var(--ph-bright); background: var(--bad); }
+.bc-create { color: var(--ph-bright); border-color: var(--ph); padding: 4px 12px; font-size: 12px; }
+.bc-create:hover { background: var(--ph-faint, rgba(255,255,255,.06)); }
+.bc-create[disabled] { opacity: .5; cursor: default; }
+
+/* ---------- the activity log ---------- */
+.bc-act-head { display: flex; align-items: center; gap: 8px; padding: 0 0 8px; }
+.bc-act { display: flex; flex-direction: column; gap: 5px; }
+.bc-act-row {
+  padding: 6px 9px; border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+  border-left: 2px solid var(--ph-dim);
+}
+.bc-act-row.bc-res-error { border-left-color: var(--bad); }
+.bc-act-row.bc-res-pending { border-left-color: var(--gold); }
+.bc-act-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.bc-act-who { color: var(--ph-dim); font-size: 11px; letter-spacing: 1.5px; }
+.bc-act-rel { color: var(--ph-dim); font-size: 11px; margin-left: auto; }
+.bc-chip.bc-res { color: var(--ph-dim); }
+.bc-chip.bc-appr { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.bc-act-action { color: var(--ph-bright); font-size: 13px; margin-top: 3px; }
+.bc-act-detail { color: var(--ph-dim); font-size: 12px; margin-top: 2px; }
+
+/* ---------- the create form ---------- */
+.bc-form { display: flex; flex-wrap: wrap; gap: 9px; padding-top: 4px; }
+.bc-f { display: flex; flex-direction: column; gap: 3px; flex: 1 1 190px; }
+.bc-f.bc-f-wide { flex: 1 1 100%; }
+.bc-f > span { color: var(--ph-dim); font-size: 11px; letter-spacing: 2px; }
+.bc-f-actions { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; margin-top: 3px; }
+.bc-f-status { font-size: 12px; color: var(--ph-dim); }
+.bc-f-status.bc-bad { color: var(--bad); }
+.bc-f-status.bc-good { color: var(--ok, #7bc88a); }

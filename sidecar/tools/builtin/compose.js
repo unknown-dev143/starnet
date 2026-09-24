@@ -22,6 +22,8 @@
 
   const { execFile } = require('node:child_process');
   const { promisify } = require('node:util');
+  // tagged fail-open for the best-effort cleanup unlink below (house convention — see sidecar/failopen.js).
+  const { swallow } = require('../../failopen.js');
 
   const MAX_OUTPUT_BYTES = 500 * 1024 * 1024; // 500MB safety cap
   const FFMPEG_TIMEOUT_MS = 10 * 60 * 1000;   // long videos can genuinely take minutes to encode
@@ -118,7 +120,7 @@
 
         const stat = await fsp.stat(outAbs);
         if (stat.size > MAX_OUTPUT_BYTES) {
-          await fsp.unlink(outAbs).catch(() => {});
+          await fsp.unlink(outAbs).catch(swallow('compose.tmp.unlink'));
           throw new Error('assembled video too large (' + stat.size + ' bytes) — use a shorter audio track');
         }
 

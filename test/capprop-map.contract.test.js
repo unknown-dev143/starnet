@@ -35,7 +35,17 @@ const EXPECTED = {
   connector_portal: 'connector',
   workbench: 'workbench',
   studio: 'studio',
-  jukebox: 'jukebox'
+  jukebox: 'jukebox',
+  // the 7 newer capability props — each grants its own same-named objectType. Added when they were
+  // registered in the host (docs/PHASE0-AUDIT.md §5b): the shipped map had them while this lock did
+  // not, so the gate was red on a change nobody had locked.
+  audiolab: 'audiolab',
+  cinema: 'cinema',
+  editingbay: 'editingbay',
+  publishinghouse: 'publishinghouse',
+  briefingroom: 'briefingroom',
+  printshop: 'printshop',
+  listingdesk: 'listingdesk'
 };
 
 // (0) the two maps enumerate the SAME set of prop ids — a NEW cap prop added to the shipped map with no lock

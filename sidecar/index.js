@@ -33,7 +33,7 @@ const workspaceRecovery = require('./workspace-recovery.js');
 const { makeUpdatePreparation } = require('./update-preparation.js');
 const { makeAgentLifecycle } = require('./agent-lifecycle.js');
 const { makeConsentWait } = require('./consentwait.js');   // EL-11: fail-closed consent timer + human-visible ack extension
-const { killAll } = require('./halt.js');
+const { killAll, killScope } = require('./halt.js');
 const { makeRegistry } = require('./tools/registry.js');
 const { makeOutputArtifacts } = require('./output-artifacts.js');
 const { makeWebTools, makePoliteScheduler } = require('./tools/builtin/web.js');
@@ -67,6 +67,17 @@ const { makeImageTools } = require('./tools/builtin/image.js');           // STU
 const { makeConnectorTools } = require('./tools/builtin/connectors.js');  // WEB: connectors.list — what the station HAS wired, and what it could (read-only, no secrets)
 const { makeVoiceTools } = require('./tools/builtin/voice.js');           // STUDIO: voice_generate — speech saved into the workspace as a playable clip
 const { makeSpotifyTools } = require('./tools/builtin/spotify.js');       // JUKEBOX: control/query the user's Spotify
+// ---- The 7 newer capability tools (audiolab, cinema, editingbay, publishinghouse, briefingroom,
+// printshop, listingdesk). CAP_REGISTRY declared all 7, but the host never required their modules, so
+// resolveTools granted a tool NAME with no handler behind it — an advertised, unfulfillable capability
+// (docs/PHASE0-AUDIT.md §5b). Registered here; still EXPOSED only when the matching prop is placed. ----
+const { makeAudioTools } = require('./tools/builtin/audio.js');                 // AUDIOLAB: audio_generate — music/audio from a local ACE-Step server (no key, no per-call cost)
+const { makeVideoTools } = require('./tools/builtin/video.js');                 // CINEMA: video_generate — short clips on the connected OpenRouter key (billed per clip)
+const { makeComposeTools } = require('./tools/builtin/compose.js');             // EDITING BAY: video_compose — assemble a long-form video via local ffmpeg (free)
+const { makeDocTools } = require('./tools/builtin/publish.js');                 // PUBLISHING HOUSE: doc_publish — structured content into a real .docx (free, local)
+const { makeBriefingTools } = require('./tools/builtin/briefing.js');           // BRIEFING ROOM: report_publish — dated morning/evening status report (free, local)
+const { makePrintPrepTools } = require('./tools/builtin/printprep.js');         // PRINT SHOP: print_prep — check a design against real POD pixel requirements
+const { makeListingDeskTools } = require('./tools/builtin/listingdesk.js');     // LISTING DESK: etsy_listing_check — validate an Etsy listing before submission
 const { makeSpotifyStore } = require('./spotify/store.js');               // Spotify OAuth (PKCE) token store + auto-refresh
 const spotifyPkce = require('./spotify/pkce.js');                          // pure PKCE helpers (verifier/challenge/urls)
 const { makeSaveStore } = require('./savestore.js');
@@ -150,6 +161,15 @@ const memcore = require('./memcore.js');
 const { makeConsentBroker } = require('./permissions.js');
 const { makeGrantManager } = require('./permgrants.js');
 const { makeProjectsStore } = require('./projects-store.js');   // NS-5: known-projects (blessed roots) durable store
+const { makeBusinessesStore } = require('./businesses-store.js');              // Business OS P1: the business ENTITY store (identity + the biz:<id> isolation namespace)
+const { makeBusinessActivityStore } = require('./business-activity-store.js'); // Business OS P1: the per-business ACTIVITY LOG (append-only, bounded, fail-closed)
+const { makeBusinessRoutes } = require('./business-routes.js');                // Business OS P1: the /api/businesses surface — a MODULE, mounted into ROUTES (not inlined here)
+const { makeOpportunitiesStore } = require('./opportunities-store.js');        // Business OS P2: the OPPORTUNITY store — §4's claim set, where P1 is a data-model invariant (a claim needs an evidence label)
+const { makeValidationStore } = require('./validation-store.js');              // Business OS P2: the VALIDATION LAB — §5, where a verdict is refused without verified/analysis evidence (P2)
+const businessTemplates = require('./business-templates.js');                  // Business OS P2: the §25 template catalogue + the §9 task-plan generator (PURE — no IO, no clock)
+const { makeBusinessTasksStore } = require('./business-tasks-store.js');       // Business OS P2: the §9 TASK & PROJECT ENGINE — isolated per business, dependencies are real edges
+const { makeMakerRoutes } = require('./maker-routes.js');                      // Business OS P2: the /api/opportunities + /api/validation + /api/templates surface, incl. the PROMOTE creation workflow
+const { makeTaskRoutes } = require('./task-routes.js');                        // Business OS P2: the /api/businesses/:id/tasks + /api/tasks surface — a MODULE, mounted into ROUTES
 const { makePathTrust } = require('./pathtrust.js');            // NS-5: conversational path-trust guard
 // Tool-result images (browser.screenshot / browser.vision -> real pixels in the prompt). ON by default; set
 // SKYNET_TOOL_IMAGES=0 for a text-only endpoint that rejects image content parts.
@@ -2887,6 +2907,125 @@ function loadProjects() {
 const projectRecords = loadProjects();   // process-wide, restored from disk (shared reference the store mutates)
 function persistProjects(recs) { saveResilient(PROJECTS_FILE, { version: 1, projects: recs }); }   // throws on failure
 const projectsStore = makeProjectsStore({ records: projectRecords, persist: persistProjects, now: () => Date.now() });
+
+/* ---- BUSINESS OS (Phase 1): the business entity store + its per-business activity log.
+   ISOLATION (P6) is by KEY NAMESPACE, not by a database foreign key — there is no SQL here. The entity
+   store owns `biz:<id>` (businessesStore.memoryNamespace) and every future business-scoped store (finance,
+   CRM, tasks, documents, experiments) MUST key on it; the activity log filters strictly on businessId on
+   every read. Both use the SAME resilient load/save pair as projects.json above (fsync-before-rename + a
+   .bak last-known-good), and both fail CLOSED: a torn write never enters memory, so a business or an audit
+   row is never reported as existing when it could not be made durable. */
+const BUSINESSES_FILE = path.join(WORKSPACES, 'businesses.json');
+function loadBusinesses() {
+  try {
+    const raw = loadResilient(BUSINESSES_FILE, 'businesses');
+    const arr = raw && Array.isArray(raw.businesses) ? raw.businesses : [];
+    return arr.filter(b => b && typeof b.id === 'string' && b.id);   // the entity store's rowView defaults every other field
+  } catch (e) { return []; }
+}
+const businessRecords = loadBusinesses();
+function persistBusinesses(recs) { saveResilient(BUSINESSES_FILE, { version: 1, businesses: recs }); }   // throws on failure
+const businessesStore = makeBusinessesStore({ records: businessRecords, persist: persistBusinesses, now: () => Date.now() });
+
+const BUSINESS_ACTIVITY_FILE = path.join(WORKSPACES, 'business-activity.json');
+function loadBusinessActivity() {
+  try {
+    const raw = loadResilient(BUSINESS_ACTIVITY_FILE, 'business-activity');
+    const arr = raw && Array.isArray(raw.activity) ? raw.activity : [];
+    // an entry without a businessId cannot be attributed to anyone, so it is dropped rather than shown
+    // against a business that did not write it (the store's rowView tolerates every other missing field).
+    return arr.filter(e => e && typeof e.businessId === 'string' && e.businessId && typeof e.action === 'string');
+  } catch (e) { return []; }
+}
+const businessActivityRecords = loadBusinessActivity();
+function persistBusinessActivity(recs) { saveResilient(BUSINESS_ACTIVITY_FILE, { version: 1, activity: recs }); }
+const businessActivityStore = makeBusinessActivityStore({ records: businessActivityRecords, persist: persistBusinessActivity, now: () => Date.now() });
+
+// The HTTP surface, mounted into ROUTES below. A module (not inlined) because index.js is 19k+ lines and is
+// named in CODE_MAP as the merge-conflict hotfile — see business-routes.js.
+//
+// Both injections are LAZY WRAPPERS, and that is load-bearing rather than stylistic: `chanEmit` and `runsMeta`
+// are `const` declarations far below this line, so handing them over by value would throw a TDZ ReferenceError
+// at boot. The wrappers only dereference them when a request actually arrives — long after module init.
+//   emit    → the REAL validated channel bus, so every business mutation is live on the Command Center.
+//   onPause → the per-business E-STOP (§21): setting a business to stage 'paused' stops ITS runs and nothing
+//             else, so the station keeps working while one business is frozen.
+const businessRoutes = makeBusinessRoutes({
+  businesses: businessesStore,
+  activity: businessActivityStore,
+  readBody,
+  emit: (name, payload) => chanEmit(name, payload),
+  onPause: (id) => haltBusiness(id)
+});
+
+/* ---- BUSINESS OS (Phase 2): the MAKER's three stores.
+   The reverse funnel runs through them in order — an opportunity (§4) is tested by validation runs (§5) and,
+   only if the Commander says so, becomes a business with a task plan (§9). Each store is a SEPARATE file and
+   each owns its own namespace; none reaches into another's. Same resilient load/save pair as businesses.json
+   above (fsync-before-rename + a .bak last-known-good), and the same fail-closed discipline: a torn write
+   never enters memory.
+
+   ISOLATION (P6) on LOAD, stated because it is not obvious: a validation run with no opportunityId and a task
+   with no businessId are DROPPED at load rather than kept. An unattributable row cannot be read back through
+   any scoped route, so keeping it would only make the file grow with rows nobody can see or delete. */
+const OPPORTUNITIES_FILE = path.join(WORKSPACES, 'opportunities.json');
+function loadOpportunities() {
+  try {
+    const raw = loadResilient(OPPORTUNITIES_FILE, 'opportunities');
+    const arr = raw && Array.isArray(raw.opportunities) ? raw.opportunities : [];
+    return arr.filter(o => o && typeof o.id === 'string' && o.id);
+  } catch (e) { return []; }
+}
+const opportunityRecords = loadOpportunities();
+function persistOpportunities(recs) { saveResilient(OPPORTUNITIES_FILE, { version: 1, opportunities: recs }); }   // throws on failure
+const opportunitiesStore = makeOpportunitiesStore({ records: opportunityRecords, persist: persistOpportunities, now: () => Date.now() });
+
+const VALIDATIONS_FILE = path.join(WORKSPACES, 'validations.json');
+function loadValidations() {
+  try {
+    const raw = loadResilient(VALIDATIONS_FILE, 'validations');
+    const arr = raw && Array.isArray(raw.validations) ? raw.validations : [];
+    return arr.filter(v => v && typeof v.id === 'string' && v.id && typeof v.opportunityId === 'string' && v.opportunityId);
+  } catch (e) { return []; }
+}
+const validationRecords = loadValidations();
+function persistValidations(recs) { saveResilient(VALIDATIONS_FILE, { version: 1, validations: recs }); }
+const validationsStore = makeValidationStore({ records: validationRecords, persist: persistValidations, now: () => Date.now() });
+
+const TASKS_FILE = path.join(WORKSPACES, 'tasks.json');
+function loadTasks() {
+  try {
+    const raw = loadResilient(TASKS_FILE, 'tasks');
+    const arr = raw && Array.isArray(raw.tasks) ? raw.tasks : [];
+    return arr.filter(t => t && typeof t.id === 'string' && t.id && typeof t.businessId === 'string' && t.businessId);
+  } catch (e) { return []; }
+}
+const taskRecords = loadTasks();
+function persistTasks(recs) { saveResilient(TASKS_FILE, { version: 1, tasks: recs }); }
+const tasksStore = makeBusinessTasksStore({ records: taskRecords, persist: persistTasks, now: () => Date.now() });
+
+// The two Phase 2 HTTP surfaces, mounted into ROUTES below. `emit` is the SAME lazy-wrapper trick as
+// businessRoutes above (chanEmit is a `const` declared far below; handing it over by value would be a TDZ
+// ReferenceError at boot). makerRoutes also needs businesses + tasks because /promote CREATES a business and
+// materialises its plan — the one route in the Maker that writes outside its own store.
+const makerRoutes = makeMakerRoutes({
+  opportunities: opportunitiesStore,
+  validations: validationsStore,
+  templates: businessTemplates,
+  businesses: businessesStore,
+  tasks: tasksStore,
+  activity: businessActivityStore,
+  readBody,
+  emit: (name, payload) => chanEmit(name, payload)
+});
+const taskRoutes = makeTaskRoutes({
+  tasks: tasksStore,
+  businesses: businessesStore,
+  templates: businessTemplates,
+  activity: businessActivityStore,
+  readBody,
+  emit: (name, payload) => chanEmit(name, payload)
+});
 // the LIVE blessed-root set = every `path:*` grant, stripped of the prefix. Derived fresh each read so a
 // grant OR a revoke (through /api/permissions) takes effect on the very next fs call with no restart.
 function blessedRoots() { const out = []; for (const k of grantsPermanent) if (k.indexOf('path:') === 0) out.push(k.slice(5)); return out; }
@@ -8340,6 +8479,16 @@ async function handleExecutionCleanup(req, res) {
 }
 
 const ROUTES = [
+  // ---- BUSINESS OS (Phase 1). Mounted from business-routes.js rather than inlined into this file on
+  // purpose — see that module's header. Every pattern is anchored, so table position is not load-bearing.
+  // These are /api/* routes, so apiauth.js's per-launch token gate covers them with no extra work here. ----
+  ...businessRoutes.routes,
+  // ---- BUSINESS OS (Phase 2). Same rule as Phase 1: mounted from their own modules, never inlined here.
+  // ORDER IS NOT LOAD-BEARING and that is a property, not a coincidence: business-routes' :id row is
+  // anchored (`/^\/api\/businesses\/([A-Za-z0-9_-]+)$/`), so `/api/businesses/acme/tasks` cannot match it and
+  // task-routes' rows can sit after it safely. If that anchor is ever loosened, THIS is the line that breaks.
+  ...makerRoutes.routes,
+  ...taskRoutes.routes,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },
@@ -13483,6 +13632,23 @@ async function handleRun(req, res) {
   const key = providerRuntimeKey(runProvider, body && body.key);
   if (!model || !providerHasCredential(runProvider, key, baseUrl)) { res.writeHead(400); return res.end('missing key/model'); }
 
+  /* BUSINESS SCOPE (Business OS Phase 1, §21). A caller may tag this run with the business it belongs to.
+     The tag does two things, and both are load-bearing:
+       (1) it is what the per-business E-STOP matches on — haltBusiness walks runsMeta looking for it;
+       (2) it is the guard that keeps a PAUSED business from quietly starting NEW work. Without (2) a pause
+           would only stop what was already running, and the next queued launch would spend anyway.
+     An UNKNOWN tag is refused rather than silently ignored: a business-scoped launch that landed as station
+     work would be a lie about whose money it spends. An absent tag means ordinary station work — unchanged. */
+  const businessTag = (body && typeof body.businessId === 'string') ? body.businessId.trim().slice(0, 120) : '';
+  if (businessTag) {
+    const biz = businessesStore.get(businessTag);
+    if (!biz) { res.writeHead(400); return res.end('unknown business: ' + businessTag); }
+    if (biz.stage === 'paused' || biz.stage === 'archived') {
+      res.writeHead(409);
+      return res.end('business "' + businessTag + '" is ' + biz.stage + ' — resume it before running work for it');
+    }
+  }
+
   // Consume a continuation before opening the response stream or doing provider/tool work. The durable start
   // record is intentionally one-way: losing this response may require another review, but retrying cannot run
   // the same continuation twice and duplicate an external effect.
@@ -13505,7 +13671,7 @@ async function handleRun(req, res) {
 
   const ac = new AbortController();
   runs.set(runId, ac);
-  runsMeta.set(runId, { agentId: agentId, startedAt: Date.now(), source: 'interactive', streamId: streamId || '' });
+  runsMeta.set(runId, { agentId: agentId, startedAt: Date.now(), source: 'interactive', streamId: streamId || '', businessId: businessTag });
   // NS-1 AWAY DETECTION: a browser /api/run is genuinely user-triggered work — stamp the away clock so the
   // night-shift driver treats the Commander as PRESENT. Cron/workshop/night-shift runs go through runOnce with
   // surface:'autonomous' and NEVER reach this route, so they can't reset the away clock (which would make the
@@ -14213,6 +14379,22 @@ async function runOnce(o) {
   // JUKEBOX (Spotify): registered every run, EXPOSED via a 'jukebox' object; no-op (clear error) until the user
   // connects Spotify in TOOLSETS. The OAuth session + auto-refresh live in the station-wide spotifyStore above.
   makeSpotifyTools({ store: spotifyStore }).register(registry);
+  /* ---- The 7 newer capability tools. Registered EVERY run, EXPOSED only when the matching prop is
+     placed (resolveTools gates them) — the exact Spotify posture: an unconfigured dependency must fail
+     HONESTLY at call time, never hide the tool. Before this block, CAP_REGISTRY advertised all 7 while
+     nothing was registered, so a placed prop granted a name with no handler (docs/PHASE0-AUDIT.md §5b).
+     `now` is the injected clock (sidecar/index.js is the ambient composition root, so it may read the
+     real clock here — see test/lint-determinism.js). */
+  makeAudioTools({ fsp, pathMod: path, root: WORKSPACES }).register(registry);              // audiolab — needs a local ACE-Step server; fails honestly without one
+  makeVideoTools({                                                                          // cinema — same OpenRouter key as image_generate
+    openrouter: studioRoute.ok ? { apiKey: studioRoute.key, baseUrl: studioOpenRouterBase } : null,
+    fsp, pathMod: path, root: WORKSPACES, now: () => Date.now()
+  }).register(registry);
+  makeComposeTools({ fsp, pathMod: path, root: WORKSPACES }).register(registry);            // editingbay — needs local ffmpeg
+  makeDocTools({ fsp, pathMod: path, root: WORKSPACES }).register(registry);                // publishinghouse — the bundled `docx` package
+  makeBriefingTools({ fsp, pathMod: path, root: WORKSPACES, now: () => Date.now() }).register(registry);   // briefingroom
+  makePrintPrepTools({ fsp, pathMod: path, root: WORKSPACES }).register(registry);          // printshop — needs local ffmpeg to upscale
+  makeListingDeskTools({ fsp, pathMod: path, root: WORKSPACES }).register(registry);        // listingdesk
   // shell.exec (the workbench capability): registered every run, but only EXPOSED + dispatchable when a 'workbench'
   // object is in the agent's room (resolveTools gates it) — no object, no shell. redact() scrubs stdout of secrets.
   makeShellTool({ spawn: childSpawn, fs: fs, pathMod: path, root: WORKSPACES, environment: executionEnvironment, redact: redact, clock: { now: () => Date.now() }, bg: shellBg }).register(registry);
@@ -17191,6 +17373,28 @@ async function handleLiveDoctor(req, res) {
     out.report.build = computeVersionSurface();
     return json(200, out);
   } catch (e) { return json(500, { error: 'live doctor failed', detail: redact((e && e.message) || e) }); }
+}
+
+/* PER-BUSINESS E-STOP (master prompt §21). The SCOPED half of the E-STOP: stop THIS business's in-flight
+   runs and leave the rest of the station alone — other businesses keep working, the crew keeps working, no
+   durable stand-down is stamped anywhere.
+
+   A run belongs to a business ONLY when it was tagged with one at start (runsMeta.businessId, set from
+   /api/run's `businessId`). An untagged run is station work and is deliberately NOT stopped by any business's
+   pause: a scoped stop that swept up unrelated runs would be worse than no scoped stop at all.
+
+   Channel-hub runs are keyed by chatId, and no business owns a chat yet (Phase 3 binds a channel to a
+   business), so they are out of scope here rather than guessed at. That is why this walks `runs` (keyed by
+   runId) and passes no hub maps.
+
+   Returns the number of runs actually aborted — a real count, never a claim. An empty id returns 0: an empty
+   scope must never be read as "all businesses" (killScope enforces the same rule one layer down). */
+function haltBusiness(businessId) {
+  const id = String(businessId == null ? '' : businessId);
+  if (!id) return 0;
+  try {
+    return killScope(id, (runId) => { const m = runsMeta.get(runId); return m && m.businessId; }, runs);
+  } catch (_) { return 0; }
 }
 
 // POST /api/halt — the E-STOP. Abort EVERY in-flight run so one click stops all spend immediately: the browser

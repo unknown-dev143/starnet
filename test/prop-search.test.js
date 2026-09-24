@@ -123,10 +123,19 @@ for (const [g, members] of Object.entries(grants)) {
   // No hit may be a stranger: it either GRANTS the word or visibly CARRIES it. Both are honest
   // answers to typing it — a grant word can also be a prop name (TERMINAL grants LIVE TOOLS while a
   // different prop grants TERMINAL), and suppressing the same-named prop would be the real surprise.
+  //
+  // "CARRIES" MUST MEAN THE SAME SURFACE THE MATCHER SEARCHES. matchProps tests every token against
+  // haystack(c) OR descstack(c); checking only haystack() here would call a legitimate desc hit a
+  // stranger. That mismatch was LATENT until a new grant label collided with existing prose: adding the
+  // AUDIO/VIDEO capabilities made editingbay's desc ("a video editing bay … generated audio") match
+  // AUDIO and VIDEO, and this assertion — which never looked at desc — reported it as a stranger.
+  // descstack is exported for exactly this, and a desc hit is ranked in the WEAKEST band by design, so
+  // counting it as "carries" is the matcher's own rule, not a relaxation of this law.
   A.ok(hits.every(id => {
     if (WorldModel.grantLabelForProp(id) === g) return true;
     const c = C.find(x => x.id === id);
-    return PropSearch.haystack(c, OPTS).indexOf(g.toLowerCase()) >= 0;
+    return PropSearch.haystack(c, OPTS).indexOf(g.toLowerCase()) >= 0
+      || PropSearch.descstack(c).indexOf(g.toLowerCase()) >= 0;
   }), 'grant "' + g + '" returns only props that grant it or visibly carry the word');
 }
 
