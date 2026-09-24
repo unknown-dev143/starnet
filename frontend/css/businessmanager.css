@@ -1,0 +1,232 @@
+/* STARNET — businessmanager.css : the BUSINESS MANAGER console (Business OS Phase 4).
+   Themed through the shared phosphor vars so it inherits every theme; businessmanager.js builds the DOM.
+   Everything is scoped under .mg-* so nothing here can leak into another window.
+   NOTE: .bm-* is TAKEN by Phase 2's businessmaker.css — this file deliberately uses .mg- so the two
+   consoles cannot fight over a class name (both stylesheets are global once index.html loads them). */
+
+/* ---------- status lines ---------- */
+.mg-sum {
+  color: var(--ph-bright); font-size: 13px; letter-spacing: 1px;
+  padding: 0 0 8px; border-bottom: 1px solid var(--ph-faint, rgba(255,255,255,.08));
+}
+.mg-err {
+  margin: 8px 0 0; padding: 5px 9px; border-radius: 3px; font-size: 13px;
+  color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad);
+}
+.mg-note { margin: 9px 0 0; color: var(--ph-dim); font-size: 12px; letter-spacing: .5px; }
+.mg-empty { color: var(--ph-dim); font-size: 13px; padding: 10px 0; }
+.mg-hint { margin: 9px 0 0; color: var(--ph-dim); font-size: 12px; letter-spacing: .5px; }
+/* a hint that carries a REFUSAL (e.g. "a conclusion needs an ended run") reads as a stop, not a note */
+.mg-hint.mg-blocked { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); padding: 5px 9px; border-radius: 3px; }
+
+/* ---------- the business picker + fields ---------- */
+.mg-field { display: flex; flex-direction: column; gap: 3px; flex: 1 1 170px; }
+.mg-field > span { color: var(--ph-dim); font-size: 11px; letter-spacing: 2px; }
+.mg-field select, .mg-field input, .mg-field textarea {
+  font: inherit; font-size: 12px; color: var(--ph); background: transparent;
+  border: 1px solid var(--ph-dim); border-radius: 2px; padding: 3px 6px;
+}
+.mg-field select:hover, .mg-field input:hover, .mg-field textarea:hover { border-color: var(--ph); }
+.mg-field select option { color: #000; }
+.mg-field input, .mg-field textarea { width: 100%; box-sizing: border-box; }
+.mg-field textarea { resize: vertical; font-family: inherit; }
+
+/* ---------- rows (projects · transactions · contacts · documents · knowledge · experiments) ---------- */
+.mg-rows { display: flex; flex-direction: column; gap: 6px; padding: 9px 0 0; }
+.mg-row {
+  padding: 8px 10px; border-radius: 3px;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+.mg-row.mg-sel { box-shadow: inset 0 0 0 1px var(--ph); }
+/* an AI-estimate transaction is flagged at the row level too, not only by its chip — the held-out money
+   must be unmistakable even at a glance down the list. */
+.mg-row.mg-est { border-left: 2px solid var(--gold); }
+.mg-row.mg-dim { opacity: .55; }
+.mg-row-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mg-row-sub { color: var(--ph-dim); font-size: 12px; letter-spacing: .5px; margin-top: 3px; }
+.mg-name { color: var(--ph-bright); font-size: 14px; }
+.mg-hyp { color: var(--ph-bright); font-size: 13px; flex: 1 1 auto; }
+.mg-cat { color: var(--ph-dim); font-size: 12px; }
+.mg-org { color: var(--ph); font-size: 12px; }
+.mg-chars { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; }
+.mg-when { margin-left: auto; color: var(--ph-dim); font-size: 11px; }
+.mg-amt { color: var(--ph-bright); font-size: 13px; }
+.mg-type {
+  font-size: 10px; letter-spacing: 1.5px; padding: 1px 5px; border-radius: 2px;
+  color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.12));
+}
+.mg-tags { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; }
+.mg-open { color: var(--gold); font-size: 11px; letter-spacing: 1px; }
+.mg-done { color: var(--ph-dim); font-size: 11px; letter-spacing: 1px; }
+.mg-acts { display: flex; align-items: center; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+
+/* status chips — colour is never the only signal; every chip also prints its label. */
+.mg-status, .mg-kind, .mg-stage, .mg-conc, .mg-prov {
+  font-size: 10px; letter-spacing: 1.5px; padding: 1px 6px; border-radius: 2px;
+  color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim);
+}
+.mg-status.mg-s-planned, .mg-status.mg-x-planned { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.mg-status.mg-s-active, .mg-status.mg-x-running { color: var(--ph-bright); box-shadow: inset 0 0 0 1px var(--ph-bright); }
+.mg-status.mg-s-paused { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.mg-status.mg-s-done, .mg-status.mg-x-concluded { color: var(--ok, #7bc88a); box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.mg-status.mg-s-archived, .mg-status.mg-x-ended { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+
+.mg-kind.mg-k-revenue { color: var(--ok, #7bc88a); box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.mg-kind.mg-k-expense { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+
+/* provenance: a REAL figure reads bright, a GUESS reads gold. */
+.mg-prov.mg-p-actual { color: var(--ph-bright); box-shadow: inset 0 0 0 1px var(--ph-bright); }
+.mg-prov.mg-p-user-entered { color: var(--ph); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.mg-prov.mg-p-imported { color: var(--ph); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.mg-prov.mg-p-ai-estimate { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+
+.mg-stage.mg-st-lead { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.mg-stage.mg-st-prospect { color: var(--ph); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.mg-stage.mg-st-customer { color: var(--ph-bright); box-shadow: inset 0 0 0 1px var(--ph-bright); }
+.mg-stage.mg-st-churned { color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+
+.mg-conc.mg-c-supported { color: var(--ok, #7bc88a); box-shadow: inset 0 0 0 1px var(--ok, #7bc88a); }
+.mg-conc.mg-c-refuted { color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.mg-conc.mg-c-inconclusive { color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-dim); }
+
+/* ---------- buttons ---------- */
+.mg-btn {
+  font: inherit; font-size: 11px; letter-spacing: 1px; cursor: pointer;
+  color: var(--ph-bright); background: transparent; border: 1px solid var(--ph);
+  padding: 3px 10px; border-radius: 2px;
+}
+.mg-btn:hover { background: var(--ph-faint, rgba(255,255,255,.06)); }
+.mg-btn.mg-primary { border-color: var(--ok, #7bc88a); color: var(--ok, #7bc88a); padding: 4px 14px; font-size: 12px; }
+.mg-btn.mg-primary:hover { background: var(--ok, #7bc88a); color: #000; }
+.mg-btn.mg-danger { color: var(--bad); border-color: var(--bad); }
+.mg-btn.mg-danger:hover { color: var(--ph-bright); background: var(--bad); }
+/* the ONE control that crosses §17's publish line — it reads as the Commander's action, not an agent's */
+.mg-btn.mg-publish { color: var(--gold); border-color: var(--gold); }
+.mg-btn.mg-publish:hover { color: #000; background: var(--gold); }
+.mg-btn[disabled] { opacity: .5; cursor: default; }
+
+/* ---------- the §10 finance headline: RECORDED and ESTIMATED, never summed ---------- */
+.mg-totals { display: flex; flex-wrap: wrap; gap: 10px; padding: 9px 0 0; }
+.mg-total {
+  flex: 1 1 240px; padding: 9px 11px; border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--ph-dim);
+}
+.mg-total-head { color: var(--ph-bright); font-size: 12px; letter-spacing: 2px; padding-bottom: 6px; }
+.mg-total-rec, .mg-total-est { padding: 6px 0; }
+.mg-total-rec { border-bottom: 1px solid var(--ph-faint, rgba(255,255,255,.08)); }
+.mg-total-est { border-left: 2px solid var(--gold); padding-left: 9px; margin-top: 6px; }
+.mg-total-tag { color: var(--ph-dim); font-size: 10px; letter-spacing: 1.5px; padding-bottom: 4px; }
+.mg-total-est .mg-total-tag { color: var(--gold); }
+.mg-total-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ph); }
+.mg-total-row b { color: var(--ph-bright); font-weight: 600; }
+.mg-total-row.mg-profit b { color: var(--ok, #7bc88a); }
+.mg-total-row.mg-profit.mg-neg b { color: var(--bad); }
+.mg-total-n { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; padding-top: 4px; }
+.mg-total-none { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; border-left-color: var(--ph-faint, rgba(255,255,255,.12)); }
+
+/* ---------- §16 attention: named rules with their raw inputs, never a score ---------- */
+.mg-att { margin-top: 14px; padding: 9px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.mg-att-head { color: var(--ph-bright); font-size: 11px; letter-spacing: 2px; padding-bottom: 6px; }
+.mg-att-rules { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; padding-bottom: 6px; }
+.mg-att-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 4px 8px; border-radius: 2px; margin-top: 3px;
+  border-left: 2px solid var(--ph-dim);
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.06));
+}
+.mg-att-row.mg-att-overdue { border-left-color: var(--bad); }
+.mg-att-row.mg-att-quiet { border-left-color: var(--gold); }
+.mg-att-who { color: var(--ph-bright); font-size: 12px; }
+.mg-att-what { color: var(--ph); font-size: 12px; }
+.mg-att-detail { color: var(--ph-dim); font-size: 11px; }
+.mg-att-rule { margin-left: auto; color: var(--ph-dim); font-size: 10px; letter-spacing: 1px; }
+
+/* ---------- budgets & prices ---------- */
+.mg-budget {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: 5px 8px; border-radius: 2px; margin-bottom: 4px;
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.07));
+  color: var(--ph); font-size: 12px;
+}
+.mg-budget.mg-over { box-shadow: inset 0 0 0 1px var(--bad); color: var(--bad); }
+.mg-price {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 4px 8px; border-radius: 2px; margin-bottom: 3px;
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.07));
+  color: var(--ph); font-size: 12px;
+}
+
+/* ---------- §11 metrics: a metric with no reading says so; it is NEVER rendered as 0 ---------- */
+.mg-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; padding: 9px 0 0; }
+.mg-metric {
+  padding: 8px 10px; border-radius: 3px; cursor: pointer;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+.mg-metric:hover { box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.mg-metric.mg-unrec { opacity: .6; box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.06)); }
+.mg-metric-label { color: var(--ph-dim); font-size: 10px; letter-spacing: 1.5px; }
+.mg-metric-value { color: var(--ph-bright); font-size: 20px; padding: 3px 0 2px; }
+.mg-metric.mg-unrec .mg-metric-value { color: var(--ph-dim); font-size: 14px; }
+.mg-metric-sub { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; }
+.mg-series { margin-top: 12px; padding: 9px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--ph-dim); }
+.mg-bar {
+  position: relative; height: 16px; border-radius: 2px; margin-top: 3px;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.06));
+}
+.mg-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ph-dim); opacity: .35; border-radius: 2px; }
+.mg-bar-v { position: relative; z-index: 1; font-size: 11px; color: var(--ph); line-height: 16px; padding-left: 6px; }
+
+/* ---------- CRM interactions & follow-ups ---------- */
+.mg-ints, .mg-fus { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.mg-int {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  color: var(--ph); font-size: 12px;
+}
+.mg-int-kind {
+  font-size: 10px; letter-spacing: 1.5px; padding: 0 5px; border-radius: 2px;
+  color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.12));
+}
+.mg-fu {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 3px 7px; border-radius: 2px; color: var(--ph); font-size: 12px;
+  border-left: 2px solid var(--gold);
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.06));
+}
+.mg-fu.mg-dim { border-left-color: var(--ph-dim); opacity: .55; }
+
+/* ---------- §17 content pipeline ---------- */
+.mg-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; padding: 9px 0 0; }
+.mg-col { display: flex; flex-direction: column; gap: 6px; }
+.mg-col-head { color: var(--ph-dim); font-size: 10px; letter-spacing: 2px; padding-bottom: 2px; border-bottom: 1px solid var(--ph-faint, rgba(255,255,255,.08)); }
+.mg-col-n { color: var(--ph-bright); }
+.mg-card {
+  padding: 7px 9px; border-radius: 3px;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+}
+.mg-card-title { color: var(--ph-bright); font-size: 13px; }
+.mg-card-sub { color: var(--ph-dim); font-size: 11px; letter-spacing: .5px; margin-top: 2px; }
+
+/* ---------- §15 search hits ---------- */
+.mg-hit {
+  padding: 7px 9px; border-radius: 3px; margin-top: 4px;
+  background: var(--ph-faint, rgba(255,255,255,.03));
+  box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.08));
+  border-left: 2px solid var(--ph-dim);
+}
+.mg-hit-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.mg-hit-head > span:first-child { color: var(--ph-bright); font-size: 13px; }
+.mg-hit-type {
+  font-size: 10px; letter-spacing: 1.5px; padding: 1px 5px; border-radius: 2px;
+  color: var(--ph-dim); box-shadow: inset 0 0 0 1px var(--ph-faint, rgba(255,255,255,.12));
+}
+.mg-hit-where { margin-left: auto; color: var(--ph-dim); font-size: 10px; letter-spacing: 1px; }
+.mg-hit-body { color: var(--ph); font-size: 12px; margin-top: 3px; white-space: pre-wrap; }
+
+/* ---------- forms ---------- */
+.mg-form { display: flex; flex-wrap: wrap; gap: 9px; padding-top: 10px; }
+.mg-form-head { flex: 1 1 100%; color: var(--ph-bright); font-size: 11px; letter-spacing: 2px; }
+.mg-form-inline { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 9px; }

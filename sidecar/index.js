@@ -174,6 +174,15 @@ const { makeBusinessAgentsStore } = require('./business-agents-store.js');     /
 const { makeBusinessMemory } = require('./business-memory.js');                // Business OS P3: the §9 FOUR-SCOPE MEMORY — user/business/project/agent, isolated by key, provenance required (P1/P6)
 const { makeAgentMessagesStore } = require('./agent-messages-store.js');       // Business OS P3: §7 team COMMUNICATION — addressed, typed, business-scoped, append-only
 const { makeAgentRoutes } = require('./agent-routes.js');                      // Business OS P3: the /api/roles + /api/permissions + /api/agents + memory + messages surface
+const { makeBusinessProjectsStore } = require('./business-projects-store.js'); // Business OS P4: §9 PROJECTS — the referent task.projectId never had (Phase 3 deferred this)
+const { makeBusinessFinance } = require('./business-finance.js');              // Business OS P4: §10 FINANCE CENTER — the four provenance classes kept structurally un-mixable (P2)
+const { makeBusinessMetrics } = require('./business-metrics.js');              // Business OS P4: §11 BUSINESS INTELLIGENCE — readings, never a fabricated 0 for an unrecorded metric
+const { makeBusinessCrmStore } = require('./business-crm-store.js');           // Business OS P4: §16 CRM — contacts, interactions, follow-ups, and two NAMED attention rules (no score)
+const { makeBusinessContentStore } = require('./business-content-store.js');   // Business OS P4: §17 CONTENT FACTORY — publishing requires a human actor, enforced in the store
+const { makeBusinessDocumentsStore } = require('./business-documents-store.js'); // Business OS P4: §15 DOCUMENT GENERATOR — typed documents, referencing deliverables, never copying them
+const { makeBusinessKnowledge } = require('./business-knowledge.js');          // Business OS P4: §15 KNOWLEDGE CENTER — the library memory's source:'document' points at
+const { makeBusinessExperimentsStore } = require('./business-experiments-store.js'); // Business OS P4: §14 EXPERIMENT LAB — a conclusion needs an ended run, two arms, graded evidence
+const { makeManagerRoutes } = require('./manager-routes.js');                  // Business OS P4: the /api/manager + projects + finance + metrics + crm + content + docs + knowledge + experiments surface
 const { makePathTrust } = require('./pathtrust.js');            // NS-5: conversational path-trust guard
 // Tool-result images (browser.screenshot / browser.vision -> real pixels in the prompt). ON by default; set
 // SKYNET_TOOL_IMAGES=0 for a text-only endpoint that rejects image content parts.
@@ -3086,6 +3095,141 @@ const agentRoutes = makeAgentRoutes({
   agents: agentsStore,
   memory: businessMemoryStore,
   messages: agentMessagesStore,
+  tasks: tasksStore,
+  businesses: businessesStore,
+  activity: businessActivityStore,
+  readBody,
+  emit: (name, payload) => chanEmit(name, payload)
+});
+
+/* ---- BUSINESS OS (Phase 4) — the BUSINESS MANAGER's eight stores, each its own file ----
+   Same resilient load/save pair as every store above (fsync-before-rename + a .bak last-known-good).
+
+   ISOLATION (P6) ON LOAD, stated because it is the point of these stores and is not obvious: a row with no
+   businessId is DROPPED rather than kept. It could never be read back through any business-scoped route, so
+   keeping it would only let the file grow with rows no business can see, list or delete. The finance store
+   additionally drops a transaction with no id, and keeps its budgets/prices maps as plain objects because a
+   hand-edited file must never throw on READ. */
+const BIZ_PROJECTS_FILE = path.join(WORKSPACES, 'business-projects.json');
+function loadBizProjects() {
+  try {
+    const raw = loadResilient(BIZ_PROJECTS_FILE, 'projects');
+    const arr = raw && Array.isArray(raw.projects) ? raw.projects : [];
+    return arr.filter(p => p && typeof p.id === 'string' && p.id && typeof p.businessId === 'string' && p.businessId);
+  } catch (e) { return []; }
+}
+const bizProjectRecords = loadBizProjects();
+function persistBizProjects(recs) { saveResilient(BIZ_PROJECTS_FILE, { version: 1, projects: recs }); }
+const bizProjectsStore = makeBusinessProjectsStore({ records: bizProjectRecords, persist: persistBizProjects, now: () => Date.now() });
+
+// THREE row families in ONE file (transactions + budgets + prices), so the persist sink takes a SNAPSHOT
+// rather than a bare array — see business-finance.js's header for why they share a store and a file.
+const BIZ_FINANCE_FILE = path.join(WORKSPACES, 'business-finance.json');
+function loadFinance() {
+  try {
+    const raw = loadResilient(BIZ_FINANCE_FILE, 'finance');
+    const arr = raw && Array.isArray(raw.transactions) ? raw.transactions : [];
+    const budgets = (raw && raw.budgets && typeof raw.budgets === 'object' && !Array.isArray(raw.budgets)) ? raw.budgets : {};
+    const prices = (raw && raw.prices && typeof raw.prices === 'object' && !Array.isArray(raw.prices)) ? raw.prices : {};
+    return {
+      transactions: arr.filter(t => t && typeof t.id === 'string' && t.id && typeof t.businessId === 'string' && t.businessId),
+      budgets: budgets, prices: prices
+    };
+  } catch (e) { return { transactions: [], budgets: {}, prices: {} }; }
+}
+const financeRaw = loadFinance();
+function persistFinance(snap) {
+  saveResilient(BIZ_FINANCE_FILE, { version: 1, transactions: snap.transactions, budgets: snap.budgets, prices: snap.prices });
+}
+const financeStore = makeBusinessFinance({
+  records: financeRaw.transactions, budgets: financeRaw.budgets, prices: financeRaw.prices,
+  persist: persistFinance, now: () => Date.now()
+});
+
+const BIZ_METRICS_FILE = path.join(WORKSPACES, 'business-metrics.json');
+function loadMetrics() {
+  try {
+    const raw = loadResilient(BIZ_METRICS_FILE, 'metrics');
+    const arr = raw && Array.isArray(raw.readings) ? raw.readings : [];
+    return arr.filter(r => r && typeof r.id === 'string' && r.id && typeof r.businessId === 'string' && r.businessId);
+  } catch (e) { return []; }
+}
+const metricRecords = loadMetrics();
+function persistMetrics(recs) { saveResilient(BIZ_METRICS_FILE, { version: 1, readings: recs }); }
+const metricsStore = makeBusinessMetrics({ records: metricRecords, persist: persistMetrics, now: () => Date.now() });
+
+const BIZ_CRM_FILE = path.join(WORKSPACES, 'business-crm.json');
+function loadContacts() {
+  try {
+    const raw = loadResilient(BIZ_CRM_FILE, 'contacts');
+    const arr = raw && Array.isArray(raw.contacts) ? raw.contacts : [];
+    return arr.filter(c => c && typeof c.id === 'string' && c.id && typeof c.businessId === 'string' && c.businessId);
+  } catch (e) { return []; }
+}
+const contactRecords = loadContacts();
+function persistContacts(recs) { saveResilient(BIZ_CRM_FILE, { version: 1, contacts: recs }); }
+const crmStore = makeBusinessCrmStore({ records: contactRecords, persist: persistContacts, now: () => Date.now() });
+
+const BIZ_CONTENT_FILE = path.join(WORKSPACES, 'business-content.json');
+function loadContent() {
+  try {
+    const raw = loadResilient(BIZ_CONTENT_FILE, 'content');
+    const arr = raw && Array.isArray(raw.pieces) ? raw.pieces : [];
+    return arr.filter(p => p && typeof p.id === 'string' && p.id && typeof p.businessId === 'string' && p.businessId);
+  } catch (e) { return []; }
+}
+const contentRecords = loadContent();
+function persistContent(recs) { saveResilient(BIZ_CONTENT_FILE, { version: 1, pieces: recs }); }
+const contentStore = makeBusinessContentStore({ records: contentRecords, persist: persistContent, now: () => Date.now() });
+
+const BIZ_DOCUMENTS_FILE = path.join(WORKSPACES, 'business-documents.json');
+function loadDocuments() {
+  try {
+    const raw = loadResilient(BIZ_DOCUMENTS_FILE, 'documents');
+    const arr = raw && Array.isArray(raw.documents) ? raw.documents : [];
+    return arr.filter(d => d && typeof d.id === 'string' && d.id && typeof d.businessId === 'string' && d.businessId);
+  } catch (e) { return []; }
+}
+const documentRecords = loadDocuments();
+function persistDocuments(recs) { saveResilient(BIZ_DOCUMENTS_FILE, { version: 1, documents: recs }); }
+const documentsStore = makeBusinessDocumentsStore({ records: documentRecords, persist: persistDocuments, now: () => Date.now() });
+
+const BIZ_KNOWLEDGE_FILE = path.join(WORKSPACES, 'business-knowledge.json');
+function loadKnowledge() {
+  try {
+    const raw = loadResilient(BIZ_KNOWLEDGE_FILE, 'knowledge');
+    const arr = raw && Array.isArray(raw.entries) ? raw.entries : [];
+    return arr.filter(e => e && typeof e.id === 'string' && e.id && typeof e.businessId === 'string' && e.businessId);
+  } catch (e) { return []; }
+}
+const knowledgeRecords = loadKnowledge();
+function persistKnowledge(recs) { saveResilient(BIZ_KNOWLEDGE_FILE, { version: 1, entries: recs }); }
+const knowledgeStore = makeBusinessKnowledge({ records: knowledgeRecords, persist: persistKnowledge, now: () => Date.now() });
+
+const BIZ_EXPERIMENTS_FILE = path.join(WORKSPACES, 'business-experiments.json');
+function loadExperiments() {
+  try {
+    const raw = loadResilient(BIZ_EXPERIMENTS_FILE, 'experiments');
+    const arr = raw && Array.isArray(raw.experiments) ? raw.experiments : [];
+    return arr.filter(x => x && typeof x.id === 'string' && x.id && typeof x.businessId === 'string' && x.businessId);
+  } catch (e) { return []; }
+}
+const experimentRecords = loadExperiments();
+function persistExperiments(recs) { saveResilient(BIZ_EXPERIMENTS_FILE, { version: 1, experiments: recs }); }
+const experimentsStore = makeBusinessExperimentsStore({ records: experimentRecords, persist: persistExperiments, now: () => Date.now() });
+
+// The Phase 4 HTTP surface, mounted into ROUTES below. `emit` is the SAME lazy-wrapper trick as the earlier
+// phases (chanEmit is a `const` declared far below — handing it over by value would be a TDZ ReferenceError
+// at boot). It needs businesses (every route is business-scoped) and tasks (the project-delete orphan check).
+const managerRoutes = makeManagerRoutes({
+  projects: bizProjectsStore,
+  finance: financeStore,
+  metrics: metricsStore,
+  crm: crmStore,
+  content: contentStore,
+  documents: documentsStore,
+  knowledge: knowledgeStore,
+  experiments: experimentsStore,
   tasks: tasksStore,
   businesses: businessesStore,
   activity: businessActivityStore,
@@ -8558,6 +8702,10 @@ const ROUTES = [
   // ---- BUSINESS OS (Phase 3). Same rule again: its own module, mounted here. Its business-scoped rows use
   // qrx (the GETs carry ?scope/?owner/?kind/?with), so they match the query-stripped path — see agent-routes.js.
   ...agentRoutes.routes,
+  // ---- BUSINESS OS (Phase 4). Same rule again: its own module, mounted here. Its business-scoped rows use
+  // qrx (their GETs carry ?stage/?kind/?currency/?q/?metric/…), so they match the query-stripped path — see
+  // manager-routes.js. The project-delete row is anchored, so /api/projects/:id cannot swallow a longer path.
+  ...managerRoutes.routes,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },

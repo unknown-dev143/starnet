@@ -343,6 +343,87 @@
       businessId: str, id: str, scope: str, ownerId: str, kind: str
     }),
 
+    /* ---- business OS (ADDITIVE, 2026-09-24, Phase 4: the Business Manager) ----
+       Twenty-one NEW names only. As with the Phase 1-3 blocks, nothing existing was renamed, removed or
+       retyped, and no field was added to an existing event.
+
+       Every one carries `businessId`, so a listener can scope a refresh to one venture without knowing
+       anything about the payload's shape. None of them carries a `runId` or an `agentId`-as-runner: these
+       are BUSINESS records changing (a transaction, a contact, a document), not station runs, and the
+       contract already has agent.run.start / agent.token / agent.cost for the latter. Conflating the two
+       would make a recorded expense look like a model invocation to every listener.
+
+         business.project.*          — §9's project layer. `changed` names the fields, never a summary.
+         business.finance.recorded   — §10. `provenance` travels so a listener can tell real money from an
+                                       AI estimate WITHOUT re-reading the row. That is the whole point.
+         business.metric.recorded    — §11. `unit` travels for the same reason: a rate and a count render
+                                       differently and a listener must not have to guess which it got.
+         business.contact.*          — §16 CRM, including `interaction` for a logged touch.
+         business.content.*          — §17. `advanced` carries `from`/`to`/`by`, so the publish transition
+                                       (and WHO made it) is visible on the bus.
+         business.document.*         — §15 document generator.
+         business.knowledge.*        — §15 knowledge base.
+         business.experiment.*       — §14. `concluded` carries the verdict, which is the only field of an
+                                       experiment anything downstream would act on. */
+    'business.project.created': obj(['businessId', 'projectId', 'name'], {
+      businessId: str, projectId: str, name: str
+    }),
+    'business.project.updated': obj(['businessId', 'projectId'], {
+      businessId: str, projectId: str, status: str, changed: { type: 'array' }
+    }),
+    'business.project.removed': obj(['businessId', 'projectId', 'name'], {
+      businessId: str, projectId: str, name: str
+    }),
+
+    'business.finance.recorded': obj(['businessId', 'transactionId', 'kind', 'amount', 'currency', 'provenance'], {
+      businessId: str, transactionId: str, kind: str, amount: { type: 'number' }, currency: str, provenance: str
+    }),
+    'business.finance.removed': obj(['businessId', 'transactionId'], { businessId: str, transactionId: str }),
+
+    'business.metric.recorded': obj(['businessId', 'readingId', 'metric', 'unit'], {
+      businessId: str, readingId: str, metric: str, unit: str
+    }),
+
+    'business.contact.added': obj(['businessId', 'contactId', 'name', 'stage'], {
+      businessId: str, contactId: str, name: str, stage: str
+    }),
+    'business.contact.updated': obj(['businessId', 'contactId'], {
+      businessId: str, contactId: str, stage: str, changed: { type: 'array' }
+    }),
+    'business.contact.removed': obj(['businessId', 'contactId', 'name'], {
+      businessId: str, contactId: str, name: str
+    }),
+    'business.contact.interaction': obj(['businessId', 'contactId', 'kind'], {
+      businessId: str, contactId: str, kind: str
+    }),
+
+    'business.content.created': obj(['businessId', 'pieceId', 'channel'], {
+      businessId: str, pieceId: str, channel: str
+    }),
+    'business.content.advanced': obj(['businessId', 'pieceId', 'from', 'to', 'by'], {
+      businessId: str, pieceId: str, from: str, to: str, by: str
+    }),
+    'business.content.removed': obj(['businessId', 'pieceId'], { businessId: str, pieceId: str }),
+
+    'business.document.created': obj(['businessId', 'documentId', 'type'], {
+      businessId: str, documentId: str, type: str
+    }),
+    'business.document.updated': obj(['businessId', 'documentId'], {
+      businessId: str, documentId: str, changed: { type: 'array' }
+    }),
+    'business.document.removed': obj(['businessId', 'documentId'], { businessId: str, documentId: str }),
+
+    'business.knowledge.added': obj(['businessId', 'entryId', 'kind'], {
+      businessId: str, entryId: str, kind: str
+    }),
+    'business.knowledge.forgotten': obj(['businessId', 'entryId'], { businessId: str, entryId: str }),
+
+    'business.experiment.opened': obj(['businessId', 'experimentId'], { businessId: str, experimentId: str }),
+    'business.experiment.ended': obj(['businessId', 'experimentId'], { businessId: str, experimentId: str }),
+    'business.experiment.concluded': obj(['businessId', 'experimentId', 'conclusion'], {
+      businessId: str, experimentId: str, conclusion: str
+    }),
+
     // ---- reserved (P3 mutation API) ----
     'worldChange': obj(['seq'], { seq: int, dirtyTiles: { type: 'array' } }),
 

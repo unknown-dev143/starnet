@@ -69,6 +69,10 @@
     business:     'a venture you run on the station — it keeps its own stage and its own activity log, and setting it to PAUSED stops its work without halting the rest of the station.',
     maker:        'where an idea becomes a business — you write down what you claim to know, label HOW you know it, try to prove yourself wrong, and only then create the business. Nothing here is scored for you; you get the counts and the labels, and you decide.',
     team:         'the agents a BUSINESS has hired — each one is one of twelve roles, filled by a real class from the catalog, with its own permission set and its own memory. Hiring one does not start it: an agent runs only safe work on its own, and asks you for everything else.',
+    // Business OS (Phase 4). The MANAGER is where the business is RUN rather than made or staffed. The two
+    // sentences worth spelling out are the two the console refuses to blur: real money is never added to an
+    // AI guess, and a metric nobody recorded reads "not recorded" rather than 0.
+    manager:      'where you run a business day to day — its money, its numbers, its customers, its content, its documents and its experiments. Every figure is kept as two separate things: what is REAL (recorded) and what the AI GUESSED (estimated), never added together; and a number nobody has recorded says so instead of showing a zero.',
     skill:        'something an agent CAN do — some skills only switch on once their gear is on station. Browse them under ⇄ ABILITIES ▸ SKILL LIBRARY.',
     toolset:      'a family of tools you can switch on or off for agents (web, files, terminal…) — the switches live in the TOOLSETS section of ⇄ ABILITIES.',
     capability:   'the same tool families as TOOLSETS, read-only — what an agent is equipped with right now; each agent’s readout is the SKILLS tab of its dossier.',

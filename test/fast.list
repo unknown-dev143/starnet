@@ -426,6 +426,16 @@ test/business-agents-store.test.js
 test/agent-messages-store.test.js
 test/agent-routes.test.js
 test/aiteam.test.js
+test/business-projects-store.test.js
+test/business-finance.test.js
+test/business-metrics.test.js
+test/business-crm-store.test.js
+test/business-content-store.test.js
+test/business-documents-store.test.js
+test/business-knowledge.test.js
+test/business-experiments-store.test.js
+test/manager-routes.test.js
+test/businessmanager.test.js
 test/projectbless.test.js
 test/folderpick.test.js
 test/pathtrust.test.js

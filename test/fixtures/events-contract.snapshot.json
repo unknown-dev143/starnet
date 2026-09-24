@@ -233,6 +233,94 @@
       "seq"
     ]
   },
+  "business.contact.added": {
+    "required": [
+      "businessId",
+      "contactId",
+      "name",
+      "stage"
+    ],
+    "properties": [
+      "businessId",
+      "contactId",
+      "name",
+      "stage"
+    ]
+  },
+  "business.contact.interaction": {
+    "required": [
+      "businessId",
+      "contactId",
+      "kind"
+    ],
+    "properties": [
+      "businessId",
+      "contactId",
+      "kind"
+    ]
+  },
+  "business.contact.removed": {
+    "required": [
+      "businessId",
+      "contactId",
+      "name"
+    ],
+    "properties": [
+      "businessId",
+      "contactId",
+      "name"
+    ]
+  },
+  "business.contact.updated": {
+    "required": [
+      "businessId",
+      "contactId"
+    ],
+    "properties": [
+      "businessId",
+      "changed",
+      "contactId",
+      "stage"
+    ]
+  },
+  "business.content.advanced": {
+    "required": [
+      "businessId",
+      "by",
+      "from",
+      "pieceId",
+      "to"
+    ],
+    "properties": [
+      "businessId",
+      "by",
+      "from",
+      "pieceId",
+      "to"
+    ]
+  },
+  "business.content.created": {
+    "required": [
+      "businessId",
+      "channel",
+      "pieceId"
+    ],
+    "properties": [
+      "businessId",
+      "channel",
+      "pieceId"
+    ]
+  },
+  "business.content.removed": {
+    "required": [
+      "businessId",
+      "pieceId"
+    ],
+    "properties": [
+      "businessId",
+      "pieceId"
+    ]
+  },
   "business.created": {
     "required": [
       "businessId",
@@ -254,6 +342,121 @@
       "actor",
       "businessId",
       "name"
+    ]
+  },
+  "business.document.created": {
+    "required": [
+      "businessId",
+      "documentId",
+      "type"
+    ],
+    "properties": [
+      "businessId",
+      "documentId",
+      "type"
+    ]
+  },
+  "business.document.removed": {
+    "required": [
+      "businessId",
+      "documentId"
+    ],
+    "properties": [
+      "businessId",
+      "documentId"
+    ]
+  },
+  "business.document.updated": {
+    "required": [
+      "businessId",
+      "documentId"
+    ],
+    "properties": [
+      "businessId",
+      "changed",
+      "documentId"
+    ]
+  },
+  "business.experiment.concluded": {
+    "required": [
+      "businessId",
+      "conclusion",
+      "experimentId"
+    ],
+    "properties": [
+      "businessId",
+      "conclusion",
+      "experimentId"
+    ]
+  },
+  "business.experiment.ended": {
+    "required": [
+      "businessId",
+      "experimentId"
+    ],
+    "properties": [
+      "businessId",
+      "experimentId"
+    ]
+  },
+  "business.experiment.opened": {
+    "required": [
+      "businessId",
+      "experimentId"
+    ],
+    "properties": [
+      "businessId",
+      "experimentId"
+    ]
+  },
+  "business.finance.recorded": {
+    "required": [
+      "amount",
+      "businessId",
+      "currency",
+      "kind",
+      "provenance",
+      "transactionId"
+    ],
+    "properties": [
+      "amount",
+      "businessId",
+      "currency",
+      "kind",
+      "provenance",
+      "transactionId"
+    ]
+  },
+  "business.finance.removed": {
+    "required": [
+      "businessId",
+      "transactionId"
+    ],
+    "properties": [
+      "businessId",
+      "transactionId"
+    ]
+  },
+  "business.knowledge.added": {
+    "required": [
+      "businessId",
+      "entryId",
+      "kind"
+    ],
+    "properties": [
+      "businessId",
+      "entryId",
+      "kind"
+    ]
+  },
+  "business.knowledge.forgotten": {
+    "required": [
+      "businessId",
+      "entryId"
+    ],
+    "properties": [
+      "businessId",
+      "entryId"
     ]
   },
   "business.memory.forgotten": {
@@ -290,6 +493,20 @@
       "source"
     ]
   },
+  "business.metric.recorded": {
+    "required": [
+      "businessId",
+      "metric",
+      "readingId",
+      "unit"
+    ],
+    "properties": [
+      "businessId",
+      "metric",
+      "readingId",
+      "unit"
+    ]
+  },
   "business.paused": {
     "required": [
       "businessId"
@@ -299,6 +516,42 @@
       "businessId",
       "halted",
       "name"
+    ]
+  },
+  "business.project.created": {
+    "required": [
+      "businessId",
+      "name",
+      "projectId"
+    ],
+    "properties": [
+      "businessId",
+      "name",
+      "projectId"
+    ]
+  },
+  "business.project.removed": {
+    "required": [
+      "businessId",
+      "name",
+      "projectId"
+    ],
+    "properties": [
+      "businessId",
+      "name",
+      "projectId"
+    ]
+  },
+  "business.project.updated": {
+    "required": [
+      "businessId",
+      "projectId"
+    ],
+    "properties": [
+      "businessId",
+      "changed",
+      "projectId",
+      "status"
     ]
   },
   "business.updated": {
