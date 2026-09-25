@@ -191,6 +191,16 @@ const { makeBusinessWorkOrders } = require('./business-workorders-store.js');  /
 const workerPolicy = require('./business-worker-policy.js');                   // Business OS P6: THE BRIDGE — a tool's §13 action, plus the composed verdict of BOTH permission systems
 const { makeBusinessWorker } = require('./business-worker.js');                // Business OS P6: the RUNNER — dispatches safe steps through the REAL tool registry, holds review, refuses restricted
 const { makeWorkerRoutes } = require('./worker-routes.js');                    // Business OS P6: the /api/workorders surface
+const { makeIntelligenceEngine } = require('./intelligence-engine.js');        // Business OS P7: §11 the ANALYTIC layer — change, candidate causes, anomalies, signals, portfolio
+const { makeModelRouter } = require('./model-router.js');                      // Business OS P7: §30 MODEL ROUTER — which model runs this; refuses rather than relaxes a requirement
+const { makeCostOptimizer } = require('./ai-cost-optimizer.js');               // Business OS P7: §30 AI COST OPTIMIZATION — cheaper equivalents that PRESERVE capability
+const { makeIntelligenceRoutes } = require('./intelligence-routes.js');        // Business OS P7: the /api/intelligence + /api/businesses/:id/intelligence surface
+/* P7 CATALOG-REFRESH SENTINEL. Declared HERE (not beside the router it points at, ~1500 lines below) for one
+   reason: warmModelCatalog() is called during boot and its .then() runs asynchronously, and a `const` or
+   `let` declared further down is still in its temporal dead zone at that moment — a bare `typeof` check does
+   NOT dodge that, it throws too. A null sentinel initialised this early is always safe to read; the real
+   router is attached to it as soon as the router exists. */
+let intelligenceCatalogSink = null;
 const { makePathTrust } = require('./pathtrust.js');            // NS-5: conversational path-trust guard
 // Tool-result images (browser.screenshot / browser.vision -> real pixels in the prompt). ON by default; set
 // SKYNET_TOOL_IMAGES=0 for a text-only endpoint that rejects image content parts.
@@ -1593,6 +1603,11 @@ function warmModelCatalog() {
       if (ms && ms.length) {
         // snapshot the ids so the channel /model command can validate an id synchronously (see setAgentModelFromChannel)
         try { orModelCatalogIds = ms.map(x => String((x && (x.id || x.model || x.name)) || '')).filter(Boolean); } catch (_) {}
+        /* P7: hand the SAME live list to the model router so it routes over real models with real prices
+           instead of the thin offline seed. The router refuses an empty/unreadable list and keeps what it
+           has, so a malformed catalog can never leave routing worse than it started. */
+        // Tagged fail-open: a catalog refresh must never break a warm, but its failure must not be silent.
+        try { refreshIntelligenceCatalog(ms); } catch (e) { failNote('intelligence.catalog-refresh', e); }
       }
       return ms;
     }
@@ -3504,6 +3519,128 @@ const workerRoutes = makeWorkerRoutes({
   consentFor: workerConsentFor,
   emit: (name, payload) => chanEmit(name, payload)
 });
+
+/* =====================================================================================================
+   BUSINESS OS PHASE 7 — INTELLIGENCE (§30: model router · AI cost optimization · opportunity monitoring ·
+   business intelligence · cross-business portfolio analytics)
+   =====================================================================================================
+   Phases 1-6 built the world and gave it hands. This phase is where the station starts to say something
+   TRUE about itself — and the governing constraint is §11's own honesty rule: it may explain a change by
+   "investigating available evidence and stating possible causes without pretending certainty".
+
+   READ-ONLY BY CONSTRUCTION. Nothing below mutates a metric, a model choice or an agent's configuration.
+   The optimizer RETURNS recommendations; it does not apply them. Switching a production model is the
+   owner's call (P5), and an automatic downgrade that quietly changed output quality in the name of saving
+   money would be the exact failure this phase exists to avoid. */
+
+/* THE ANALYTIC LAYER. Its accessors are the real stores — no copy, no cache, so an insight can never be
+   computed from a stale snapshot of a business's numbers. Each accessor is wrapped in try/catch at the
+   engine boundary (see intelligence-engine.js), so a store that is absent degrades to "no corroborating
+   evidence" rather than taking the route down. */
+const intelligenceEngine = makeIntelligenceEngine({
+  // (businessId, metricId) -> this business's readings for that metric, oldest first.
+  readings: (businessId, metricId) => metricsStore.list(businessId, { metric: metricId }),
+  // The CORROBORATING source an explanation may draw on. The activity store has no time filter, so the
+  // window is applied here — an activity outside the window cannot explain a change inside it.
+  activities: (businessId, o) => {
+    const rows = businessActivityStore.list(businessId);
+    const since = Number(o && o.since), until = Number(o && o.until);
+    if (!isFinite(since) && !isFinite(until)) return rows;
+    return rows.filter(r => {
+      const at = Number(r && r.at);
+      if (!isFinite(at)) return false;
+      if (isFinite(since) && at < since) return false;
+      if (isFinite(until) && at > until) return false;
+      return true;
+    });
+  },
+  experiments: (businessId) => experimentsStore.experiments(businessId),
+  businesses: () => businessesStore.list(),
+  now: () => Date.now()
+});
+
+/* THE MODEL CATALOG. Built from what the station actually KNOWS offline: each provider profile's own
+   `staticModels` (a real, hand-maintained seed — see registry.js), priced through prices.js's own
+   `priceOf` so the router's dollars and the spend seatbelt's dollars are the same numbers.
+
+   THIS IS A SEED, NOT THE WHOLE CATALOG, AND IT SAYS SO. The full model list is fetched from providers at
+   runtime; at boot only the static entries exist. The router refuses rather than inventing when nothing
+   matches, and `/api/intelligence/models` reports `catalogSize` so the console can state how much of the
+   picture it has. `refreshIntelligenceCatalog` below swaps in a live list the moment one arrives — an
+   empty or unreadable replacement is refused and the seed is kept (see model-router.js setCatalog). */
+function buildSeedModelCatalog() {
+  const reg = require('./providers/registry.js');
+  const prices = require('./providers/prices.js');
+  const profiles = reg._profiles || reg.listProviderProfiles() || [];
+  /* PRICE A MODEL — ONLY FROM THE PROVIDER'S OWN DECLARED FAMILY.
+     `priceFamily` is the provider profile's statement of which rate table it bills from
+     (registry.js documents it: "prices.js list-rate table to price runs with"). It is used as declared and
+     nothing else is attempted.
+
+     WHY THERE IS DELIBERATELY NO CROSS-FAMILY FALLBACK (a wrong price is worse than no price). Trying every
+     table in turn and taking the first match sounds reasonable — the tables are keyed by model-id patterns —
+     but several of them end in CATCH-ALL family fallbacks (/pro/i, /flash/i, and the together/fireworks
+     entries), so the search matches wildly: it priced Perplexity's `sonar-pro` at Gemini Pro's rate and
+     `sonar` at Fireworks'. Those numbers are not approximations of the truth, they are the truth about a
+     DIFFERENT model, and they would have flowed straight into a "switch to this and save 60%" recommendation.
+     A model with no declared family is therefore reported UNPRICED — which the router states, the optimizer
+     lists as a blind spot, and no one acts on. */
+  function priceFor(p, id) {
+    if (!p.priceFamily) return null;
+    try { return prices.priceOf(String(p.priceFamily), id); } catch (_) { return null; }
+  }
+
+  const out = [];
+  for (const p of profiles) {
+    for (const m of (p && p.staticModels ? p.staticModels : [])) {
+      if (!m || !m.id) continue;
+      const id = String(m.id);
+      const priced = priceFor(p, id);
+      out.push({
+        provider: p.id,
+        id: id,
+        name: m.name != null ? String(m.name) : id,
+        contextLength: Number(m.context_length) || 0,
+        supportsTools: m.supportsTools === true,
+        supportsReasoning: m.supportsReasoning === true,
+        supportsVision: m.supportsVision === true,
+        priceIn: priced ? priced.in : null,
+        priceOut: priced ? priced.out : null,
+        unmetered: p.unmetered === true,
+        speedTier: 'unknown'
+      });
+    }
+  }
+  return out;
+}
+const modelRouter = makeModelRouter({ catalog: buildSeedModelCatalog() });
+const costOptimizer = makeCostOptimizer({ router: modelRouter });
+
+/* Swap in a richer catalog when a provider's live list arrives. Refusing the empty case is the whole
+   point: a bad refresh must not leave the router answering "no models" for work it could have routed.
+   Reads the sentinel rather than `modelRouter` directly, because the boot-time catalog warm can fire
+   before the router's `const` initialises (see the sentinel's own comment). */
+function refreshIntelligenceCatalog(rows) {
+  if (!intelligenceCatalogSink) return { ok: false, replaced: 0, kept: 0, reason: 'the model router is not built yet' };
+  const r = intelligenceCatalogSink.setCatalog(rows);
+  if (r && r.ok) console.warn('[intelligence] model catalog refreshed: ' + r.kept + ' -> ' + r.replaced + ' models');
+  return r;
+}
+intelligenceCatalogSink = modelRouter;
+
+const intelligenceRoutes = makeIntelligenceRoutes({
+  engine: intelligenceEngine,
+  router: modelRouter,
+  optimizer: costOptimizer,
+  businesses: businessesStore,
+  // insights.js folds the REAL run history (reason / usd / tokens / model) — the station's own cost
+  // telemetry, and the only honest input to a cost-optimization recommendation. runStore.all() is
+  // exactly what /api/insights folds (same source, same numbers), so the two surfaces cannot disagree.
+  insights: () => foldInsights(runStore.all(), { nowMs: Date.now(), bucketMs: 3600000, buckets: 24 }),
+  readBody,
+  emit: (name, payload) => chanEmit(name, payload)   // lazy wrapper — chanEmit is declared far below
+});
+
 // the LIVE blessed-root set = every `path:*` grant, stripped of the prefix. Derived fresh each read so a
 // grant OR a revoke (through /api/permissions) takes effect on the very next fs call with no restart.
 function blessedRoots() { const out = []; for (const k of grantsPermanent) if (k.indexOf('path:') === 0) out.push(k.slice(5)); return out; }
@@ -9003,6 +9140,12 @@ const ROUTES = [
   // NOTE the ordering against Phase 5: /api/worker/approvals/… and /api/approvals/… are DIFFERENT prefixes, so
   // the two approval deciders cannot capture each other's ids.
   ...workerRoutes.routes,
+  // ---- BUSINESS OS (Phase 7). Same rule again: its own module, mounted here, same rx + query-tolerant-tail
+  // discipline. Its rows are namespaced (/api/intelligence/…) plus THREE business-scoped reads
+  // (/api/businesses/:id/intelligence, /intelligence/explain, /signals) — none of which can shadow a
+  // Phase 1-6 path, because Phase 4 claimed /metrics, /experiments, /finance etc. and this phase claims
+  // only /intelligence and /signals under the same business prefix.
+  ...intelligenceRoutes.rows,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },

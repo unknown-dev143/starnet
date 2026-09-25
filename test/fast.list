@@ -441,6 +441,11 @@ test/business-approvals-store.test.js
 test/business-automation-engine.test.js
 test/automation-routes.test.js
 test/businessautomation.test.js
+test/intelligence-engine.test.js
+test/model-router.test.js
+test/ai-cost-optimizer.test.js
+test/intelligence-routes.test.js
+test/businessintelligence.test.js
 test/business-worker-policy.test.js
 test/business-workorders-store.test.js
 test/business-worker.test.js

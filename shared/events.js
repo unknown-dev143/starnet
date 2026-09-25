@@ -534,6 +534,22 @@
       businessId: str, orderId: str, expiredApprovals: int
     }),
 
+    /* ---- Phase 7 · intelligence (§30) ---------------------------------------------------------------
+       ONE event for the whole phase, because the phase is a READ layer. Business intelligence, portfolio
+       analytics, opportunity signals and cost analysis are computed on request from data already on disk —
+       they create no new fact, so emitting an event per request would be telemetry noise dressed as an audit
+       trail (P4). The model router is the exception: a routing decision is a real decision about what will
+       run, and a listener that saw the spend but not the choice could not say which model cost what.
+
+         intelligence.model.routed — the router answered "which model runs this". `ok:false` means it
+                                     REFUSED rather than relaxed a requirement, which is the outcome worth
+                                     logging: a station that silently downgrades a model to find a candidate
+                                     produces broken runs and a healthy-looking cost report. `eligible` is
+                                     how many models cleared the hard filter (0 on a refusal). */
+    'intelligence.model.routed': obj(['ok', 'model', 'prefer', 'eligible'], {
+      ok: bool, model: str, prefer: str, eligible: int
+    }),
+
     // ---- reserved (P3 mutation API) ----
     'worldChange': obj(['seq'], { seq: int, dirtyTiles: { type: 'array' } }),
 

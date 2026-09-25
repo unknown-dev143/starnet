@@ -1,0 +1,55 @@
+'use strict';
+/* test/businessintelligence.test.js — Phase 7 console PURE HALF, tested headless (Business OS §30).
+
+   The console's pure half (formatters, the MISSING renderer, the POSSIBLE-CAUSES renderer, the route-form
+   validator) is Node-loadable without a DOM. These tests prove the honest rendering rules that the browser
+   panel must honour: a null reading is NOT rendered as 0, causes are shown under POSSIBLE CAUSES with no
+   asserted verdict, and the route-form validator rejects absent / implausible token counts and a bad preference. */
+const A = require('./_assert.js');
+
+// The console is a browser UMD; give it harmless globals so it can be required in Node, then read the pure API.
+globalThis.window = globalThis.window || globalThis;
+globalThis.document = globalThis.document || { createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }), getElementById: () => null };
+globalThis.StationUI = globalThis.StationUI || { registerWindow: () => {} };
+
+const C = require('../frontend/app/businessintelligence.js');
+
+function main() {
+  A.ok(typeof C === 'object' && typeof C.fmt === 'function', 'console module exports its pure API');
+
+  // ---- a null reading is not zero ----
+  A.eq(C.fmt(null), 'not recorded', 'fmt(null) is the absent label');
+  A.ok(/MISSING|not recorded|in-missing|in-none/.test(C.fmtHtml(null)), 'fmtHtml(null) renders absence, never 0');
+
+  // ---- a real number formats as itself ----
+  A.eq(C.fmt(1700), '1700', 'fmt(1700) is the number');
+  A.ok(C.fmtHtml(1700).indexOf('1700') >= 0, 'fmtHtml(1700) contains the value');
+
+  // ---- currency formatting is explicit ----
+  A.ok(/\$/.test(C.fmtUsd(1.5)), 'fmtUsd carries a currency symbol');
+  A.eq(C.fmtUsd(0), '$0', 'fmtUsd(0) renders a real zero');
+
+  // ---- causes render under POSSIBLE CAUSES and quote the verdict (no asserted causality) ----
+  const exp = {
+    verdict: 'no cause is asserted as the reason',
+    causes: [
+      { kind: 'experiment', text: 'an experiment changed state', confidence: 'strong', evidence: 'verified' },
+      { kind: 'sampling', text: 'few readings recorded', confidence: 'weak', evidence: 'verified' }
+    ]
+  };
+  const ch = C.causesHtml(exp);
+  A.ok(/POSSIBLE CAUSES/i.test(ch), 'causes render under POSSIBLE CAUSES');
+  A.ok(/asserted as the reason/i.test(ch), 'the verdict is quoted, not a causal claim');
+  A.ok(/strong/i.test(ch) && /experiment/i.test(ch), 'cause strength and kind are shown');
+
+  // ---- the route-form validator (mirrors the POST /route contract) ----
+  A.ok(C.validateRouteForm({ needs: {}, prefer: 'cost', tokensIn: 1000, tokensOut: 200 }).ok, 'valid form passes');
+  A.ok(!C.validateRouteForm({ needs: {}, prefer: 'bogus' }).ok, 'unknown preference rejected');
+  A.ok(!C.validateRouteForm({ needs: {}, prefer: 'cost', tokensIn: -1 }).ok, 'negative token count rejected');
+  A.ok(!C.validateRouteForm({ needs: {}, prefer: 'cost', tokensIn: 0, tokensOut: 0 }).ok, 'all-zero token count rejected');
+  A.ok(!C.validateRouteForm({ needs: {}, prefer: 'cost', tokensIn: 200000000 }).ok, 'token count above any context rejected');
+
+  A.report('businessintelligence: honest console rendering (pure half)');
+}
+
+main();

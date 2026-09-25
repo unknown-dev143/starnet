@@ -1,0 +1,102 @@
+/* frontend/css/businessintelligence.css — the INTELLIGENCE console (Business OS Phase 7).
+   Scoped .in-* so it cannot collide with the other business consoles:
+     .bc-* = Phase 1 (Business Command Center)
+     .bm-* = Phase 2 (Business Maker)
+     .tm-* = Phase 3 (AI Team)
+     .mg-* = Phase 4 (Business Manager)
+     .ba-* = Phase 5 (Automation)
+     .wk-* = Phase 6 (AI Worker)
+     .in-* = Phase 7 (Intelligence)  ← this file
+
+   LIGHT THEME. Every surface below is light with dark text, matching the station's light console. Nothing
+   here hardcodes a dark background.
+
+   ONE RULE WORTH NAMING: the "not recorded" state (.in-none) and the MISSING contributor (.in-missing) are
+   styled as VISIBLE absences, not as blanks and not as zeroes. A dashboard that renders an unrecorded number
+   as an empty cell or a 0 is stating a fact it does not have, so absence gets its own look. */
+
+.in-wrap { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 18px; height: 100%; box-sizing: border-box; overflow: hidden; }
+
+.in-head { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.in-title { margin: 0; font-size: 13px; letter-spacing: 0.12em; font-weight: 700; color: #1a1d24; }
+.in-spacer { flex: 1 1 auto; }
+
+.in-sub { font-size: 11px; color: #5c6472; line-height: 1.5; }
+.in-count { margin: 2px 0 6px; }
+.in-subhead { margin: 12px 0 6px; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b7382; font-weight: 700; border-bottom: 1px solid #e3e7ee; padding-bottom: 4px; }
+
+.in-btn { font: inherit; font-size: 11px; letter-spacing: 0.08em; font-weight: 600; padding: 4px 10px; border: 1px solid #c8cfdb; border-radius: 4px; background: #f7f9fc; color: #1a1d24; cursor: pointer; }
+.in-btn:hover { background: #eef2f8; }
+.in-select, .in-inp { font: inherit; font-size: 11px; padding: 3px 6px; border: 1px solid #c8cfdb; border-radius: 4px; background: #fff; color: #1a1d24; max-width: 180px; }
+
+/* Tabs */
+.in-tabs { display: flex; gap: 4px; flex: 0 0 auto; flex-wrap: wrap; border-bottom: 1px solid #e3e7ee; }
+.in-tab { font: inherit; font-size: 10px; letter-spacing: 0.1em; font-weight: 700; padding: 6px 10px; border: 1px solid transparent; border-bottom: none; background: transparent; color: #6b7382; cursor: pointer; border-radius: 4px 4px 0 0; }
+.in-tab:hover { color: #1a1d24; background: #f2f5fa; }
+.in-tab.in-on { color: #1a1d24; background: #fff; border-color: #e3e7ee; border-bottom: 1px solid #fff; margin-bottom: -1px; }
+
+.in-panels { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+.in-panel { display: none; }
+.in-panel.in-on { display: block; }
+
+.in-loading, .in-empty { font-size: 12px; color: #6b7382; padding: 14px 0; line-height: 1.6; }
+
+/* Headline */
+.in-headline { background: #f2f5fa; border: 1px solid #dde3ec; border-left: 3px solid #4a6fa5; border-radius: 4px; padding: 8px 10px; font-size: 12px; color: #1a1d24; line-height: 1.55; margin-bottom: 8px; }
+.in-hl-label { font-size: 9px; letter-spacing: 0.14em; font-weight: 700; color: #4a6fa5; margin-right: 6px; }
+
+/* Rows */
+.in-row { border: 1px solid #e3e7ee; border-radius: 4px; padding: 7px 9px; margin-bottom: 6px; background: #fff; }
+.in-rowhead { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.in-rowbody { margin-top: 4px; font-size: 11px; color: #3a4150; line-height: 1.55; }
+.in-metric { font-size: 12px; font-weight: 600; color: #1a1d24; }
+.in-kind { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a93a3; }
+.in-delta { font-size: 12px; font-weight: 700; color: #1a1d24; font-variant-numeric: tabular-nums; }
+.in-total { font-size: 12px; font-weight: 700; color: #1a1d24; font-variant-numeric: tabular-nums; }
+.in-note { margin-top: 4px; font-size: 10.5px; color: #7a8392; line-height: 1.5; font-style: italic; }
+.in-none { color: #9aa3b2; font-style: italic; }
+
+/* The clickable trend row: clicking asks for the P1 explanation in place. */
+.in-trend.in-clickable { cursor: pointer; }
+.in-trend.in-clickable:hover { background: #f7f9fc; border-color: #c8cfdb; }
+.in-trend.in-open { border-color: #4a6fa5; }
+
+/* Chips */
+.in-chip { display: inline-block; font-size: 9px; letter-spacing: 0.08em; font-weight: 700; padding: 2px 6px; border-radius: 3px; background: #eef1f6; color: #4a5160; white-space: nowrap; }
+.in-up { background: #fdecec; color: #b3261e; }          /* up   — warm/red, the station's "moved" accent */
+.in-down { background: #e6f4ea; color: #1e7a3c; }        /* down — green */
+.in-flat { background: #eef1f6; color: #5c6472; }
+.in-onset { background: #e8f0fb; color: #1b5faa; }
+.in-cessation { background: #fdf0e3; color: #97550a; }
+.in-unknown { background: #f1f1f1; color: #8a93a3; }
+.in-conf-strong { background: #e6f4ea; color: #1e7a3c; }
+.in-conf-moderate { background: #fdf6e3; color: #8a6d0b; }
+.in-conf-weak { background: #fdecec; color: #b3261e; }
+.in-conf-none { background: #f1f1f1; color: #8a93a3; }
+.in-ev { background: #eef1f6; color: #5c6472; }
+.in-score { background: #e8f0fb; color: #1b5faa; font-variant-numeric: tabular-nums; }
+.in-save { background: #e6f4ea; color: #1e7a3c; font-variant-numeric: tabular-nums; }
+
+/* Explanation */
+.in-explain { margin-top: 8px; padding: 8px 9px; background: #f7f9fc; border: 1px solid #e3e7ee; border-radius: 4px; }
+.in-verdict { font-size: 11.5px; color: #1a1d24; line-height: 1.6; }
+.in-cause { background: #fff; border-color: #dde3ec; margin-top: 5px; }
+.in-signal { background: #fff; }
+
+/* Portfolio */
+.in-contribs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.in-contrib { font-size: 10px; padding: 2px 6px; background: #f2f5fa; border: 1px solid #e3e7ee; border-radius: 3px; color: #3a4150; font-variant-numeric: tabular-nums; }
+.in-contrib.in-missing { background: #fbfbfc; border-style: dashed; color: #9aa3b2; font-style: italic; }
+
+/* Model router form */
+.in-form { border: 1px solid #e3e7ee; border-radius: 4px; padding: 9px 10px; background: #f7f9fc; margin-bottom: 10px; }
+.in-formrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 7px; }
+.in-formrow:last-child { margin-bottom: 0; }
+.in-lbl { font-size: 10.5px; color: #5c6472; display: inline-flex; align-items: center; gap: 5px; }
+.in-check { font-size: 10.5px; color: #3a4150; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.in-model { background: #fff; }
+
+/* Cost recommendations */
+.in-rec { border-left: 3px solid #1e7a3c; }
+.in-caveat { margin-top: 5px; font-size: 10px; color: #7a8392; line-height: 1.5; font-style: italic; border-top: 1px dotted #dde3ec; padding-top: 4px; }
+.in-blind { border-left: 3px solid #c8cfdb; background: #fbfbfc; }

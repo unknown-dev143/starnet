@@ -1066,6 +1066,20 @@
     "required": [],
     "properties": []
   },
+  "intelligence.model.routed": {
+    "required": [
+      "eligible",
+      "model",
+      "ok",
+      "prefer"
+    ],
+    "properties": [
+      "eligible",
+      "model",
+      "ok",
+      "prefer"
+    ]
+  },
   "iteration.refunded": {
     "required": [
       "agentId",
