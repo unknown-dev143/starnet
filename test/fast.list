@@ -451,6 +451,7 @@ test/business-workorders-store.test.js
 test/business-worker.test.js
 test/worker-routes.test.js
 test/businessworker.test.js
+test/business-os-hardening.test.js
 test/projectbless.test.js
 test/folderpick.test.js
 test/pathtrust.test.js
