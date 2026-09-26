@@ -3400,7 +3400,7 @@ const automationRoutes = makeAutomationRoutes({
    eagerly here would throw at boot. A function body is only evaluated when a work order actually runs.
    (2) A fresh registry per invocation means a tool cannot carry state from one work order into the next.
 
-   WHAT IS DELIBERATELY ABSENT, AND WHY THAT IS A FEATURE. shell, terminal, browser, computer, desktop,
+   WHAT IS DELIBERATELY ABSENT, AND WHY THAT IS A FEATURE. shell, terminal, computer, desktop,
    spotify, the media generators, routines and loops are NOT registered here. Every one of them is either
    §13-restricted (shell/terminal/computer/desktop — the policy refuses those before dispatch, so their
    absence is a SECOND, independent fence behind it) or needs an external service the worker has no business
@@ -3408,7 +3408,18 @@ const automationRoutes = makeAutomationRoutes({
    `external_comms` (review) and holds it, but the worker has no route to it, so the runner REFUSES such a step
    with a reason that says exactly that rather than filing an approval it could not then honour. The console
    shows each tool's `wired` flag from /api/worker/catalog, so this is visible before an order is written
-   rather than discovered when one runs. */
+   rather than discovered when one runs.
+
+   THE BROWSER IS A PARTIAL EXCEPTION (added 2026-09-26). A business worker now gets the browser's
+   READ-ONLY half — navigate, snapshot, find, inspect, get_text, screenshot, pdf, vision, console, network,
+   tabs, wait. Those are §13 `research` (safe) and the whole point of §10's "controlled browser worker": a
+   business researching its market is exactly the unattended job that should not need a human in the loop.
+   The INTERACTIVE half (click, type, upload, dialog, emulate, eval, intercept, attach/detach, login) is
+   still NOT registered — deliberately, and it stays a second fence behind the policy, which already calls
+   every one of them restricted. So the worker can READ the web and cannot ACT on it.
+   The session is the same hardened one a normal agent run gets: headless, synthetic input only, CDP on an
+   ephemeral port, a throwaway profile, and NO persistent profile lease and NO attended-login channel — so a
+   business worker browses as nobody in particular and cannot log in. */
 function makeWorkerRegistry() {
   const reg = makeRegistry();
   // research (§13 safe) — the worker reads the open web. `surface: 'autonomous'` is the honest label: a work
@@ -3429,6 +3440,37 @@ function makeWorkerRegistry() {
       catch (_) { return ''; }
     })()
   }).register(reg);
+  /* THE BROWSER, READ-ONLY (§10). See the header above for why this is a deliberate partial exception.
+     The toolset is built with the SAME hardened posture a normal agent run uses — headless, synthetic input
+     only, an ephemeral CDP port and a throwaway profile — and then ONLY the §13 `research` tools are
+     registered. Filtering at registration (rather than passing a flag) means the interactive tools are not
+     merely un-granted, they are ABSENT from this registry: a step naming one reports `wired:false` and is
+     refused with "the worker has no route to it", which is the honest, distinct fact the runner is built to
+     report. No persistent profile lease and no attendedLogin are passed, so a business worker browses
+     anonymously and `browser.login` refuses honestly rather than reaching for the Commander's cookies. */
+  const workerBrowserResearch = new Set([
+    'browser.navigate', 'browser.snapshot', 'browser.find', 'browser.inspect', 'browser.get_text',
+    'browser.screenshot', 'browser.pdf', 'browser.vision', 'browser.console', 'browser.network',
+    'browser.tabs', 'browser.wait'
+  ]);
+  makeBrowserTools({
+    ledger: procLedger,
+    fsp, pathMod: path, root: WORKSPACES,
+    downloadDir: path.join(WORKSPACES, 'business-worker', 'downloads'),
+    allowVisible: false,
+    forceHeadless: true,
+    syntheticInputOnly: true,
+    cdpPort: 0,
+    profileDir: path.join(os.tmpdir(), 'starnet-worker-browser-' + process.pid + '-' + crypto.randomUUID().replace(/[^A-Za-z0-9_-]/g, '')),
+    cleanupProfile: true,
+    // NO persistentProfile lease and NO attendedLogin: an unattended business worker must not inherit a
+    // signed-in identity. (A normal interactive run passes both; the asymmetry is the point.)
+    requireOwnedServer: true,
+    ownsLocalUrl: async ({ url, serverId, agentId: owner }) => {
+      const st = shellBg.status(String(owner || 'business-worker'), String(serverId || ''));
+      return backgroundOwnsLocalUrl(st, url, loopbackListenerProbe);
+    }
+  }).tools.filter(t => workerBrowserResearch.has(t.name)).forEach(t => reg.register(t));
   makeConnectorTools({ connectors: connectors, serviceKeys: () => serviceKeys, connectorCatalog: connectorCatalog, keysCatalog: serviceKeysCatalog }).register(reg);
   makeStationInspectTool({ inspect: () => harnessSnapshotForRun({ agentId: 'business-worker', surface: 'autonomous', trigger: 'workorder' }) }).register(reg);
   // read + write of the agent's OWN workspace. `pathTrust` is omitted deliberately (the same choice

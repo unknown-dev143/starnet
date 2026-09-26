@@ -401,6 +401,65 @@ function rule(id, event, actions) { return { id, name: id, trigger: event, enabl
     const bad = lines.some(l => /qrx\s*:/.test(l) && /\(/.test(l));
     A.ok(!bad, 'sidecar/' + f + '.js has no qrx matcher that captures a path segment (route-table trap avoided)');
   }
+
+  // ---------------------------------------------------------------------------
+  // 5. THE WORKER'S BROWSER IS READ-ONLY (§10's "controlled browser worker").
+  //    A business worker may READ the open web (navigate/snapshot/get_text/...)
+  //    and must never be able to ACT on it (click/type/upload/eval/login/...).
+  //    Asserted at the source because the fence lives in TWO places that must
+  //    agree: the policy's tier table AND makeWorkerRegistry()'s filter in
+  //    index.js. If a future edit widens either one, this fails loudly.
+  // ---------------------------------------------------------------------------
+  {
+    const idx = fs.readFileSync(path.join(__dirname, '..', 'sidecar', 'index.js'), 'utf8');
+    // Locate the browser registration inside makeWorkerRegistry() specifically — not the normal-run
+    // browser, which legitimately carries the interactive tools.
+    const fnStart = idx.indexOf('function makeWorkerRegistry()');
+    A.ok(fnStart > 0, 'makeWorkerRegistry() is found in sidecar/index.js');
+    const fnEnd = idx.indexOf('\nfunction ', fnStart + 10);
+    const rawBody = fnEnd > fnStart ? idx.slice(fnStart, fnEnd) : idx.slice(fnStart);
+    // Strip comments before scanning: the header and inline notes in this function deliberately NAME the
+    // options it does not pass (e.g. "NO attendedLogin"), so a naive scan would read the explanation as
+    // the thing it denies. Code only.
+    const body = rawBody.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+
+    // The registry builds the browser toolset then filters it to the research tier.
+    A.ok(/makeBrowserTools\s*\(/.test(body), 'the worker registry builds a browser toolset');
+    A.ok(/\.tools\.filter\(/.test(body), 'and FILTERS the toolset rather than registering all of it');
+
+    // The allow-set names exactly the read tools — every one §13 `research`.
+    const READ = ['navigate', 'snapshot', 'find', 'inspect', 'get_text', 'screenshot', 'pdf', 'vision', 'console', 'network', 'tabs', 'wait'];
+    for (const t of READ) {
+      A.ok(body.indexOf("'browser." + t + "'") >= 0, "the worker may read: browser." + t);
+    }
+    // And NO interactive tool may appear in the allow-set. This is the load-bearing assertion: a
+    // regression that adds e.g. browser.click to the Set would make the worker able to act on the web.
+    const ACT = ['click', 'type', 'press', 'select', 'hover', 'scroll', 'drag', 'upload', 'dialog', 'emulate', 'eval', 'intercept', 'attach', 'detach', 'login', 'back', 'forward', 'tab_select', 'tab_close', 'viewport'];
+    for (const t of ACT) {
+      A.ok(body.indexOf("'browser." + t + "'") < 0, "the worker must NOT be granted browser." + t);
+    }
+
+    // The session posture: an unattended worker browses anonymously. These four defaults are what make
+    // that true, and each is a deliberate asymmetry against the normal interactive run.
+    A.ok(/forceHeadless:\s*true/.test(body), 'the worker browser is headless');
+    A.ok(/syntheticInputOnly:\s*true/.test(body), 'and takes synthetic input only (no OS-level cursor)');
+    A.ok(/cdpPort:\s*0/.test(body), 'and opens CDP on an ephemeral port');
+    A.ok(/cleanupProfile:\s*true/.test(body), 'and burns its profile afterwards');
+    A.ok(!/persistentProfile\s*:/.test(body), 'AND IS PASSED NO PERSISTENT PROFILE LEASE (it cannot inherit a signed-in identity)');
+    A.ok(!/attendedLogin\s*:/.test(body), 'and no attended-login channel (browser.login refuses honestly)');
+
+    // Second fence: the policy already calls every interactive browser tool restricted. Prove the two
+    // layers are consistent by reading the policy table rather than trusting the comment.
+    const Pol = require(path.join(__dirname, '..', 'sidecar', 'business-worker-policy.js'));
+    for (const t of READ) {
+      const c = Pol.actionFor('browser.' + t);
+      A.eq(c && c.action, 'research', 'policy agrees: browser.' + t + ' is §13 research');
+    }
+    for (const t of ACT) {
+      const c = Pol.actionFor('browser.' + t);
+      A.ok(c && c.action !== 'research', 'policy fences browser.' + t + ' out of the safe tier');
+    }
+  }
 }
 
 A.report('business-os-hardening.test');
