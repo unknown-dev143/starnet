@@ -195,6 +195,8 @@ const { makeIntelligenceEngine } = require('./intelligence-engine.js');        /
 const { makeModelRouter } = require('./model-router.js');                      // Business OS P7: §30 MODEL ROUTER — which model runs this; refuses rather than relaxes a requirement
 const { makeCostOptimizer } = require('./ai-cost-optimizer.js');               // Business OS P7: §30 AI COST OPTIMIZATION — cheaper equivalents that PRESERVE capability
 const { makeIntelligenceRoutes } = require('./intelligence-routes.js');        // Business OS P7: the /api/intelligence + /api/businesses/:id/intelligence surface
+const { makeBusinessTwin } = require('./business-twin.js');                    // Business OS P9: §18 DIGITAL TWIN — what-if arithmetic on RECORDED readings; never a forecast
+const { makeTwinRoutes } = require('./twin-routes.js');                        // Business OS P9: the /api/businesses/:id/twin surface (catalog + simulate + compare)
 /* P7 CATALOG-REFRESH SENTINEL. Declared HERE (not beside the router it points at, ~1500 lines below) for one
    reason: warmModelCatalog() is called during boot and its .then() runs asynchronously, and a `const` or
    `let` declared further down is still in its temporal dead zone at that moment — a bare `typeof` check does
@@ -3699,6 +3701,22 @@ const intelligenceRoutes = makeIntelligenceRoutes({
   // telemetry, and the only honest input to a cost-optimization recommendation. runStore.all() is
   // exactly what /api/insights folds (same source, same numbers), so the two surfaces cannot disagree.
   insights: () => foldInsights(runStore.all(), { nowMs: Date.now(), bucketMs: 3600000, buckets: 24 }),
+  readBody,
+  emit: (name, payload) => chanEmit(name, payload)   // lazy wrapper — chanEmit is declared far below
+});
+
+/* §18 DIGITAL TWIN (Phase 9). Same injected-accessor shape as the intelligence engine above, and the SAME
+   readings source — `metricsStore.list` — so a simulation and an explanation can never disagree about what
+   was recorded. The twin reads the metrics store; it never writes to it and owns no store of its own: a
+   "digital twin" that persisted its projections would be manufacturing facts out of assumptions (P7). */
+const businessTwin = makeBusinessTwin({
+  readings: (businessId, metricId) => metricsStore.list(businessId, { metric: metricId })
+});
+
+const twinRoutes = makeTwinRoutes({
+  twin: businessTwin,
+  businesses: businessesStore,
+  activity: businessActivityStore,                 // the durable trail: a simulation that ran is worth logging
   readBody,
   emit: (name, payload) => chanEmit(name, payload)   // lazy wrapper — chanEmit is declared far below
 });
@@ -9211,6 +9229,11 @@ const ROUTES = [
   // Phase 1-6 path, because Phase 4 claimed /metrics, /experiments, /finance etc. and this phase claims
   // only /intelligence and /signals under the same business prefix.
   ...intelligenceRoutes.rows,
+  // ---- BUSINESS OS (Phase 9). §18 Digital Twin. Own module, mounted here, same rx + query-tolerant-tail
+  // discipline. Three rows, all under the already-claimed business prefix: /twin (catalog, GET),
+  // /twin/simulate and /twin/compare (both POST, both STATELESS — they compute and return; nothing is
+  // written). Mounted AFTER Phase 7's rows so the more specific /twin/... paths are tested first.
+  ...twinRoutes.rows,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },

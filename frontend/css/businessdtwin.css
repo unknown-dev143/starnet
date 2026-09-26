@@ -1,0 +1,93 @@
+/* frontend/css/businessdtwin.css — the DIGITAL TWIN console (Business OS Phase 9, §18).
+   Scoped .dt-* so it cannot collide with the other business consoles:
+     .bc-* = Phase 1 (Business Command Center)
+     .bm-* = Phase 2 (Business Maker)
+     .tm-* = Phase 3 (AI Team)
+     .mg-* = Phase 4 (Business Manager)
+     .ba-* = Phase 5 (Automation)
+     .wk-* = Phase 6 (AI Worker)
+     .in-* = Phase 7 (Intelligence)
+     .dt-* = Phase 9 (Digital Twin)  ← this file
+
+   LIGHT THEME. Every surface below is light with dark text, matching the station's light console. Nothing
+   here hardcodes a dark background.
+
+   THE ONE RULE THIS FILE EXISTS TO ENFORCE: a simulated number must never LOOK like a recorded one. So:
+     · `.dt-banner` is a persistent, non-dismissible line saying this is a simulation, and it is styled to be
+       read (a blue left border, like a callout) rather than to be skimmed past;
+     · `.dt-sim` is a small pill that sits next to EVERY simulated figure and every result heading — a
+       screenshot of one number still carries the marker;
+     · `.dt-cell-basis` (the recorded value) and `.dt-cell-sim` (the simulated one) are visually SEPARATED,
+       with the recorded one carrying its age, so the arithmetic is checkable by eye;
+     · `.dt-clamp` marks an assumption that demanded something impossible, so a clamped result is not read
+       as a computed one. */
+
+.dt-wrap { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 18px; height: 100%; box-sizing: border-box; overflow: hidden; }
+
+.dt-head { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; flex-wrap: wrap; }
+.dt-title { margin: 0; font-size: 13px; letter-spacing: 0.12em; font-weight: 700; color: #1a1d24; }
+.dt-spacer { flex: 1 1 auto; }
+
+/* The persistent honesty banner. Blue callout, same family as the intelligence headline, but it is NOT a
+   headline — it is a standing statement about every number on the page. */
+.dt-banner { font-size: 10px; letter-spacing: 0.04em; color: #2f4f7a; background: #eef3fb; border: 1px solid #cfdcef; border-left: 3px solid #4a6fa5; border-radius: 3px; padding: 3px 7px; }
+
+.dt-btn { font: inherit; font-size: 11px; letter-spacing: 0.08em; font-weight: 600; padding: 4px 10px; border: 1px solid #c8cfdb; border-radius: 4px; background: #f7f9fc; color: #1a1d24; cursor: pointer; }
+.dt-btn:hover { background: #eef2f8; }
+.dt-select, .dt-input { font: inherit; font-size: 11px; padding: 3px 6px; border: 1px solid #c8cfdb; border-radius: 4px; background: #fff; color: #1a1d24; }
+.dt-select { max-width: 220px; }
+.dt-input { width: 90px; }
+
+/* Tabs */
+.dt-tabs { display: flex; gap: 4px; flex: 0 0 auto; flex-wrap: wrap; border-bottom: 1px solid #e3e7ee; }
+.dt-tab { font: inherit; font-size: 10px; letter-spacing: 0.1em; font-weight: 700; padding: 6px 10px; border: 1px solid transparent; border-bottom: none; background: transparent; color: #6b7382; cursor: pointer; border-radius: 4px 4px 0 0; }
+.dt-tab:hover { color: #1a1d24; background: #f2f5fa; }
+.dt-tab.dt-on { color: #1a1d24; background: #fff; border-color: #e3e7ee; border-bottom: 1px solid #fff; margin-bottom: -1px; }
+
+.dt-panels { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+.dt-panel { display: none; }
+.dt-panel.dt-on { display: block; }
+
+.dt-loading, .dt-empty { font-size: 12px; color: #6b7382; padding: 14px 0; line-height: 1.6; }
+.dt-err { font-size: 12px; color: #9c3a3a; padding: 12px 0; line-height: 1.6; }
+
+/* Form */
+.dt-form { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.dt-lbl { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b7382; font-weight: 700; }
+.dt-steps { display: flex; flex-direction: column; gap: 5px; }
+.dt-step { display: flex; align-items: center; gap: 6px; }
+.dt-step-arg { width: 110px; }
+.dt-x { font: inherit; font-size: 12px; line-height: 1; padding: 3px 7px; border: 1px solid #d8dee7; border-radius: 4px; background: #fff; color: #8a93a3; cursor: pointer; }
+.dt-x:hover { color: #9c3a3a; border-color: #e0b4b4; background: #fdf6f6; }
+.dt-actions { display: flex; gap: 6px; margin-top: 4px; }
+.dt-note { font-size: 11px; color: #8a93a3; line-height: 1.5; margin: 4px 0 0; }
+
+/* Problems / failures — a refused scenario is VISIBLE, never a quiet empty table. */
+.dt-problems, .dt-bad { border: 1px solid #e6cccc; background: #fdf7f7; border-radius: 4px; padding: 8px 10px; }
+.dt-bad { margin-top: 10px; }
+.dt-fail { font-size: 11px; color: #8f3a3a; margin: 2px 0; line-height: 1.5; }
+
+/* Result */
+.dt-result { border: 1px solid #e3e7ee; border-radius: 4px; padding: 9px 10px; background: #fff; margin-top: 10px; }
+.dt-result-head { font-size: 12px; font-weight: 700; color: #1a1d24; margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
+
+/* THE SIM MARKER. A small pill next to every simulated figure and heading. Deliberately high-contrast so it
+   survives a screenshot and cannot be skimmed past: a bare simulated number is the failure this prevents. */
+.dt-sim { font-size: 8.5px; letter-spacing: 0.14em; font-weight: 700; color: #fff; background: #4a6fa5; border-radius: 3px; padding: 1px 4px; vertical-align: middle; }
+
+.dt-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.dt-table th { text-align: left; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #6b7382; font-weight: 700; border-bottom: 1px solid #e3e7ee; padding: 4px 6px; }
+.dt-table td { padding: 5px 6px; border-bottom: 1px solid #f0f3f8; color: #1a1d24; vertical-align: top; }
+.dt-cell-metric { font-weight: 600; }
+.dt-cell-basis { color: #3a4150; font-variant-numeric: tabular-nums; }
+.dt-cell-sim { font-variant-numeric: tabular-nums; font-weight: 700; color: #2f4f7a; }
+.dt-cell-delta { font-variant-numeric: tabular-nums; color: #3a4150; }
+.dt-age { display: block; font-size: 9px; color: #8a93a3; font-weight: 400; }
+.dt-delta-sub { display: block; font-size: 9px; color: #8a93a3; font-weight: 400; }
+
+/* The assumption line under each result row — the arithmetic, stated in words. */
+.dt-assume td { font-size: 10px; color: #6b7382; padding-top: 0; border-bottom: 1px solid #eef1f6; font-family: var(--font-mono, monospace); }
+
+/* A clamped assumption: the request was impossible and the result stopped at the edge of the definition.
+   Marked so 1.0 is not read as a computed conversion rate. */
+.dt-clamp { font-size: 9px; letter-spacing: 0.06em; color: #8a5a1a; background: #fdf4e6; border: 1px solid #f0dcb8; border-radius: 3px; padding: 0 4px; }

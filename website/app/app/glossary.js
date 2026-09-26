@@ -73,6 +73,9 @@
     intelligence: 'where the station says what it actually knows about your businesses: which numbers moved, what else was recorded at the same time, which models cost what, and where a cheaper one could have done the job. It reads only — nothing here changes a metric, a model or a setting. When it cannot explain a change it says so rather than inventing a reason.',
     signal:       'a condition the numbers actually show — a figure moving the same way four readings running, a reading far outside its own normal range, an experiment that ended with no verdict recorded. A signal is an observation, never a recommendation: what you do about it stays yours.',
     portfolio:    'every business side by side on one metric. A business that never recorded a number is shown as MISSING, not as zero — so a total is the sum of what was really reported, and the count next to it says how many businesses that covers.',
+    /* Business OS (Phase 9, §18). DIGITAL TWIN is the one place the station shows a number that is NOT a
+       measurement, so its copy has to do the work of stopping it being read as one. */
+    digitaltwin:  'a what-if on your own recorded numbers: name an assumption (say "conversion ×1.2") and see what the figures you actually recorded would have been. It is arithmetic, not a forecast — every simulated figure carries a SIM marker and the recorded value it came from, nothing is dated in the future, and a metric you never recorded cannot be simulated at all. Nothing you do here changes any real number.',
     task:         'a planned piece of work created on the board or launched from a recipe or goal — it appears on the ☑ TASK BOARD and opens as a COMMS session.',
     quest:        'a suggestion or progress marker from the station — accepting one starts real work; it is never a second to-do list.',
     // Business OS (Phase 1). The per-business stop is deliberately described as SCOPED: it is not the E-STOP,

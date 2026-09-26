@@ -451,6 +451,8 @@ test/business-workorders-store.test.js
 test/business-worker.test.js
 test/worker-routes.test.js
 test/businessworker.test.js
+test/business-twin.test.js
+test/twin-routes.test.js
 test/business-os-hardening.test.js
 test/business-os-lifecycle.test.js
 test/projectbless.test.js

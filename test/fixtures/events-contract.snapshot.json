@@ -687,6 +687,22 @@
       "status"
     ]
   },
+  "business.twin.simulated": {
+    "required": [
+      "businessId",
+      "mode",
+      "scenario",
+      "simulated",
+      "steps"
+    ],
+    "properties": [
+      "businessId",
+      "mode",
+      "scenario",
+      "simulated",
+      "steps"
+    ]
+  },
   "business.updated": {
     "required": [
       "businessId"

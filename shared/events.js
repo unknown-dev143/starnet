@@ -550,6 +550,21 @@
       ok: bool, model: str, prefer: str, eligible: int
     }),
 
+    /* ---- Phase 9 · digital twin / scenario simulation (§18) ------------------------------------------
+       ONE event, and it is the same shape of exception as the router's above: a simulation that RAN is a
+       real thing the owner did, so it belongs in the activity trail — but the payload carries the SCENARIO
+       NAME and the COUNTS, never a simulated number. Persisting the numbers here would make the event log a
+       second, stale copy of a computation that the twin recomputes from the recorded baseline on demand
+       (P4 — one source of truth). The recorded readings remain the only numbers that mean anything.
+
+         business.twin.simulated — a what-if was run against recorded readings. `mode` distinguishes a single
+                                   scenario from a side-by-side comparison, because "I tried one idea" and
+                                   "I compared four" are different acts even though both are one event. */
+    'business.twin.simulated': obj(['businessId', 'scenario', 'steps', 'simulated', 'mode'], {
+      businessId: str, scenario: str, steps: int, simulated: int,
+      mode: { enum: ['simulate', 'compare'] }
+    }),
+
     // ---- reserved (P3 mutation API) ----
     'worldChange': obj(['seq'], { seq: int, dirtyTiles: { type: 'array' } }),
 

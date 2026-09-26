@@ -134,7 +134,7 @@ Current metrics **[verified]**:
 | §15 AI cost management | **done** | cost/spend/ledger/budget (+ per-business tagging) |
 | §16 Model Router | **done** | `providers/factory.js` + `execution-router.js` + `fallbackchain.js` |
 | §17 Business Portfolio | **done** | `intelligence-engine.js` `portfolio()` — cross-business, `null` not `0` |
-| §18 Business Digital Twin | **MISSING** | no simulation/scenario module **[verified: grep]** |
+| §18 Business Digital Twin | **done** | `business-twin.js` (pure what-if engine) + `twin-routes.js` + console `businessdtwin.js` — every figure labelled `kind:'simulation'` |
 | §19 Business Intelligence | **done** | `intelligence-engine.js` — change/explain/anomalies |
 | §20 CRM | **done** | `business-crm-store.js` (391) |
 | §21 Automation engine | **done** | store + engine + depth bound + pass budget |
@@ -199,7 +199,7 @@ Ordered by value. Each is *verified absent or partial* above.
 |---|---|---|---|---|
 | 1 | ~~Browser tools unclassified~~ **DONE** (`329b3aeb4`) | §10 | — | 35 tools classified by consequence. |
 | 2 | ~~**Browser callable by a worker** (the §6c decision)~~ **DONE** (`f7fa49c08`) | §10 | — | Read-only half wired (12 `research` tools, headless, anonymous profile). Interactive half still held. |
-| 3 | **Business Digital Twin / scenario simulation** | §18 | High | The one whole feature with **no** implementation. Must be labelled a simulation, never a prediction. |
+| 3 | ~~**Business Digital Twin / scenario simulation**~~ **DONE** (Phase 9) | §18 | — | Runs **backward**: applies explicit assumptions to **recorded** readings; never forecasts. No reading → refuses. Every figure `kind:'simulation'` + `simulated:true` + `basis`. Rates clamped 0..1, clamps reported. |
 | 4 | **Goal Autopilot single entry** | §9 | Medium | Worker plans+runs per order; no "prepare this business for launch" → full plan. |
 | 5 | **Unified Mission Control window** | §23 | Medium | The reads exist (Phase 7); the single combined pane does not. |
 | 6 | **Security Center window** | §13 | Medium | Permissions + audit exist; the combined view does not. |

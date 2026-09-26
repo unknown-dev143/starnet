@@ -38,6 +38,7 @@
 <link rel="stylesheet" href="css/businessautomation.css"><!-- BUSINESS AUTOMATION (Business OS Phase 5): scoped .ba-* styles for the business lane of the AUTOMATION hub — the rule list, the builder and the §13 approval queue (businessautomation.js). NOTE: .bc-*/.bm-*/.mg-* belong to Phases 1/2/4 — this one is .ba- so the consoles cannot collide. -->
 <link rel="stylesheet" href="css/businessworker.css"><!-- AI WORKER (Business OS Phase 6): scoped .wk-* styles for the work-order console — the plan builder, the order list, the §13 step decisions and the policy catalogue (businessworker.js). NOTE: .bc-*/.bm-*/.tm-*/.mg-*/.ba-* belong to Phases 1/2/3/4/5 — this one is .wk- so the consoles cannot collide. -->
 <link rel="stylesheet" href="css/businessintelligence.css"><!-- INTELLIGENCE (Business OS Phase 7): scoped .in-* styles for the intelligence console — what moved, the P1 explanation, the portfolio, the model router and the AI cost panel (businessintelligence.js). NOTE: .bc-*/.bm-*/.tm-*/.mg-*/.ba-*/.wk-* belong to Phases 1-6 — this one is .in- so the consoles cannot collide. -->
+<link rel="stylesheet" href="css/businessdtwin.css"><!-- DIGITAL TWIN (Business OS Phase 9, §18): scoped .dt-* styles for the scenario console — the what-if form, the simulated-vs-recorded table and the SIM markers (businessdtwin.js). NOTE: .bc-*/.bm-*/.tm-*/.mg-*/.ba-*/.wk-*/.in-* belong to Phases 1-7 — this one is .dt- so the consoles cannot collide. -->
 
 </head>
 <body class="theme-amber">
@@ -635,6 +636,10 @@
         <!-- BUSINESS OS (Phase 7). INTELLIGENCE: the reporting layer — what the numbers actually say, across
              one business or all of them, plus which model should run a job and what it costs. Read-only. -->
         <button class="bb" data-term="intelligence" data-hint="intelligence"><span class="bb-i">◈</span><span class="bb-tx"><b>INTELLIGENCE</b><small>what your numbers actually say — trends, signals, portfolio, model &amp; AI cost</small></span></button>
+        <!-- BUSINESS OS (Phase 9). DIGITAL TWIN (§18): what-if arithmetic over a business's OWN recorded
+             readings. Not a forecast — every simulated figure carries a SIM marker and the recorded basis it
+             came from. Stores nothing. Title must stay in step with windows/digitaltwin.js. -->
+        <button class="bb" data-term="digitaltwin" data-hint="digitaltwin"><span class="bb-i">⧉</span><span class="bb-tx"><b>DIGITAL TWIN</b><small>what-ifs on your real numbers — arithmetic, not a forecast</small></span></button>
         <button class="bb" data-term="quests" data-hint="quest"><span class="bb-i">⚑</span><span class="bb-tx"><b>QUESTS</b><small>progress &amp; suggestions — not a second to-do list</small></span></button>
         <!-- BUSINESS (Business OS Phase 1): the first surface about BUSINESSES rather than agents — the list,
              each one's audit log, and the per-business stop. Title must stay in step with windows/business.js. -->
@@ -852,6 +857,8 @@ document.write('<script src="' + ((window.__STARNET_API__ || '') + '/shared/spec
 <script src="app/windows/worker.js"></script><!-- AI WORKER — the WORKER window slot (plan one · work orders · waiting on you · what the worker may do); MUST load after businessworker.js and stationui.js. TITLE LAW: the dock reads WORKER and this registers 'WORKER'. -->
 <script src="app/businessintelligence.js"></script><!-- BUSINESS OS engine (Phase 7): pure trend/cause/portfolio/model/cost row shaping + the Intelligence console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/intelligence.js (the window slot) and after stationui.js. -->
 <script src="app/windows/intelligence.js"></script><!-- INTELLIGENCE — the window slot (what moved · portfolio · signals · models · AI cost); MUST load after businessintelligence.js and stationui.js. TITLE LAW: the dock reads INTELLIGENCE and this registers 'INTELLIGENCE'. -->
+<script src="app/businessdtwin.js"></script><!-- BUSINESS OS engine (Phase 9, §18): pure value/delta formatting, catalog + scenario row shaping and the Digital Twin console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/digitaltwin.js (the window slot) and after stationui.js. -->
+<script src="app/windows/digitaltwin.js"></script><!-- DIGITAL TWIN — the window slot (run a what-if · compare); MUST load after businessdtwin.js and stationui.js. TITLE LAW: the dock reads DIGITAL TWIN and this registers 'DIGITAL TWIN'. -->
 <script src="app/navdock.js"></script>
 <script src="app/chatresize.js"></script>
 <script src="app/leftrail.js"></script><!-- hide/show the CREW rail (◂ in the rail header · ▸ CREW drawer tab on the stage edge); persisted per machine -->
