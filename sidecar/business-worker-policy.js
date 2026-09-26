@@ -224,7 +224,82 @@
     /* ---- SENSITIVE ACCESS: credentials and authenticated sessions. §13 'access_sensitive' — RESTRICTED.
        Logging in as the business is the one action that can turn every later read into a privileged one, so
        it can never be the agent's own decision. ---- */
-    'browser.login': 'access_sensitive'
+    'browser.login': 'access_sensitive',
+
+    /* ---- THE BROWSER (§10). Enumerated in full, because there was previously only ONE browser entry in
+       this table and no `browser.` family — so 34 of the 35 browser tools fell through to the fail-closed
+       default (`access_sensitive` → restricted) and a business worker could not drive the browser AT ALL.
+       That failure mode was SAFE (fail-closed is correct) but it made a mature 2,873-line browser layer
+       unreachable, which is a dead feature rather than a safe one. Found by live verification, 2026-09-26.
+
+       CLASSIFIED BY CONSEQUENCE, not by the tool's own `scope` — the two-axes argument in this file's header.
+       The tool layer knows the MECHANISM (does it touch the network?); §13 knows the CONSEQUENCE (can the
+       business be harmed?). A page that is merely READ cannot harm the business, so it is 'research'. A page
+       that is DRIVEN (a click, a form submit, a purchase) acts in the outside world as the business, so it is
+       'change_infra' — restricted, never auto-run, not rescuable by a per-request yes. And anything that
+       changes WHO we are while browsing, or exports the session, is 'access_sensitive'. ---- */
+
+    /* READING A PAGE (§13 'research' — safe). These observe; they do not act. `browser.navigate` is here and
+       not in the acting block on purpose: it resolves a URL and renders it, exactly what `web_fetch` does, and
+       `web_fetch` is already 'research' above. Consistency matters more than the tool's own 'read' scope would
+       suggest, because an inconsistent line is the one a reader cannot disagree with precisely. */
+    'browser.navigate': 'research',
+    'browser.snapshot': 'research',
+    'browser.get_text': 'research',
+    'browser.inspect': 'research',
+    'browser.find': 'research',
+    'browser.console': 'research',
+    'browser.network': 'research',
+    'browser.tabs': 'research',
+    'browser.screenshot': 'research',
+    'browser.pdf': 'research',
+    'browser.vision': 'research',
+    'browser.wait': 'research',
+
+    /* DRIVING A PAGE (§13 'change_infra' — RESTRICTED). Every one of these changes state in the outside
+       world under the business's identity: a click can buy, a type can submit, an upload can publish,
+       `browser.dialog` can accept a native confirm. Reversible ones and irreversible ones are NOT
+       distinguished here because this tier already refuses unattended execution entirely — the distinction
+       that matters (approve / do not) has already been made one level up. */
+    'browser.click': 'change_infra',
+    'browser.type': 'change_infra',
+    'browser.press': 'change_infra',
+    'browser.select': 'change_infra',
+    'browser.hover': 'change_infra',
+    'browser.scroll': 'change_infra',
+    'browser.drag': 'change_infra',
+    'browser.back': 'change_infra',
+    'browser.forward': 'change_infra',
+    'browser.dialog': 'change_infra',
+    'browser.upload': 'change_infra',
+    'browser.tab_select': 'change_infra',
+    'browser.tab_close': 'change_infra',
+    'browser.viewport': 'change_infra',
+    'browser.emulate': 'change_infra',
+
+    /* SESSION AND PAGE CONTROL THAT IS EFFECTIVELY INFRASTRUCTURE.
+
+       `browser.eval` runs arbitrary JavaScript in the page. The tool declares it `exec`, but a generic
+       "restricted" is not enough nuance: eval can read the session cookie, rewrite the DOM a later step
+       trusts, or extract the whole page's secrets. It is the browser's `shell.exec`, and it takes the same
+       tier for the same reason — an agent may not decide this for itself.
+       `browser.intercept` rewrites network traffic, which is worse than reading it: a rewritten response is
+       what every later step will believe.
+       `browser.attach` / `browser.detach` adopt or release an EXISTING browser session that may already be
+       authenticated as the user — that is privileged access, not mere navigation. */
+    'browser.eval': 'change_infra',
+    'browser.intercept': 'change_infra',
+    'browser.attach': 'access_sensitive',
+    'browser.detach': 'access_sensitive',
+
+    /* THE BROWSER TEST RIG (`browser.test_*`, capability 'workbench'). These drive a throwaway test page the
+       agent itself created to check a site it is building — they cannot touch the business's real accounts, so
+       they stay 'draft' (producing an internal artefact). They are still enumerated rather than left to a
+       family so a future rename is a deliberate edit here. */
+    'browser.test_navigate': 'draft',
+    'browser.test_snapshot': 'draft',
+    'browser.test_state': 'draft',
+    'browser.test_input': 'draft'
   };
 
   /* FAMILY RULES, applied only when the exact name is not in the table. A family rule exists where a whole
@@ -244,6 +319,26 @@
     { prefix: 'terminal.status', action: 'read_local' },
     { prefix: 'terminal.', action: 'change_infra' },
     { prefix: 'browser.login', action: 'access_sensitive' },
+    /* The read-only browser reads, longest-prefix-first cannot help across different names, so the twelve
+       `browser.<read>` names are listed as their own prefixes. A NEW browser read added upstream falls to the
+       `browser.` family below and arrives refused — which is the honest default, not a hole: earning it
+       'research' is a deliberate edit here, exactly as the `fs.` family argues. */
+    { prefix: 'browser.navigate', action: 'research' },
+    { prefix: 'browser.snapshot', action: 'research' },
+    { prefix: 'browser.get_text', action: 'research' },
+    { prefix: 'browser.inspect', action: 'research' },
+    { prefix: 'browser.find', action: 'research' },
+    { prefix: 'browser.console', action: 'research' },
+    { prefix: 'browser.network', action: 'research' },
+    { prefix: 'browser.tabs', action: 'research' },
+    { prefix: 'browser.screenshot', action: 'research' },
+    { prefix: 'browser.pdf', action: 'research' },
+    { prefix: 'browser.vision', action: 'research' },
+    { prefix: 'browser.wait', action: 'research' },
+    { prefix: 'browser.test_', action: 'draft' },
+    /* An unenumerated browser.* name is one this policy cannot reason about. It could be a click on a
+       "Confirm payment" button, so it takes the restricted family rather than the reading one. */
+    { prefix: 'browser.', action: 'change_infra' },
     { prefix: 'channel.', action: 'external_comms' },
     { prefix: 'web_', action: 'research' },
     { prefix: 'notebook.read', action: 'analyze' },

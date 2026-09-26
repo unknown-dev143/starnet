@@ -391,4 +391,70 @@ const TIERS = ['safe', 'review', 'restricted'];
   A.eq(s.byTier.restricted, 1, 'including the restricted one');
 }
 
+/* ---------- THE BROWSER (§10) — every browser tool is REACHABLE and CLASSIFIED ----------
+   Regression pin for a real, verified gap (found live 2026-09-26). The table previously held exactly ONE
+   browser entry — `browser.login` — and there was no `browser.` family, so 34 of the 35 browser tools
+   (tools/builtin/browser.js) fell through to the fail-closed DEFAULT. That is SAFE but it made a mature,
+   2,873-line browser layer unreachable by a business worker: a dead capability, not a protected one.
+
+   These locks fail if the browser surface ever silently loses its classification again. */
+{
+  // The 35 tools tools/builtin/browser.js actually declares (read via its makeBrowserTools helpers).
+  const BROWSER_TOOLS = [
+    'browser.attach', 'browser.back', 'browser.click', 'browser.console', 'browser.detach',
+    'browser.dialog', 'browser.drag', 'browser.emulate', 'browser.eval', 'browser.find',
+    'browser.forward', 'browser.get_text', 'browser.hover', 'browser.inspect', 'browser.intercept',
+    'browser.login', 'browser.navigate', 'browser.network', 'browser.pdf', 'browser.press',
+    'browser.screenshot', 'browser.scroll', 'browser.select', 'browser.snapshot', 'browser.tab_close',
+    'browser.tab_select', 'browser.tabs', 'browser.test_input', 'browser.test_navigate',
+    'browser.test_snapshot', 'browser.test_state', 'browser.type', 'browser.upload', 'browser.viewport',
+    'browser.vision', 'browser.wait'
+  ];
+  const unclassified = BROWSER_TOOLS.filter(t => { const r = M.actionFor(t, P); return !r.ok || r.source === 'default'; });
+  A.eq(unclassified.length, 0,
+    'NO browser tool falls to the fail-closed default — the browser is reachable by the worker'
+    + (unclassified.length ? ' (unclassified: ' + unclassified.join(', ') + ')' : ''));
+
+  // classification is explicit (table), not a guess rescued by a family
+  const byTable = BROWSER_TOOLS.filter(t => M.actionFor(t, P).source === 'table');
+  A.eq(byTable.length, BROWSER_TOOLS.length, 'every browser tool is classified by the TABLE, not a family fallback');
+
+  // the SPLIT is the whole point: observing ≠ acting
+  const tierOf = (t) => M.actionFor(t, P).tier;
+  A.eq(tierOf('browser.snapshot'), 'safe', 'reading a page (snapshot) is safe');
+  A.eq(tierOf('browser.get_text'), 'safe', 'reading text is safe');
+  A.eq(tierOf('browser.navigate'), 'safe', 'navigation alone is research, matching web_fetch');
+  A.eq(tierOf('browser.click'), 'restricted', 'clicking acts in the world, so it is restricted');
+  A.eq(tierOf('browser.type'), 'restricted', 'typing into a form is restricted');
+  A.eq(tierOf('browser.upload'), 'restricted', 'an upload can publish, so it is restricted');
+  A.eq(tierOf('browser.eval'), 'restricted', "arbitrary page JS is the browser's shell.exec — restricted");
+  A.eq(tierOf('browser.intercept'), 'restricted', 'rewriting responses is restricted');
+  A.eq(tierOf('browser.login'), 'restricted', 'logging in is access_sensitive → restricted');
+  A.eq(tierOf('browser.attach'), 'restricted', 'adopting an existing authenticated session is access_sensitive');
+  A.eq(M.actionFor('browser.attach', P).action, 'access_sensitive', 'and it is named as sensitive access, not mere infra');
+
+  // the test rig drives a throwaway page the agent built, so it is drafting, not real-world action
+  for (const t of ['browser.test_navigate', 'browser.test_snapshot', 'browser.test_state', 'browser.test_input']) {
+    A.eq(tierOf(t), 'safe', t + ' is internal test-rig work → safe');
+  }
+
+  // A NEW browser tool added upstream arrives REFUSED, not silently safe and not silently dead.
+  const novel = M.actionFor('browser.teleport', P);
+  A.ok(novel.ok === true && novel.source === 'family', 'an unenumerated browser.* name is still classified (family)');
+  A.eq(novel.tier, 'restricted', 'and it arrives restricted, so it is refused rather than waved through');
+  A.eq(novel.action, 'change_infra', 'via the browser. family');
+
+  // the read-only family members are reachable by NAME too (a rename would otherwise regress silently)
+  for (const t of ['browser.console', 'browser.find', 'browser.inspect', 'browser.network', 'browser.tabs',
+    'browser.pdf', 'browser.screenshot', 'browser.vision', 'browser.wait']) {
+    A.eq(tierOf(t), 'safe', t + ' stays reachable as a read');
+  }
+
+  // and the worker catalog agrees: browser rows are present, wired, and tier-tagged
+  const cat = M.catalog(P);
+  const browserRows = cat.rows.filter(r => r.tool.indexOf('browser.') === 0);
+  A.ok(browserRows.length >= BROWSER_TOOLS.length, 'the worker catalog lists every browser tool');
+  A.ok(browserRows.every(r => r.tier !== undefined), 'each browser row carries a tier');
+}
+
 A.report('business-worker-policy');
