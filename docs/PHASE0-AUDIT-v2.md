@@ -197,16 +197,14 @@ Ordered by value. Each is *verified absent or partial* above.
 
 | # | Gap | Brief § | Effort | Note |
 |---|---|---|---|---|
-| 1 | **Browser tools unreachable by a business worker** | §10 | **Low** | 35 browser tools exist; worker policy maps 1. Fail-closed, so nothing is unsafe — but the capability is dead. **Highest value/effort ratio.** See §6b. |
-| 2 | **Business Digital Twin / scenario simulation** | §18 | High | The one whole feature with **no** implementation. Must be labelled a simulation, never a prediction. |
-| 3 | **Goal Autopilot single entry** | §9 | Medium | Worker plans+runs per order; no "prepare this business for launch" → full plan. |
-| 4 | **Unified Mission Control window** | §23 | Medium | The reads exist (Phase 7); the single combined pane does not. |
-| 5 | **Security Center window** | §13 | Medium | Permissions + audit exist; the combined view does not. |
-| 6 | **AI Software Factory pipeline** | §22 | High | Terminal/code tools exist; no Idea→Spec→…→Deploy artifact. |
-| 7 | **Lifecycle divergence** | §2 | Low | 6 states vs the brief's 10 — a decision to make, not a bug. |
-
-**Suggested order given the evidence:** start with **#1** (small, in-house, unblocks §10, needs no external
-repo), then **#3/#4** (mostly assembly of existing parts), then **#2** (genuinely new).
+| 1 | ~~Browser tools unclassified~~ **DONE** (`329b3aeb4`) | §10 | — | 35 tools classified; **but still not callable** — see §6c for the decision. |
+| 2 | **Browser callable by a worker** (the §6c decision) | §10 | Medium | Needs a session-lifetime + profile + headless decision. Read-only first. Recommend: **user decides**. |
+| 3 | **Business Digital Twin / scenario simulation** | §18 | High | The one whole feature with **no** implementation. Must be labelled a simulation, never a prediction. |
+| 4 | **Goal Autopilot single entry** | §9 | Medium | Worker plans+runs per order; no "prepare this business for launch" → full plan. |
+| 5 | **Unified Mission Control window** | §23 | Medium | The reads exist (Phase 7); the single combined pane does not. |
+| 6 | **Security Center window** | §13 | Medium | Permissions + audit exist; the combined view does not. |
+| 7 | **AI Software Factory pipeline** | §22 | High | Terminal/code tools exist; no Idea→Spec→…→Deploy artifact. |
+| 8 | **Lifecycle divergence** | §2 | Low | 6 states vs the brief's 10 — a decision to make, not a bug. |
 
 ---
 
@@ -294,6 +292,41 @@ a *separate, deliberate* decision, not an oversight. **Making the browser callab
 `makeBrowserTools({...}).register(reg)` to `makeWorkerRegistry()` — a real capability change with security
 weight (it hands an unattended worker a live Playwright session), and therefore a decision for the user, not
 a unilateral edit.** Flagged, not made. See §6c.
+
+---
+
+## 6c. THE DECISION LEFT TO THE USER — should the browser be callable by a worker?
+
+Phase 0 fixed *classification*. It did **not** make the browser reachable. That is a separate decision, and
+this section records exactly what it would cost so the choice is informed.
+
+**What changing it would mean.** Add browser registration to `makeWorkerRegistry()` (index.js:3412), roughly:
+
+```js
+makeBrowserTools({ session: <the station's browser session>, ... }).register(reg);
+```
+
+**Why it is not a one-line change:** `makeBrowserRegistry`'s other registrations are pure/stateless
+(web tools take a `reader`, fs takes a jail). The browser takes a **live Playwright session**, and
+`browser.js`'s own header notes the session is created per-run and deliberately not retained at module
+scope. Wiring it for an unattended worker means deciding:
+
+1. **Session lifetime** — one session per work order? per step? a shared, long-lived one?
+2. **Profile** — the durable station Chrome profile (which holds the Commander's cookies) or a clean one?
+   Handing an unattended agent the Commander's logged-in profile is the single highest-risk variant.
+3. **Headless posture** — `browser.js` has an `allowVisible` flag; an unattended worker must almost
+   certainly be headless-only.
+4. **The two-gate interaction** — every browser call would then be judged by §13 (now correct, this commit)
+   *and* the runtime consent broker. A `restricted` browser action is already non-runnable; the open
+   question is whether `research`-tier reads (navigate/snapshot) should auto-run unattended.
+
+**Recommendation:** if the user wants §10 satisfiable, the smallest safe first step is **read-only browser
+access** — register the browser and grant only the `research` tier (navigate/snapshot/get_text/inspect/find),
+on a **clean profile**, headless. That gives a business worker real research capability with no credential
+exposure and no ability to act. Interactive browser work (click/type/upload) should stay **held for human
+approval** even after that, which the policy already does correctly as of this commit.
+
+**Status:** not started. Awaiting the user's decision.
 
 ---
 
