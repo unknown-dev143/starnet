@@ -1,4 +1,4 @@
-/* STARNET — autonomystore.js : the thin browser wiring around the pure autonomy-posture engine (autonomy.js).
+/* SPACESTATION — autonomystore.js : the thin browser wiring around the pure autonomy-posture engine (autonomy.js).
 
    Holds the Commander's tunable "alive between sessions" posture and persists it. Mirrors the discipline of
    pitchstore / suggeststore / curiositystore:

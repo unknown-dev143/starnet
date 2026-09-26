@@ -1,4 +1,4 @@
-/* STARNET — workstreams.js : the unified unit-of-work record (session organization).
+/* SPACESTATION — workstreams.js : the unified unit-of-work record (session organization).
    A WORKSTREAM is one named conversation that simultaneously IS the Comms thread (its
    `history`), IS a kanban card (its `lane`), and OWNS its backend runs + deliverables +
    per-conversation cost. This module is the single owner of workstreams[] + activeId +
@@ -440,7 +440,7 @@
       const doc = { schema: 'starnet.conversation', version: 1, exportedAt: opts.exportedAt != null ? opts.exportedAt : now(), title, messages, secretsIncluded: false };
       return { format: 'json', mime: 'application/json', filename: 'starnet-' + slug + '.json', text: JSON.stringify(doc, null, 2), doc };
     }
-    const lines = ['# ' + title, '', '_Exported from StarNet. Hidden/system data and obvious credentials are excluded._', ''];
+    const lines = ['# ' + title, '', '_Exported from SpaceStation. Hidden/system data and obvious credentials are excluded._', ''];
     for (const m of messages) lines.push('## ' + (m.role === 'user' ? 'Commander' : 'Agent'), '', m.content, '');
     return { format: 'markdown', mime: 'text/markdown', filename: 'starnet-' + slug + '.md', text: lines.join('\n') };
   }

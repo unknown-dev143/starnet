@@ -1,4 +1,4 @@
-/* STARNET — windows/autopilot.js : the GOAL AUTOPILOT window slot (Business OS Phase 12, §9).
+/* SPACESTATION — windows/autopilot.js : the GOAL AUTOPILOT window slot (Business OS Phase 12, §9).
 
    The extracted-window seam stationui.js exposes (see its "EXTRACTED-WINDOW SEAM" note): this file owns the
    window KEY and its title, and nothing else. The engine — the goal catalogue, the plan preview, the refusal

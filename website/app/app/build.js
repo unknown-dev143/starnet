@@ -1,4 +1,4 @@
-/* STARNET — build.js : the diegetic full-screen REFIT (build) mode.
+/* SPACESTATION — build.js : the diegetic full-screen REFIT (build) mode.
 
    Toggled from the dock. Dims the live sim and drops the Commander into an in-fiction
    station-editor over the SAME procedural art: pan/zoom camera, phosphor build grid,

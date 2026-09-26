@@ -1,4 +1,4 @@
-/* STARNET — windows/loops.js : the LOOPS lane of the AUTOMATION window (standing objectives).
+/* SPACESTATION — windows/loops.js : the LOOPS lane of the AUTOMATION window (standing objectives).
 
    Loads AFTER stationui.js and windows/automation.js (see index.html) and registers itself as an
    AutomationWindow LANE — its two sections (ACTIVE LOOPS · START A LOOP) mount inside the shared

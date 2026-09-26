@@ -1,4 +1,4 @@
-/* STARNET — starters.js : the PURE session-opener chip engine.
+/* SPACESTATION — starters.js : the PURE session-opener chip engine.
 
    The COMMS empty state used to show the same three chips forever ("what can you do here" /
    Recipes.list()[0] / "brief me on this station") — right for minute one, dead weight by day two.

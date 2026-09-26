@@ -1,4 +1,4 @@
-/* STARNET — workshopstore.js : the AWAY-WORKSHOP return surface (lane W3, frontend).
+/* SPACESTATION — workshopstore.js : the AWAY-WORKSHOP return surface (lane W3, frontend).
 
    The Commander switched an agent's "build things while I'm away" grant on; while they were gone an
    autonomous shift built a deliverable in that agent's jailed sandbox and wrote a manifest. This store
@@ -297,7 +297,7 @@ const WorkshopStore = (() => {
   // W7 — OS launch is intentionally unavailable: neither loopback API possession nor
   // renderer IPC proves a fresh human gesture. The caller presents manual-open guidance.
   async function openFile(agentId, runId, relPath) {
-    return { ok: false, error: 'Open this file manually; StarNet cannot launch desktop applications from a run.' };
+    return { ok: false, error: 'Open this file manually; SpaceStation cannot launch desktop applications from a run.' };
   }
 
   // the sensible default Keep destination (the Commander's Desktop, when the desktop shell knows it).

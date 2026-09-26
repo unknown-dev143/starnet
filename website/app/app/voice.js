@@ -1,4 +1,4 @@
-/* STARNET — voice.js : two-way voice for the COMMS panel.
+/* SPACESTATION — voice.js : two-way voice for the COMMS panel.
 
    INPUT  (click-to-talk): click the mic once to start recording and again to finish; the completed take feeds the text
           straight through Chat.send — identical to typing — so all of chat.js's

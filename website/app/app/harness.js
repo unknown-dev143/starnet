@@ -1,4 +1,4 @@
-/* STARNET — harness.js : the REAL agent harness (BYOK).
+/* SPACESTATION — harness.js : the REAL agent harness (BYOK).
    Owns the model connection + streaming + token/cost accounting.
 
    For this prototype the call goes browser -> OpenRouter directly (CORS-friendly,
@@ -731,7 +731,7 @@ const Harness = (() => {
         body: JSON.stringify(reqBody)
       });
     } catch (e) {
-      throw new Error('cannot reach the STARNET sidecar — start it with `npm start` (node sidecar/index.js)');
+      throw new Error('cannot reach the SPACESTATION sidecar — start it with `npm start` (node sidecar/index.js)');
     }
     // A pre-stream failure's TRUE reason lives in the response body — runRouteFailure's {"error":"sidecar
     // failure: Not signed in to ChatGPT …"} JSON, handleRun's "missing key/model", the token gate's "forbidden
@@ -1107,7 +1107,7 @@ const Harness = (() => {
     try { U.bus.on('agent.run.error', endContextRun); } catch (_) {}
   }
 
-  /* IS THE LOCAL ENGINE ACTUALLY UP? (2026-07-29 — the "Can't reach StarNet's local service" misdiagnosis.)
+  /* IS THE LOCAL ENGINE ACTUALLY UP? (2026-07-29 — the "Can't reach SpaceStation's local service" misdiagnosis.)
      A dead response stream and a dead sidecar are INDISTINGUISHABLE from the thrown fetch error alone (see the
      long note on isTransportLoss in friendlyerror.js), and the app used to assert the sidecar was gone and tell
      people to restart — sending users chasing a phantom for days when the real drop was the model's stream.

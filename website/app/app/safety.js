@@ -1,4 +1,4 @@
-/* STARNET — safety.js : the emergency-stop (E-STOP) logic, the visible topbar control + Alt+H hotkey.
+/* SPACESTATION — safety.js : the emergency-stop (E-STOP) logic, the visible topbar control + Alt+H hotkey.
 
    The harness autonomously spends the Commander's money and writes files, so it needs a one-click
    "stop EVERYTHING". HALT calls /api/halt — which kills every run on the sidecar (browser AND any

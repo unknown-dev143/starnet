@@ -53,9 +53,9 @@
      ends in show(<screen>) (splash / game / connect / future / recovery), which clears this veil — so a
      returning Commander never flashes the CREATE console on the way to their station (the old bug: #screen-connect
      carried the static .active). Truthful telemetry: it asserts nothing about state — just "connecting". -->
-<section id="screen-boot" class="screen active" aria-label="StarNet booting" aria-hidden="true">
+<section id="screen-boot" class="screen active" aria-label="SpaceStation booting" aria-hidden="true">
   <div class="boot-veil">
-    <div class="boot-mark">◆ STARNET</div>
+    <div class="boot-mark">◆ SPACESTATION</div>
     <div class="boot-line">establishing local uplink<span class="boot-dots"></span></div>
   </div>
 </section>
@@ -65,14 +65,14 @@
      perspective grid floor, the big phosphor wordmark, and a blinking PRESS ANY KEY. Any key / click /
      tap advances into CREATE YOUR OVERSEER (app.js showSplash()). Resume/recovery paths never route
      here — a returning Commander lands in the station or the RESUME console, not a title card. -->
-<section id="screen-splash" class="screen" aria-label="StarNet boot screen">
+<section id="screen-splash" class="screen" aria-label="SpaceStation boot screen">
   <canvas id="sp-stars" aria-hidden="true"></canvas>
   <div class="sp-nebula" aria-hidden="true"></div>
   <div class="sp-floor" aria-hidden="true"><div class="sp-grid"></div></div>
   <span class="cc-bracket sp-tl">┌</span><span class="cc-bracket sp-tr">┐</span>
   <span class="cc-bracket sp-bl">└</span><span class="cc-bracket sp-br">┘</span>
   <div class="sp-center">
-    <img class="sp-logo" src="assets/brand/starnet-logo.png" alt="STARNET" draggable="false">
+    <img class="sp-logo" src="assets/brand/spacestation-wordmark.svg" alt="SPACESTATION" draggable="false">
     <div class="sp-tag">AI-AGENT HARNESS</div>
     <button id="sp-press" class="sp-press" type="button">▮ PRESS ANY KEY TO START</button>
   </div>
@@ -94,7 +94,7 @@
     <span class="cc-bracket cc-bl">└</span><span class="cc-bracket cc-br">┘</span>
 
     <header class="cc-console-head ov-head">
-      <div class="cc-titlebar"><span class="cc-tb-tag">STARNET</span><span class="cc-tb-rule"></span><span id="cc-mode" class="cc-tb-mode">GENESIS</span><span class="cc-tb-phosphor"><span class="cc-tb-plabel">PHOSPHOR</span><span id="phosphor-swatches" class="phosphor-swatches" role="group" aria-label="Console phosphor tint"></span></span><span class="cc-tb-rec">● LIVE</span></div>
+      <div class="cc-titlebar"><span class="cc-tb-tag">SPACESTATION</span><span class="cc-tb-rule"></span><span id="cc-mode" class="cc-tb-mode">GENESIS</span><span class="cc-tb-phosphor"><span class="cc-tb-plabel">PHOSPHOR</span><span id="phosphor-swatches" class="phosphor-swatches" role="group" aria-label="Console phosphor tint"></span></span><span class="cc-tb-rec">● LIVE</span></div>
       <div class="cc-title-row ov-title-row">
         <h2 id="cc-title">▮ CREATE YOUR OVERSEER</h2>
         <span id="cc-sub" class="ov-sub">the first mind you wake is your <b>OVERSEER</b> — it runs the station and recruits every agent after it.</span>
@@ -178,8 +178,8 @@
                 <span class="prov-hero-row">
                   <span class="prov-hero-ic" aria-hidden="true">🔗</span>
                   <span class="prov-hero-body">
-                    <span class="prov-hero-title">START WITH STARNET</span>
-                    <span class="prov-hero-sub">your StarNet subscription powers every agent — link it in one click, no API key to find or paste</span>
+                    <span class="prov-hero-title">START WITH SPACESTATION</span>
+                    <span class="prov-hero-sub">your SpaceStation subscription powers every agent — link it in one click, no API key to find or paste</span>
                   </span>
                 </span>
               </button>
@@ -241,12 +241,12 @@
                 <div id="starnet-status" class="codex-status">checking…</div>
                 <div id="starnet-code" class="codex-code hidden"></div>
                 <div class="codex-actions">
-                  <button type="button" id="btn-starnet-link" class="btn">🔗 LINK YOUR STARNET ACCOUNT ▸</button>
+                  <button type="button" id="btn-starnet-link" class="btn">🔗 LINK YOUR SPACESTATION ACCOUNT ▸</button>
                   <button type="button" id="btn-starnet-open" class="btn hidden">↗ OPEN PAGE</button>
                   <button type="button" id="btn-starnet-credits" class="btn hidden">＄ ADD CREDITS ▸</button>
                   <button type="button" id="btn-starnet-switch" class="btn hidden">↻ USE A DIFFERENT ACCOUNT</button>
                 </div>
-                <div class="dim hint" id="starnet-hint">Runs on your StarNet subscription — no API key to find or paste. You’ll confirm a short code in your browser; StarNet never handles your payment details in the app.</div>
+                <div class="dim hint" id="starnet-hint">Runs on your SpaceStation subscription — no API key to find or paste. You’ll confirm a short code in your browser; SpaceStation never handles your payment details in the app.</div>
               </div>
             </div>
 
@@ -268,7 +268,7 @@
                  keyless Codex path (no key ⇒ the whole note is irrelevant there). -->
             <div id="byok-disclose" class="byok-disclose">
               <button type="button" id="byok-toggle" class="byok-toggle" aria-expanded="false" aria-controls="byok-note">▸ where does my key go?</button>
-              <p id="byok-note" class="muted byok-note hidden">Bring your own key — stored locally, sent only to the STARNET sidecar on this machine (127.0.0.1), which calls your chosen model. On a <b>task</b> the agent can search the live web (DuckDuckGo · Jina Reader) and read/write files in its workspace. <span class="dim">(In the shipped desktop build the key moves behind the OS keychain.)</span></p>
+              <p id="byok-note" class="muted byok-note hidden">Bring your own key — stored locally, sent only to the SPACESTATION sidecar on this machine (127.0.0.1), which calls your chosen model. On a <b>task</b> the agent can search the live web (DuckDuckGo · Jina Reader) and read/write files in its workspace. <span class="dim">(In the shipped desktop build the key moves behind the OS keychain.)</span></p>
             </div>
           </div>
         </div>
@@ -280,13 +280,13 @@
         <span class="ov-foot-cap">＋ later: agent setup in CREW › AGENTS · model in COMMS · providers, permissions &amp; appearance in SYSTEM › SETTINGS</span>
         <!-- DATA PORTABILITY — RESTORE must stay reachable for first-run users now that the title screen is gone.
              Labeled RESTORE BACKUP (not IMPORT AGENT) so it can't be mistaken for the Recruitment Bay's
-             Hermes/OpenClaw agent importer — this button only reads StarNet's own export file. EXPORT is
+             Hermes/OpenClaw agent importer — this button only reads SpaceStation's own export file. EXPORT is
              surfaced here whenever there's a saved agent to back up (it is the only in-app export
              entry point); app.js (applyRecoveryMode) toggles its visibility. -->
         <button id="btn-import" class="btn-sm">⭱ RESTORE BACKUP</button>
         <button id="btn-export" class="btn-sm hidden">⭳ EXPORT AGENT</button>
         <input id="file-import" type="file" accept="application/json,.json" hidden>
-        <span class="dim">restores a StarNet export file — secrets excluded, re-enter keys after</span>
+        <span class="dim">restores a SpaceStation export file — secrets excluded, re-enter keys after</span>
         <span id="data-status" class="title-status"></span>
       </div>
       <div class="connect-actions ov-actions">
@@ -301,7 +301,7 @@
 </section>
 
 <!-- ============ FORWARD-VERSION GATE ============ -->
-<!-- Blocking screen raised when the local/durable save (or an adopted remote) was written by a NEWER StarNet
+<!-- Blocking screen raised when the local/durable save (or an adopted remote) was written by a NEWER SPACESTATION
      than this build can read (save.js forward-version guard, P0.3). It reuses the connect-panel CRT chrome so
      no new window vocabulary is invented. While this screen is active NOTHING calls persist()/Save.write() —
      app.js showFutureSaveGate() returns before any resume/create path runs, so the newer save is never
@@ -313,13 +313,13 @@
     <span class="cc-bracket cc-tl">┌</span><span class="cc-bracket cc-tr">┐</span>
     <span class="cc-bracket cc-bl">└</span><span class="cc-bracket cc-br">┘</span>
     <header class="cc-console-head ov-head">
-      <div class="cc-titlebar"><span class="cc-tb-tag">STARNET</span><span class="cc-tb-rule"></span><span class="cc-tb-mode">UPDATE REQUIRED</span><span class="cc-tb-rec">● HOLD</span></div>
+      <div class="cc-titlebar"><span class="cc-tb-tag">SPACESTATION</span><span class="cc-tb-rule"></span><span class="cc-tb-mode">UPDATE REQUIRED</span><span class="cc-tb-rec">● HOLD</span></div>
       <div class="cc-title-row ov-title-row">
-        <h2>▮ SAVE FROM A NEWER STARNET</h2>
+        <h2>▮ SAVE FROM A NEWER SPACESTATION</h2>
         <span id="future-sub" class="ov-sub"></span>
       </div>
       <div class="ov-recovery" role="alert">
-        Your station was last saved by a <b>newer version of StarNet</b>. This build can't read that save
+        Your station was last saved by a <b>newer version of SpaceStation</b>. This build can't read that save
         without risking damage to it, so it's being kept <b>untouched</b>. Update the app to continue — your
         agent, history and progress are safe.
       </div>
@@ -330,7 +330,7 @@
         <span class="ov-foot-cap">＋ your save is intact — this build simply predates it</span>
       </div>
       <div class="connect-actions ov-actions">
-        <button id="btn-future-update" class="btn-xl">⭯ UPDATE STARNET ▸</button>
+        <button id="btn-future-update" class="btn-xl">⭯ UPDATE SPACESTATION ▸</button>
       </div>
     </div>
   </div>
@@ -347,7 +347,7 @@
     <span class="cc-bracket cc-tl">┌</span><span class="cc-bracket cc-tr">┐</span>
     <span class="cc-bracket cc-bl">└</span><span class="cc-bracket cc-br">┘</span>
     <header class="cc-console-head ov-head">
-      <div class="cc-titlebar"><span class="cc-tb-tag">STARNET</span><span class="cc-tb-rule"></span><span class="cc-tb-mode">SAVE DAMAGED</span><span class="cc-tb-rec">● HOLD</span></div>
+      <div class="cc-titlebar"><span class="cc-tb-tag">SPACESTATION</span><span class="cc-tb-rule"></span><span class="cc-tb-mode">SAVE DAMAGED</span><span class="cc-tb-rec">● HOLD</span></div>
       <div class="cc-title-row ov-title-row">
         <h2>▮ YOUR SAVE WAS DAMAGED</h2>
         <span class="ov-sub"></span>
@@ -381,17 +381,17 @@
     <span class="cc-bracket cc-tl">┌</span><span class="cc-bracket cc-tr">┐</span>
     <span class="cc-bracket cc-bl">└</span><span class="cc-bracket cc-br">┘</span>
     <header class="cc-console-head ov-head">
-      <div class="cc-titlebar"><span class="cc-tb-tag">STARNET</span><span class="cc-tb-rule"></span><span class="cc-tb-mode">RECONNECTING</span><span class="cc-tb-rec">● HOLD</span></div>
+      <div class="cc-titlebar"><span class="cc-tb-tag">SPACESTATION</span><span class="cc-tb-rule"></span><span class="cc-tb-mode">RECONNECTING</span><span class="cc-tb-rec">● HOLD</span></div>
       <div class="cc-title-row ov-title-row">
         <h2>▮ STATION DATA UNREACHABLE</h2>
         <span id="unreachable-sub" class="ov-sub"></span>
       </div>
       <div class="ov-recovery" role="alert">
-        StarNet <b>could not read your saved station</b> — the local station service didn't answer.
+        SpaceStation <b>could not read your saved station</b> — the local station service didn't answer.
         Your save has <b>not</b> been deleted or touched; it just can't be reached right now.
-        StarNet is retrying automatically and will resume your station the moment it reconnects.
+        SpaceStation is retrying automatically and will resume your station the moment it reconnects.
         If it cannot recover, <b>START COMPLETELY FRESH</b> safely sets the old local station aside.
-        It does not remove your StarNet account link or purchased credits.
+        It does not remove your SpaceStation account link or purchased credits.
       </div>
     </header>
     <div class="ov-foot">
@@ -416,13 +416,13 @@
     <span class="cc-bracket cc-tl">┌</span><span class="cc-bracket cc-tr">┐</span>
     <span class="cc-bracket cc-bl">└</span><span class="cc-bracket cc-br">┘</span>
     <header class="cc-console-head ov-head">
-      <div class="cc-titlebar"><span class="cc-tb-tag">STARNET</span><span class="cc-tb-rule"></span><span class="cc-tb-mode">RECOVERY MODE</span><span class="cc-tb-rec">● READ ONLY</span></div>
+      <div class="cc-titlebar"><span class="cc-tb-tag">SPACESTATION</span><span class="cc-tb-rule"></span><span class="cc-tb-mode">RECOVERY MODE</span><span class="cc-tb-rec">● READ ONLY</span></div>
       <div class="cc-title-row ov-title-row">
         <h2>▮ PRIOR STATION DATA FOUND</h2>
         <span class="ov-sub">new-station onboarding is paused</span>
       </div>
       <div class="ov-recovery" role="alert">
-        StarNet did not find a readable active save, but it <b>did find evidence of an earlier station</b>.
+        SpaceStation did not find a readable active save, but it <b>did find evidence of an earlier station</b>.
         Nothing has been erased. Recovery Mode prevents a new station from being created over that evidence.
         <div id="lineage-evidence" style="margin-top:12px;word-break:break-word"></div>
       </div>
@@ -453,7 +453,7 @@
      var(--ph) per theme and stay crisp at any DPR / TEXT SIZE. The SVG is the master art's OWN
      letterforms traced out of its perceived-density field (dev/trace-logo.mjs), NOT a redraw; the
      title screen keeps the full-size master PNG, where the ASCII-digit texture actually reads. -->
-<div id="logo"><span class="logo-img" role="img" aria-label="STARNET"></span><span class="logo-sub">AI-AGENT HARNESS</span></div>
+<div id="logo"><span class="logo-img" role="img" aria-label="SPACESTATION"></span><span class="logo-sub">AI COMMAND CENTER</span></div>
 
 <section id="screen-game" class="screen">
 

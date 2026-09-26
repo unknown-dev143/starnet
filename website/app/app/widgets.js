@@ -1,4 +1,4 @@
-/* STARNET — widgets.js : the WIDGET RAILS (user-pinnable telemetry instruments).
+/* SPACESTATION — widgets.js : the WIDGET RAILS (user-pinnable telemetry instruments).
 
    Two rails of compact instruments live in the chrome's DEAD SPACE — the empty middle of
    #topbar (between the logo anchor and the instrument cluster) and of #bottombar (between

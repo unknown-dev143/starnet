@@ -1,4 +1,4 @@
-/* STARNET — businesscenter.js : the BUSINESS COMMAND CENTER (Business OS Phase 1).
+/* SPACESTATION — businesscenter.js : the BUSINESS COMMAND CENTER (Business OS Phase 1).
 
    The first surface in the app that is about BUSINESSES rather than about agents. It answers three questions
    and refuses to answer a fourth:

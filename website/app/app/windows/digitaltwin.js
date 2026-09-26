@@ -1,4 +1,4 @@
-/* STARNET — windows/digitaltwin.js : the DIGITAL TWIN window slot (Business OS Phase 9, §18).
+/* SPACESTATION — windows/digitaltwin.js : the DIGITAL TWIN window slot (Business OS Phase 9, §18).
 
    The extracted-window seam stationui.js exposes (see its "EXTRACTED-WINDOW SEAM" note): this file owns the
    window KEY and its title, and nothing else. The engine — the what-if form, the simulated-vs-recorded

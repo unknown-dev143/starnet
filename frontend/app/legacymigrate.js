@@ -1,4 +1,4 @@
-/* STARNET — legacymigrate.js : one-time localStorage key migration for the Skynet→StarNet rename.
+/* SPACESTATION — legacymigrate.js : one-time localStorage key migration for the Skynet→StarNet rename.
 
    The project was renamed Skynet → StarNet. Every browser-side key the app owns moved from the
    `skynet.*` prefix to `starnet.*`. This script runs FIRST (before any store reads localStorage —

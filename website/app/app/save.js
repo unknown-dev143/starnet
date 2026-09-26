@@ -1,4 +1,4 @@
-/* STARNET — save.js : local persistence for the agent + session.
+/* SPACESTATION — save.js : local persistence for the agent + session.
    A VERSIONED envelope so saves survive future changes. localStorage for now;
    the same shape + migration ladder moves to the SQLite sidecar later. */
 'use strict';

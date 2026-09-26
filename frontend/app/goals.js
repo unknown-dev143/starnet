@@ -1,4 +1,4 @@
-/* STARNET — goals.js : the PURE GOAL-TREE engine (GROWTH Tier 2: understanding → direction).
+/* SPACESTATION — goals.js : the PURE GOAL-TREE engine (GROWTH Tier 2: understanding → direction).
 
    Today a Commander "goal" is a flat dossier belief string ("shipping a local-first agent harness"); a quest is
    an isolated one-off; a completed quest fires SFX+toast and feeds back NOTHING. This engine upgrades a goal

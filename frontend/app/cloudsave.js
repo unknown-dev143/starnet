@@ -1,4 +1,4 @@
-/* STARNET — cloudsave.js : write the agent through to the durable sidecar, and pull it back on boot.
+/* SPACESTATION — cloudsave.js : write the agent through to the durable sidecar, and pull it back on boot.
 
    localStorage is a fast CACHE that a browser wipe can erase. The sidecar's <workspaces>/<id>.save.json is the
    DURABLE copy (app-data dir, survives a cache wipe / different browser). This module keeps them in sync:

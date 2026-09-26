@@ -1,4 +1,4 @@
-/* STARNET — aiteam.js : the AI TEAM console (Business OS Phase 3).
+/* SPACESTATION — aiteam.js : the AI TEAM console (Business OS Phase 3).
 
    Phase 1 gave a business a place to live; Phase 2 gave it a way to be created. This is the part that gives
    it a CREW: §7's twelve roles, §13's permission model, §9's four-scope memory, and the communication between

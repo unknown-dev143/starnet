@@ -1,4 +1,4 @@
-/* STARNET — windows/intelligence.js : the INTELLIGENCE window slot (Business OS Phase 7).
+/* SPACESTATION — windows/intelligence.js : the INTELLIGENCE window slot (Business OS Phase 7).
 
    The extracted-window seam stationui.js exposes (see its "EXTRACTED-WINDOW SEAM" note): this file owns the
    window KEY and its title, and nothing else. The engine — the trend rows, the P1 explanation rendering, the

@@ -1,4 +1,4 @@
-/* STARNET — windows/maker.js : the BUSINESS MAKER window slot (Business OS Phase 2).
+/* SPACESTATION — windows/maker.js : the BUSINESS MAKER window slot (Business OS Phase 2).
 
    The extracted-window seam stationui.js exposes (see its "EXTRACTED-WINDOW SEAM" note): this file owns the
    window KEY and its title, and nothing else. The engine — pure row shaping + the console mount — lives in

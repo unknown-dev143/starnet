@@ -1,4 +1,4 @@
-/* STARNET — terrain.js : THE GROUND. What the station is standing ON.
+/* SPACESTATION — terrain.js : THE GROUND. What the station is standing ON.
 
    THIS IS NOT A BACKDROP, AND THE DIFFERENCE IS THE WHOLE POINT.
 

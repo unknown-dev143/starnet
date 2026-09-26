@@ -1,4 +1,4 @@
-/* STARNET — businessmaker.js : the BUSINESS MAKER (Business OS Phase 2).
+/* SPACESTATION — businessmaker.js : the BUSINESS MAKER (Business OS Phase 2).
 
    Phase 1 built the Business COMMAND CENTER — the place you look after businesses that exist. This is the
    other half: the place you decide whether one SHOULD exist. It runs the reverse funnel from the master

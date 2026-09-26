@@ -1,4 +1,4 @@
-/* STARNET — codexsignin.js : the ONE device-code OAuth sign-in driver for keyless subscription providers.
+/* SPACESTATION — codexsignin.js : the ONE device-code OAuth sign-in driver for keyless subscription providers.
 
    Originally the ChatGPT (Codex) device-code flow extracted from app.js's connect-screen (start → show code →
    open page → poll → connected) so the Settings→PROVIDERS panel can offer RE-SIGN-IN without duplicating the

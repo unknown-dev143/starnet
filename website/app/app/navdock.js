@@ -1,4 +1,4 @@
-/* STARNET — navdock.js : the grouped bottom-bar navigation.
+/* SPACESTATION — navdock.js : the grouped bottom-bar navigation.
    The 13 station panels were a flat, undifferentiated row of cryptic glyphs. They're now
    regrouped (in index.html) into 4 labelled docks — CREW / WORK / BUILD / SYSTEM — each a
    .bb-grp trigger that opens a .bb-menu popover of its items. The item buttons keep their

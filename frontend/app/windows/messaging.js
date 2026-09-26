@@ -1,4 +1,4 @@
-/* STARNET — windows/messaging.js : the CHANNELS (messaging platforms) window (extracted verbatim from stationui.js).
+/* SPACESTATION — windows/messaging.js : the CHANNELS (messaging platforms) window (extracted verbatim from stationui.js).
    Loads AFTER stationui.js (see index.html) and registers itself via StationUI.registerWindow;
    the only stationui internals it touches are the enumerated StationUI.h helper surface
    (sfx/notify/openTerm/mountConsole and the live present view). */

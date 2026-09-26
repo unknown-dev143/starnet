@@ -1,4 +1,4 @@
-/* STARNET — businessmission.js : the §23 MISSION CONTROL console (Business OS Phase 11).
+/* SPACESTATION — businessmission.js : the §23 MISSION CONTROL console (Business OS Phase 11).
 
    The presentation half of §23. The sidecar (`mission-control.js`) ranks every business by what is blocking
    it and names the reasons; this file renders that board and NOTHING ELSE. It holds no ranking policy of its

@@ -1,4 +1,4 @@
-/* STARNET — journeystore.js: QuerySpine projection for /api/journey.
+/* SPACESTATION — journeystore.js: QuerySpine projection for /api/journey.
    The sidecar owns every claim. QuerySpine owns GET dedupe/polling/freshness/error truth; this citizen
    performs explicit Commander writes and projects proven evolution into the world. */
 'use strict';

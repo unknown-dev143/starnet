@@ -1,4 +1,4 @@
-/* STARNET — windows/worker.js : the AI WORKER window slot (Business OS Phase 6).
+/* SPACESTATION — windows/worker.js : the AI WORKER window slot (Business OS Phase 6).
 
    The extracted-window seam stationui.js exposes (see its "EXTRACTED-WINDOW SEAM" note): this file owns the
    window KEY and its title, and nothing else. The engine — the policy catalogue, the work-order list, the

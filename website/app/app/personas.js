@@ -1,4 +1,4 @@
-/* STARNET — personas.js : PERSONALITY archetypes for agents (the "how it TALKS" axis).
+/* SPACESTATION — personas.js : PERSONALITY archetypes for agents (the "how it TALKS" axis).
 
    Each agent carries a personaId (default 'confidant') plus optional voiceTraits (the fine-tune
    dials) and an optional customVoice string. composeSystemPrompt() in app.js folds the result of

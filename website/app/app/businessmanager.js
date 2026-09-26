@@ -1,4 +1,4 @@
-/* STARNET — businessmanager.js : the BUSINESS MANAGER console (Business OS Phase 4).
+/* SPACESTATION — businessmanager.js : the BUSINESS MANAGER console (Business OS Phase 4).
 
    Phase 1 gave a business a place to live; Phase 2 a way to be created; Phase 3 a crew. This is the part
    that runs the thing: §10 Finance · §11 Analytics · §16 CRM · §17 Content · §15 Documents & Knowledge ·

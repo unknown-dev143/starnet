@@ -1,4 +1,4 @@
-/* STARNET — tutorial.js : THE FIRST COMMAND + coachmarks + Field Manual (diegetic onboarding, P0–P3).
+/* SPACESTATION — tutorial.js : THE FIRST COMMAND + coachmarks + Field Manual (diegetic onboarding, P0–P3).
 
    The mind that just woke up (onboarding.js) keeps talking — and teaches the Commander the ONE
    real loop. It opens with the KIT-OUT: the floor is REAL, so a fresh station is compute-only and the
@@ -464,7 +464,7 @@ const Tutorial = (() => {
     });
   }
   // the demo is a REAL run — only attempt it when it can actually land: a configured brain AND a reachable sidecar.
-  // Without both, Chat.send throws a raw "no key" / "cannot reach the STARNET sidecar" line and the run never walks
+  // Without both, Chat.send throws a raw "no key" / "cannot reach the SPACESTATION sidecar" line and the run never walks
   // (the user's "the end test fails" report). Preflight, and if it can't run, narrate the truth and teach on.
   function demoPreflight() {
     const model = (typeof Harness !== 'undefined' && Harness.getModel) ? Harness.getModel() : '';

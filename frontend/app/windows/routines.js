@@ -1,4 +1,4 @@
-/* STARNET — windows/routines.js : the ROUTINES lane of the AUTOMATION window (extracted from stationui.js).
+/* SPACESTATION — windows/routines.js : the ROUTINES lane of the AUTOMATION window (extracted from stationui.js).
    Loads AFTER stationui.js and windows/automation.js (see index.html) and registers itself as an
    AutomationWindow LANE — its two sections (ACTIVE ROUTINES · CREATE ROUTINE) mount inside the shared
    AUTOMATION console rather than a window of their own (NAV CONDENSE 2026-08-04). The only stationui

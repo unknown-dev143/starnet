@@ -1,4 +1,4 @@
-/* STARNET — goalstore.js : the live wiring around the pure GOAL-TREE engine (goals.js) — GROWTH Tier 2.
+/* SPACESTATION — goalstore.js : the live wiring around the pure GOAL-TREE engine (goals.js) — GROWTH Tier 2.
 
    The glue that turns a flat dossier goals-belief into a confirmed, persisted PATH the Commander watches fill in:
      • THE DECOMPOSITION FLOW — when a goals-dim belief exists with no goal tree yet, it runs the pure

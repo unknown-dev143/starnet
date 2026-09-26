@@ -1,4 +1,4 @@
-/* STARNET — floorstats.js : the FACTORY-FLOOR economy readout (pure, testable).
+/* SPACESTATION — floorstats.js : the FACTORY-FLOOR economy readout (pure, testable).
 
    Folds the harness's already-frozen usage/outcome events into ONE render-agnostic
    snapshot the live floor HUD reads at a glance — so the running station is legible

@@ -1,4 +1,4 @@
-/* STARNET — windows/factory.js : the SOFTWARE FACTORY window slot (Business OS Phase 12, §22).
+/* SPACESTATION — windows/factory.js : the SOFTWARE FACTORY window slot (Business OS Phase 12, §22).
 
    The extracted-window seam stationui.js exposes: this file owns the window KEY and its title, and nothing
    else. The engine — the stage shaping, the state map and the pipeline render — lives in

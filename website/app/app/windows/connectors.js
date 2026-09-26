@@ -1,4 +1,4 @@
-/* STARNET — windows/connectors.js : the TOOLSETS & CONNECTORS window (extracted verbatim from stationui.js).
+/* SPACESTATION — windows/connectors.js : the TOOLSETS & CONNECTORS window (extracted verbatim from stationui.js).
    Loads AFTER stationui.js (see index.html) and registers itself via StationUI.registerWindow;
    the only stationui internals it touches are the enumerated StationUI.h helper surface
    (esc/sfx/notify/fmtRel, mountConsole, and openSignIn for catalog OAuth flows). */

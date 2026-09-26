@@ -1,4 +1,4 @@
-/* STARNET — workqueststore.js : the live wiring around the pure WorkQuests engine (G1c).
+/* SPACESTATION — workqueststore.js : the live wiring around the pure WorkQuests engine (G1c).
 
    Turns an ACCEPTED idea into a trackable multi-step build. It owns what the pure engine can't:
      • the MINT — pitchstore/suggeststore call WorkQuestStore.accept(parsed, ctx) the instant the Commander hits

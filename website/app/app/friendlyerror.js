@@ -1,4 +1,4 @@
-/* STARNET — friendlyerror.js : turn a raw failure into something a beginner can act on.
+/* SPACESTATION — friendlyerror.js : turn a raw failure into something a beginner can act on.
    Pure + testable (UMD: a `Friendly` global in the browser, module.exports under node).
 
    The COMMS panel used to surface raw plumbing on a failed turn — "sidecar HTTP 500", an OpenRouter
@@ -28,7 +28,7 @@
    to classifyApiError() to derive the reason, then translate that reason into a beginner-facing message —
    so the truth table stays single-sourced. In the browser the sidecar module isn't loaded, so we fall back
    to a lightweight pattern-match over the SAME kind vocabulary on the UI-level error strings Harness throws
-   ('sidecar HTTP <status>', 'cannot reach the STARNET sidecar…', a forwarded 'no <cap> — …'). */
+   ('sidecar HTTP <status>', 'cannot reach the SPACESTATION sidecar…', a forwarded 'no <cap> — …'). */
 'use strict';
 (function (root, factory) {
   const api = factory();
@@ -74,17 +74,17 @@
     // provider's 5xx/overloaded must never land here — a message naming a component owes proof it is at fault,
     // and blaming the local service for an Anthropic/OpenRouter overload had users reporting "StarNet's servers
     // are down" during every industry load spike (2026-07-30, the report wave behind this split).
-    server_error:  { retryable: true,  action: null,       msg: 'The local StarNet service hit an error — give it a moment and try again.' },
+    server_error:  { retryable: true,  action: null,       msg: 'The local SpaceStation service hit an error — give it a moment and try again.' },
     // The PROVIDER's servers answered with an error/overload (5xx, "overloaded", "temporarily unavailable").
     // StarNet is healthy and says so; retry is the primary door because provider load spikes pass.
-    provider_server_error: { retryable: true, action: null, msg: "The AI provider's servers are having trouble right now (overloaded or erroring) — StarNet itself is fine. Wait a moment and try again; if it keeps failing, switch model or provider in COMMS." },
-    network:       { retryable: true,  action: null,       msg: "Can't reach StarNet's local service — if the app closed, restart it; if it restarted, reload this window, then try again." },
+    provider_server_error: { retryable: true, action: null, msg: "The AI provider's servers are having trouble right now (overloaded or erroring) — SpaceStation itself is fine. Wait a moment and try again; if it keeps failing, switch model or provider in COMMS." },
+    network:       { retryable: true,  action: null,       msg: "Can't reach SpaceStation's local service — if the app closed, restart it; if it restarted, reload this window, then try again." },
     rate_limit:    { retryable: true,  action: null,       msg: 'The model provider is busy (too many requests) — wait a few seconds and try again.' },
     // The sidecar is fine; its call OUT to the model provider failed (see isUpstreamFetchFailure). Say that, and
     // say StarNet is healthy — the failure mode this replaces had users restarting and reinstalling for days over
     // a message that named the wrong component. `action: null` on purpose: a provider blip is usually transient,
     // so RETRY must stay the primary chip rather than a SETTINGS door that fixes nothing.
-    provider_unreachable: { retryable: true, action: null, msg: "StarNet is running fine, but it couldn't reach the AI provider — that's usually your internet connection, a VPN or proxy, or the provider having a moment. Try again; if it keeps failing, switch provider or model in SETTINGS." },
+    provider_unreachable: { retryable: true, action: null, msg: "SpaceStation is running fine, but it couldn't reach the AI provider — that's usually your internet connection, a VPN or proxy, or the provider having a moment. Try again; if it keeps failing, switch provider or model in SETTINGS." },
     /* A SPENT ALLOWANCE is not a busy moment. A ChatGPT-subscription weekly quota resets in DAYS, so offering
        "wait a few seconds and try again" made every retry doomed and told the user nothing they could act on.
        The copy names the meter that was actually spent — the ChatGPT subscription, NOT API billing — and the
@@ -102,7 +102,7 @@
     // managed StarNet credits ran out (only reachable when a managed-credit backend is wired). Point at the STORE
     // to top up; a BYOK station never hits this kind (it gets `billing`/`auth` instead).
     // copy names the SAME door the button opens (PROVIDERS) — "the STORE" was a surface that doesn't exist as a button.
-    managed_credit:{ retryable: false, action: 'store',    msg: "You're out of StarNet credits — top up under SETTINGS → PROVIDERS, or connect your own provider key." },
+    managed_credit:{ retryable: false, action: 'store',    msg: "You're out of SpaceStation credits — top up under SETTINGS → PROVIDERS, or connect your own provider key." },
     // capdenied copy is REBUILT per-error in friendlyError() to name the exact power + gear; this is the fallback
     // when the capability can't be parsed. The door is REFIT (place the gear), NOT the SKILLS list.
     capdenied:     { retryable: false, action: 'refit',    msg: "This task needed a tool this agent doesn't have on station yet — open REFIT to place the gear it's missing." },
@@ -147,7 +147,7 @@
   // or ECONNRESET. They all mean ONE thing: the response stream died before it finished.
   //
   // ⚠ WHAT THEY DO **NOT** TELL YOU IS *WHERE* IT DIED (2026-07-29). This predicate used to be documented as
-  // "COMMS lost its local sidecar transport" and the copy asserted "Can't reach StarNet's local service —
+  // "COMMS lost its local sidecar transport" and the copy asserted "Can't reach SpaceStation's local service —
   // restart the app". That is an UNPROVEN claim, and it is wrong in at least two common cases:
   //   • the MODEL PROVIDER's stream drops mid-answer (undici surfaces exactly `terminated` /
   //     `other side closed` / `premature close` / ECONNRESET) — the sidecar is perfectly healthy;
@@ -168,7 +168,7 @@
 
      This existed as a real user report: diagnostics showed a healthy local engine (uptime, workspace present, the
      report itself was served by it) with five `fetch failed` entries — the sidecar could not reach chatgpt.com /
-     api.openai.com — and the app told them "Can't reach StarNet's local service, restart it". They lost a day.
+     api.openai.com — and the app told them "Can't reach SpaceStation's local service, restart it". They lost a day.
 
      WHY THE BUG SURVIVED: sidecar/providers/errorClass.js:168 ALREADY classifies undici transport codes
      correctly, but friendlyerror only `require`s it in node/tests — in the browser classifyApiError is null, so
@@ -189,7 +189,7 @@
   function transportMessage(engineAlive) {
     if (engineAlive === false) return KINDS.network.msg;
     if (engineAlive === true) {
-      return "The reply stream stopped before it finished — StarNet's local service answered a health check, so "
+      return "The reply stream stopped before it finished — SpaceStation's local service answered a health check, so "
         + 'the app itself is running; this was the connection carrying the reply. Try again.';
     }
     return 'The connection dropped before the reply finished — try again. If it keeps happening, use "copy '
@@ -252,7 +252,7 @@
     // MUST precede isTransportLoss: that predicate also matches `fetch failed`, and whichever runs first owns the
     // verdict. Upstream is the more specific (and provable) reading, so it wins.
     if (isUpstreamFetchFailure(low)) return 'provider_unreachable';
-    // the sidecar is unreachable (fetch threw — Harness throws "cannot reach the STARNET sidecar…")
+    // the sidecar is unreachable (fetch threw — Harness throws "cannot reach the SPACESTATION sidecar…")
     if (isTransportLoss(low)) return 'network';
     // content / policy beats a status
     if (/content[ _]?policy|moderation|flagged|safety|content_filter/.test(low)) return 'content_policy_blocked';

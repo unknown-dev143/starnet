@@ -1,4 +1,4 @@
-/* STARNET — windows/business.js : the BUSINESS window slot (Business OS Phase 1).
+/* SPACESTATION — windows/business.js : the BUSINESS window slot (Business OS Phase 1).
 
    The extracted-window seam stationui.js exposes (see its "EXTRACTED-WINDOW SEAM" note): this file owns the
    window KEY and its title, and nothing else. The engine — pure row shaping + the console mount — lives in

@@ -1,4 +1,4 @@
-/* STARNET — businesssecurity.js : the §13 SECURITY CENTER console (Business OS Phase 10).
+/* SPACESTATION — businesssecurity.js : the §13 SECURITY CENTER console (Business OS Phase 10).
 
    The presentation half of §13. The sidecar (`business-security.js`) composes the four sources into one read;
    this file renders that read and NOTHING ELSE. It holds no policy of its own: every tier, action label and

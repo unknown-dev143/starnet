@@ -1,4 +1,4 @@
-/* STARNET — topbar.js : the TOPBAR INSTRUMENT-CLUSTER logic (read-only wiring).
+/* SPACESTATION — topbar.js : the TOPBAR INSTRUMENT-CLUSTER logic (read-only wiring).
 
    The topbar holds one cockpit gauge group: STATION (level + an XP-progress sliver)
    and the moved-up session-status instruments (UPLINK / ONLINE / save).
@@ -61,7 +61,7 @@ const Topbar = (() => {
       el.classList.add('standby');
       el.childNodes[0].nodeValue = 'STANDBY ';
       bars.textContent = SIG_STANDBY;   // dim even bars — NOT full signal
-      el.title = ls && ls.paused ? 'connection to the background service is paused (disconnected)' : 'connection to StarNet’s background service — standby (not connected yet)';
+      el.title = ls && ls.paused ? 'connection to the background service is paused (disconnected)' : 'connection to SpaceStation’s background service — standby (not connected yet)';
       return;
     }
     if (ls.down) {
@@ -69,12 +69,12 @@ const Topbar = (() => {
       el.classList.add('down');
       el.childNodes[0].nodeValue = 'LINK DOWN ';
       bars.textContent = SIG_DOWN;
-      el.title = 'lost the connection to StarNet’s background service — live numbers pause until it’s back (is the app still running?)';
+      el.title = 'lost the connection to SpaceStation’s background service — live numbers pause until it’s back (is the app still running?)';
     } else {
       el.classList.remove('down', 'standby');
       el.childNodes[0].nodeValue = 'UPLINK ';
       bars.textContent = SIG_UP;
-      el.title = 'connected to StarNet’s background service — everything on screen is live';
+      el.title = 'connected to SpaceStation’s background service — everything on screen is live';
     }
   }
 

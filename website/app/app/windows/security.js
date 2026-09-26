@@ -1,4 +1,4 @@
-/* STARNET — windows/security.js : the SECURITY CENTER window slot (Business OS Phase 10, §13).
+/* SPACESTATION — windows/security.js : the SECURITY CENTER window slot (Business OS Phase 10, §13).
 
    Same extracted-window seam as its siblings: this file owns the window KEY and its title, nothing else. The
    engine — the counts, the capability table, the who-can-do-what grid and the audit slice — lives in

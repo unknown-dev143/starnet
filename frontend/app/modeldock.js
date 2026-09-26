@@ -72,7 +72,7 @@ const ModelDock = (() => {
   }
   function providerLabel(p) {
     p = normalizeProvider(p);
-    const map = { starnet: 'STARNET', codex: 'GPT / CODEX', grok: 'GROK OAUTH', kimi: 'KIMI OAUTH', openrouter: 'OPENROUTER', openai: 'OPENAI API', anthropic: 'ANTHROPIC', gemini: 'GEMINI', xai: 'XAI', groq: 'GROQ', mistral: 'MISTRAL', deepseek: 'DEEPSEEK', together: 'TOGETHER', fireworks: 'FIREWORKS', perplexity: 'PERPLEXITY', cerebras: 'CEREBRAS', ollama: 'OLLAMA', custom: 'CUSTOM' };
+    const map = { starnet: 'SPACESTATION', codex: 'GPT / CODEX', grok: 'GROK OAUTH', kimi: 'KIMI OAUTH', openrouter: 'OPENROUTER', openai: 'OPENAI API', anthropic: 'ANTHROPIC', gemini: 'GEMINI', xai: 'XAI', groq: 'GROQ', mistral: 'MISTRAL', deepseek: 'DEEPSEEK', together: 'TOGETHER', fireworks: 'FIREWORKS', perplexity: 'PERPLEXITY', cerebras: 'CEREBRAS', ollama: 'OLLAMA', custom: 'CUSTOM' };
     return map[p] || String(p || 'openrouter').toUpperCase();
   }
   function normalizeProvider(p) {
@@ -607,7 +607,7 @@ const ModelDock = (() => {
     // The remedy has to match the credential. Telling a credits user to "add a key" sends them looking
     // for a field that does not exist for this provider.
     const msg = provider() === 'starnet'
-      ? 'this station isn’t linked to a StarNet account — link it in SETTINGS to run on credits'
+      ? 'this station isn’t linked to a SpaceStation account — link it in SETTINGS to run on credits'
       : 'no ' + esc(providerLabel(provider())) + ' key — this model can’t run yet. add one in SETTINGS';
     warn.innerHTML = '<span class="mdw-glyph" aria-hidden="true">⚠</span>' +
       '<span class="mdw-txt">' + msg + '</span>';

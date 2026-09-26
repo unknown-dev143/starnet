@@ -1,4 +1,4 @@
-/* STARNET — hint.js : a tiny HTML-layer tooltip that explains the station's jargon on hover/tap.
+/* SPACESTATION — hint.js : a tiny HTML-layer tooltip that explains the station's jargon on hover/tap.
 
    The app speaks fluent StarNet at users who have been here zero minutes (see the UX audit's jargon
    wall). This is the shared primitive every screen sprinkles onto its own confusing labels instead of

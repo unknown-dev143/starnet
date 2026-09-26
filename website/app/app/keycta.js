@@ -1,4 +1,4 @@
-/* STARNET — keycta.js : the honest "your agent is awake but has no working brain" call-to-action.
+/* SPACESTATION — keycta.js : the honest "your agent is awake but has no working brain" call-to-action.
 
    THE ASYMMETRY THIS CLOSES: a Commander can complete the ENTIRE awakening with no key configured — the
    ceremony degrades to its scripted spine (no live model), the agent ends up "ready" on screen, yet the

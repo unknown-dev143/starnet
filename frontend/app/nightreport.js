@@ -1,4 +1,4 @@
-/* STARNET — nightreport.js : the PURE engine for the MORNING REPORT (NS-4).
+/* SPACESTATION — nightreport.js : the PURE engine for the MORNING REPORT (NS-4).
 
    THE PROMISE: Andrew must never again wonder "what did you do all night, and if nothing, why?". On the first
    activity after a real absence, the station owes ONE honest digest — the acts it fired AND the honest other half

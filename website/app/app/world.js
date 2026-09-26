@@ -1,4 +1,4 @@
-/* STARNET — world.js : the LIVE station the agent lives inside.
+/* SPACESTATION — world.js : the LIVE station the agent lives inside.
 
    Renders the player-built WorldModel station (multi-room) with the generalized
    procedural bake (stationbake.js), under a pan/zoom camera. The agent has a

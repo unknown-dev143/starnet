@@ -1,4 +1,4 @@
-/* STARNET — windows/manager.js : the BUSINESS MANAGER window slot (Business OS Phase 4).
+/* SPACESTATION — windows/manager.js : the BUSINESS MANAGER window slot (Business OS Phase 4).
 
    The extracted-window seam stationui.js exposes (see its "EXTRACTED-WINDOW SEAM" note): this file owns the
    window KEY and its title, and nothing else. The engine — pure row shaping, the guards, the money/format

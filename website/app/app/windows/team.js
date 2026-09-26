@@ -1,4 +1,4 @@
-/* STARNET — windows/team.js : the AI TEAM window slot (Business OS Phase 3).
+/* SPACESTATION — windows/team.js : the AI TEAM window slot (Business OS Phase 3).
 
    The extracted-window seam stationui.js exposes (see its "EXTRACTED-WINDOW SEAM" note): this file owns the
    window KEY and its title, and nothing else. The engine — pure row shaping + the console mount — lives in

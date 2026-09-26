@@ -1,4 +1,4 @@
-/* STARNET — goalloop.js : the PURE GOAL-LOOP state machine (StarNet's "Ralph loop").
+/* SPACESTATION — goalloop.js : the PURE GOAL-LOOP state machine (StarNet's "Ralph loop").
 
    The autonomous engine behind /goal: the Commander sets a standing goal on a workstream; after each turn
    lands, an auxiliary JUDGE model is asked "is this goal satisfied by the agent's last response?" and returns

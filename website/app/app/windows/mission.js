@@ -1,4 +1,4 @@
-/* STARNET — windows/mission.js : the MISSION CONTROL window slot (Business OS Phase 11, §23).
+/* SPACESTATION — windows/mission.js : the MISSION CONTROL window slot (Business OS Phase 11, §23).
 
    Same extracted-window seam as its siblings: this file owns the window KEY and its title, nothing else. The
    engine — the ranked board, the fleet figures, the trail and the reasons — lives in app/businessmission.js

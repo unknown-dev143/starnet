@@ -1,4 +1,4 @@
-/* STARNET — recipes.js : THE RECIPE / MISSION LIBRARY — ready-made, parameterized job templates.
+/* SPACESTATION — recipes.js : THE RECIPE / MISSION LIBRARY — ready-made, parameterized job templates.
 
    The sibling of specialties.js. A SPECIALTY answers "who should my agent BE" (its purpose + standing
    orders); a RECIPE answers "what should my agent DO right now" — a one-tap mission like "morning research

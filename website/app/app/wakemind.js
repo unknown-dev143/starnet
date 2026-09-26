@@ -1,4 +1,4 @@
-/* STARNET — wakemind.js : the PURE engine for the LIVE half of THE AWAKENING (Interview 2.0).
+/* SPACESTATION — wakemind.js : the PURE engine for the LIVE half of THE AWAKENING (Interview 2.0).
 
    The awakening used to be a form wearing a costume: six fixed questions, fixed options, canned
    acknowledgments — the agent never actually LISTENED. This engine gives the ceremony a real mind:
