@@ -80,7 +80,8 @@ function makeEngine(ruleMap, opts) {
   const projects = opts.projects || (opts.withProjects ? { create: (bid, o) => { counts.projectCalls++; return { ok: true, project: { id: 'pr' + counts.projectCalls, name: o.name } }; } } : null);
   const tasks = opts.tasks || (opts.withTasks ? { create: (bid, o, prov) => { counts.taskCalls++; return { ok: true, task: { id: 'tk' + counts.taskCalls, title: o.title, status: 'todo', priority: o.priority || 'normal', origin: prov } }; } } : null);
   const content = opts.content || null;
-  const engine = makeBusinessAutomationEngine({ automation, approvals, permissions: BP, businesses, projects, tasks, content, emit, now: () => 1000 });
+  // forward an injected outbound rail (so the send_external deliver/fail/throw paths are exercisable)
+  const engine = makeBusinessAutomationEngine({ automation, approvals, permissions: BP, businesses, projects, tasks, content, outbound: opts.outbound || null, emit, now: () => 1000 });
   engineHolder = engine;
   engine.__counts = counts;
   engine.__emits = emits;
@@ -253,6 +254,24 @@ function rule(id, event, actions) { return { id, name: id, trigger: event, enabl
   A.eq(ext.ok, true, 'a spend action is "handled"');
   A.eq(ext.delivered, false, 'a spend action claims NOTHING was delivered (no fake send — P2)');
   A.ok(ext.external === true, 'the external flag is honest about what happened');
+
+  // The outbound rail, when injected, must deliver — and must never lie about a failure (P2/P7).
+  // AWAIT, never `return`: a return here would exit the whole IIFE and silently skip sections 7-10 + report().
+  const railSent = [];
+  const rail = makeEngine({}, { outbound: { send: (o) => { railSent.push(o); return Promise.resolve({ ok: true }); } } });
+  const r = await rail.executeAction('A', 'send_external', { to: 'x@y.z', subject: 's', body: 'hello' });
+  A.eq(r.ok, true, 'an injected outbound rail makes send_external succeed');
+  A.eq(r.delivered, true, 'and it reports a REAL delivery, not a phantom authorization');
+  A.ok(railSent.length === 1 && /hello/.test(railSent[0].text), 'the rail received the composed message');
+  // a rail that reports failure must fail the action
+  const fail = makeEngine({}, { outbound: { send: () => Promise.resolve({ ok: false, error: 'nope' }) } });
+  const rf = await fail.executeAction('A', 'send_external', { to: 'x@y.z', subject: 's', body: 'b' });
+  A.eq(rf.ok, false, 'a rail failure fails the action — never a phantom success');
+  // a rail that throws must be caught, not propagated into the engine
+  const thr = makeEngine({}, { outbound: { send: () => { throw new Error('boom'); } } });
+  const rt = await thr.executeAction('A', 'send_external', { to: 'x@y.z', subject: 's', body: 'b' });
+  A.eq(rt.ok, false, 'a throwing rail is caught and reported as a failure, not propagated');
+  A.ok(/threw/.test(rt.reason), 'and the throw is named in the reason');
 }
 
 // ===========================================================================

@@ -3331,6 +3331,26 @@ const automationEngine = makeBusinessAutomationEngine({
   projects: bizProjectsStore,
   documents: documentsStore,
   content: contentStore,
+  /* THE OUTBOUND RAIL (Phase 8 follow-up): the injected transport that lets an approved `send_external`
+     actually leave the station. It reuses the SAME channel handle the cron notifier uses (liveChannelFor),
+     so there is ONE delivery path, not two — and it keeps the engine ambient-IO-free (the engine only ever
+     sees a `send` function). Delivery honesty is preserved: a transport that reports `ok:false` or throws
+     becomes a FAILED send, never a phantom success. No channel connected → the engine falls back to the
+     honest "authorization recorded, nothing left the station" result. */
+  outbound: {
+    send: function (o) {
+      // lazy: liveChannelFor is declared far below (a `function` decl is hoisted, but keep the call inside
+      // the closure so boot ordering can never bite — same reason `emit` is wrapped).
+      const ch = liveChannelFor(o && o.channel ? o.channel : 'telegram');
+      if (!ch || !ch.adapter || typeof ch.adapter.send !== 'function') {
+        return Promise.resolve({ ok: false, error: 'no channel is connected on this station' });
+      }
+      return Promise.resolve(ch.adapter.send(o.to, redact(o.text))).then(function (r) {
+        if (r && r.ok === false) return { ok: false, error: String(r.error || 'send failed') };
+        return { ok: true, ref: (r && r.ref) || null };
+      });
+    }
+  },
   halted: loadAutomationHalted(),
   now: () => Date.now(),
   // lazy wrapper — chanEmit is a `const` declared far below, so handing it over by value would be a TDZ

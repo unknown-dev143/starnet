@@ -179,9 +179,9 @@
       required: ['type', 'title'], optional: ['body'],
       note: '§15 document generator. A draft is not a publication.' },
 
-    { id: 'send_external', label: 'Send an external message', perm: 'external_comms', risk: 'medium', executor: 'none',
-      required: ['to', 'subject', 'body'], optional: [],
-      note: '§13 — an important external communication needs your approval. Approving records your authorization; this station has no mail rail, so nothing is delivered by it.' },
+    { id: 'send_external', label: 'Send an external message', perm: 'external_comms', risk: 'medium', executor: 'outbound',
+      required: ['to', 'subject', 'body'], optional: ['channel'],
+      note: '§13 — an important external communication needs your approval. Approving it IS the authorization; when the station has an outbound rail connected the message is then actually sent through it, and when it does not, your authorization is recorded and nothing leaves the station (delivered:false, stated plainly).' },
     { id: 'publish_content', label: 'Publish a content piece', perm: 'publish_content', risk: 'medium', executor: 'local',
       required: ['pieceId'], optional: [],
       note: '§13 — publishing business content needs your approval. Approving it IS the human authorization §17 demands: the piece advances to "publish" with actor "user".' },

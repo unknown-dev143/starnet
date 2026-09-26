@@ -58,15 +58,16 @@ const REVIEW = [{ action: 'spend_money', params: { amount: '10', currency: 'USD'
     const c = P.classify(a.perm);
     A.ok(c.ok, 'action "' + a.id + '" names a KNOWN permission action ("' + a.perm + '")');
     A.ok(P.TIERS.indexOf(c.tier) >= 0, 'action "' + a.id + '" resolves to a real §13 tier');
-    A.ok(a.executor === 'local' || a.executor === 'none', 'action "' + a.id + '" declares whether this station can perform it');
+    A.ok(a.executor === 'local' || a.executor === 'none' || a.executor === 'outbound', 'action "' + a.id + '" declares whether this station can perform it');
     A.ok(!!a.label && !!a.note, 'action "' + a.id + '" has a label and a note');
     A.ok(Array.isArray(a.required) && a.required.length > 0, 'action "' + a.id + '" requires at least one param');
     A.ok(M.ACTION_IDS.indexOf('delete_data') < 0, 'no action maps to delete_data — an automation never deletes');
     A.ok(M.ACTION_IDS.indexOf('change_infra') < 0, 'no action maps to change_infra — an automation never touches infrastructure');
   }
-  // the executor field is not decoration: the two external actions must say they have no rail.
-  A.eq(M.actionById('send_external').executor, 'none', 'send_external has no local executor');
-  A.eq(M.actionById('spend_money').executor, 'none', 'spend_money has no local executor');
+  // the executor field is not decoration: send_external now HAS a real (injected) outbound rail, while
+  // spend_money deliberately stays rail-less — there is no payment rail, and money is unrecoverable.
+  A.eq(M.actionById('send_external').executor, 'outbound', 'send_external has an injected outbound executor (Phase 8 follow-up)');
+  A.eq(M.actionById('spend_money').executor, 'none', 'spend_money has no executor — deliberately, there is no payment rail');
   A.eq(M.actionById('publish_content').executor, 'local', 'publish_content DOES have a local executor (§17 advance with actor user)');
   for (const a of M.AUTOMATION_ACTIONS) {
     const c = P.classify(a.perm);

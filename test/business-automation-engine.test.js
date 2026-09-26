@@ -256,10 +256,10 @@ const names = (seen) => seen.map(s => s.name);
   A.eq(ap.ok, true, 'approve succeeds');
   A.eq(ap.approval.status, 'approved', 'the row is approved');
   A.eq(ap.approval.decidedBy, 'Andrew', 'and records who decided');
-  // THE HONESTY CASE: this station has no mail rail, so the engine must NOT claim a delivery
+  // THE HONESTY CASE: this harness has NO outbound rail, so the engine must NOT claim a delivery
   A.eq(ap.executed.ok, true, 'the approved action "ran" in the sense that the authorization was recorded');
   A.eq(ap.executed.delivered, false, 'but it reports delivered:false — nothing left the station (P2)');
-  A.ok(/no message-delivery rail/.test(ap.executed.reason), 'and says so in words');
+  A.ok(/no outbound rail/.test(ap.executed.reason), 'and says so in words');
   A.ok(names(h.seen).indexOf('business.approval.decided') >= 0, 'the decision was announced on the bus');
   const decided = h.seen.filter(s => s.name === 'business.approval.decided')[0].payload;
   A.eq(decided.decision, 'approved', 'with the decision verb');
@@ -529,3 +529,74 @@ const names = (seen) => seen.map(s => s.name);
 }
 
 A.report('business-automation-engine.test');
+
+/* ================= the OUTBOUND RAIL: a real send, honestly reported =================
+   Everything above is synchronous, so this block lives AFTER report() as its own async section — a top-level
+   `return` anywhere above would silently truncate the whole suite. The rail is injected, so this proves the
+   real deliver/fail/throw paths without a network. */
+async function railSection() {
+  // 1) A rail that DELIVERS: the approval actually sends, and says delivered:true.
+  const sent = [];
+  const h = harness({ outbound: { send: (o) => { sent.push(o); return Promise.resolve({ ok: true, ref: 'msg-1' }); } } });
+  h.automation.create('acme', {
+    name: 'Tell the list', trigger: 'business.experiment.concluded',
+    actions: [{ action: 'send_external', params: { to: 'a@b.c', subject: 'Hi', body: 'Body text' } }],
+    enabled: true, cooldownMs: 0
+  });
+  h.engine.handleEvent('business.experiment.concluded', { businessId: 'acme', experimentId: 'acme~x1', conclusion: 'supported' });
+  const row = h.approvals.list('acme', { status: 'pending' })[0];
+
+  const ap = await h.engine.approve(row.id, 'Andrew');
+  A.eq(ap.ok, true, 'approve with a rail succeeds');
+  A.eq(ap.executed.delivered, true, 'and the message was actually DELIVERED (the new capability)');
+  A.eq(sent.length, 1, 'the rail was called exactly once');
+  A.eq(sent[0].to, 'a@b.c', 'with the declared destination');
+  A.ok(/Hi/.test(sent[0].text) && /Body text/.test(sent[0].text), 'and the subject+body composed into the text');
+  A.eq(sent[0].businessId, 'acme', 'the rail is told which business the send belongs to (P6 audit trail)');
+  const auditRow = h.activity.list('acme').filter(a => /delivered/i.test(String(a.action)))[0];
+  A.ok(auditRow, 'the activity log records a DELIVERY, distinctly from an authorization');
+
+  // 2) A rail that FAILS must never be reported as a success (P2/P7).
+  const hf = harness({ outbound: { send: () => Promise.resolve({ ok: false, error: 'smtp 550' }) } });
+  hf.automation.create('acme', {
+    name: 'Failing send', trigger: 'business.experiment.concluded',
+    actions: [{ action: 'send_external', params: { to: 'a@b.c', subject: 's', body: 'b' } }],
+    enabled: true, cooldownMs: 0
+  });
+  hf.engine.handleEvent('business.experiment.concluded', { businessId: 'acme', experimentId: 'acme~y1', conclusion: 'supported' });
+  const rowf = hf.approvals.list('acme', { status: 'pending' })[0];
+  const apf = await hf.engine.approve(rowf.id, 'Andrew');
+  A.eq(apf.executed.ok, false, 'a rail failure is a FAILED action, not a phantom success');
+  A.ok(/could not deliver|550/.test(apf.executed.reason), 'the failure reason is surfaced in words');
+
+  // 3) A rail that THROWS is caught, not propagated.
+  const ht = harness({ outbound: { send: () => { throw new Error('socket closed'); } } });
+  ht.automation.create('acme', {
+    name: 'Throwing send', trigger: 'business.experiment.concluded',
+    actions: [{ action: 'send_external', params: { to: 'a@b.c', subject: 's', body: 'b' } }],
+    enabled: true, cooldownMs: 0
+  });
+  ht.engine.handleEvent('business.experiment.concluded', { businessId: 'acme', experimentId: 'acme~z1', conclusion: 'supported' });
+  const rowt = ht.approvals.list('acme', { status: 'pending' })[0];
+  const apt = await ht.engine.approve(rowt.id, 'Andrew');
+  A.eq(apt.executed.ok, false, 'a throwing rail is caught and reported as a failure');
+  A.ok(/threw|socket closed/.test(apt.executed.reason), 'with the throw surfaced, not swallowed');
+
+  // 4) spend_money stays rail-less BY DESIGN (money is the one unrecoverable action).
+  const hs = harness({ outbound: { send: () => Promise.resolve({ ok: true }) } });
+  hs.automation.create('acme', {
+    name: 'Pay', trigger: 'business.experiment.concluded',
+    actions: [{ action: 'spend_money', params: { amount: 10, currency: 'USD', description: 'x' } }],
+    enabled: true, cooldownMs: 0
+  });
+  hs.engine.handleEvent('business.experiment.concluded', { businessId: 'acme', experimentId: 'acme~w1', conclusion: 'supported' });
+  const rows = hs.approvals.list('acme', { status: 'pending' })[0];
+  const aps = await hs.engine.approve(rows.id, 'Andrew');
+  A.eq(aps.executed.delivered, false, 'spend_money reports delivered:false even WHEN a rail exists');
+  A.ok(/no payment rail/.test(aps.executed.reason), 'because there is deliberately no payment rail');
+  A.eq(sent.length, 1, 'and it never touched the outbound rail');
+}
+railSection().then(
+  () => A.report('business-automation-engine.test — outbound rail'),
+  (e) => { console.error('outbound rail section THREW:', (e && e.stack) || e); A.report('business-automation-engine.test — outbound rail'); }
+);

@@ -89,6 +89,12 @@
     const projects = deps.projects || null;
     const documents = deps.documents || null;
     const content = deps.content || null;   // only the §17 publish action needs it, and only on approve()
+    /* THE OUTBOUND RAIL (Phase 8 follow-up): `send_external` used to have NO executor at all — approving it
+       recorded the authorization and reported `delivered:false`, which was honest but meant automation could
+       never reach outside the station. A rail is now INJECTED (`outbound.send(...)`), never hardcoded: the
+       host passes the same transport the cron notifier uses (channels/telegram.js), so this module stays
+       ambient-IO-free and unit-testable with a plain fake. Absent rail → the old honest non-delivery. */
+    const outbound = (deps.outbound && typeof deps.outbound.send === 'function') ? deps.outbound : null;
 
     const emit = typeof deps.emit === 'function' ? deps.emit : null;
     const now = typeof deps.now === 'function' ? deps.now : (() => null);
@@ -412,15 +418,51 @@
             });
             return { ok: true, ref: params.pieceId };
           }
-          /* NO LOCAL EXECUTOR — §13's external actions. The station has no mail rail and no payment rail,
-             so approving one records the AUTHORIZATION (which is the whole point of the review tier) and
-             reports `delivered:false` rather than claiming a send that never happened (P2/P7). */
-          case 'send_external':
+          /* §13's external actions. `send_external` now has a REAL rail when the host injects one — it goes
+             through the transport the cron notifier uses. Every prior guarantee is kept:
+               · it is `review`-tier, so it only ever runs from approve(), never from an event;
+               · no rail injected → the old honest non-delivery (authorization recorded, `delivered:false`);
+               · a rail that reports failure is reported as NOT delivered — never a phantom success (P2/P7);
+               · the reason string states what actually happened, in words.
+             `spend_money` deliberately stays rail-less: there is no payment rail, and inventing one would be
+             the single most dangerous thing this module could do. It keeps the record-the-authorization path. */
+          case 'send_external': {
+            if (!outbound) {
+              return {
+                ok: true, delivered: false, external: true,
+                reason: 'your authorization is recorded, but this station has no outbound rail — nothing left the station'
+              };
+            }
+            if (!params.to) return { ok: false, reason: 'send_external needs a destination ("to")' };
+            /* The catalog declares required: ['to','subject','body'] — resolveParams only forwards DECLARED
+               fields, so read exactly those (reading an undeclared `text` would always be undefined). */
+            const subject = params.subject != null ? String(params.subject) : '';
+            const body = params.body != null ? String(params.body) : '';
+            if (!body.trim()) return { ok: false, reason: 'send_external needs a non-empty "body"' };
+            const text = subject ? (subject + '\n\n' + body) : body;
+            let sent;
+            try {
+              sent = outbound.send({ to: String(params.to), text: text, subject: subject, businessId: businessId, channel: params.channel });
+            } catch (e) {
+              return { ok: false, reason: 'the outbound rail threw: ' + ((e && e.message) || 'unknown error') };
+            }
+            /* Transports resolve a SendResult; a rejection or `ok:false` is a FAILED delivery, not a success.
+               Awaiting here keeps approve() synchronous-from-the-caller's-view via the promise it returns. */
+            return Promise.resolve(sent).then(function (r) {
+              if (r && r.ok === false) {
+                return { ok: false, reason: 'the outbound rail could not deliver: ' + String((r && r.error) || 'send failed') };
+              }
+              return { ok: true, delivered: true, external: true, to: String(params.to), ref: (r && r.ref) || null };
+            }, function (e) {
+              return { ok: false, reason: 'the outbound rail rejected: ' + ((e && e.message) || 'send failed') };
+            });
+          }
           case 'spend_money': {
-            const what = actionId === 'spend_money' ? 'payment' : 'message-delivery';
+            /* Still rail-less BY DESIGN — there is no payment rail on this station, and this is the one
+               action where a mistake is unrecoverable. The authorization is the deliverable. */
             return {
               ok: true, delivered: false, external: true,
-              reason: 'your authorization is recorded, but this station has no ' + what + ' rail — nothing left the station'
+              reason: 'your authorization is recorded, but this station has no payment rail — nothing left the station'
             };
           }
           default:
@@ -488,6 +530,17 @@
         reason: 'automation approval', result: 'ok', approval: 'granted'
       });
       const r = executeAction(row.businessId, row.automationAction, row.params, 0);
+      /* executeAction is synchronous for every LOCAL executor, but `send_external` against an injected rail
+         resolves a Promise. Settle both here so the audit trail says the same thing either way — a Promise
+         that fails is a failure (never a silent success), and a delivered send is recorded as delivered. */
+      if (r && typeof r.then === 'function') {
+        return Promise.resolve(r).then(function (res) { return finishApprove(row, d, id, res); });
+      }
+      return finishApprove(row, d, id, r);
+    }
+
+    /* finishApprove — the audit + drain tail shared by the sync and async paths, so they cannot drift. */
+    function finishApprove(row, d, id, r) {
       if (!r.ok) {
         audit(row.businessId, {
           actor: { kind: 'system', id: '', name: '' }, action: 'Approved action failed: ' + row.what,
@@ -498,6 +551,12 @@
         audit(row.businessId, {
           actor: { kind: 'system', id: '', name: '' }, action: 'Approved (not delivered): ' + row.what,
           reason: r.reason, result: 'ok', approval: 'granted'
+        });
+      } else if (r.delivered === true) {
+        // the outbound rail actually delivered — record THAT, distinctly from "authorized but not sent".
+        audit(row.businessId, {
+          actor: { kind: 'system', id: '', name: '' }, action: 'Approved and delivered: ' + row.what,
+          reason: r.reason || ('delivered to ' + (r.to || 'the outbound rail')), result: 'ok', approval: 'granted'
         });
       }
       // executeAction emitted a domain event, and handleEvent drained whatever that cascaded — the queue
