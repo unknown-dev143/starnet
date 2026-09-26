@@ -87,6 +87,11 @@ environment**, not product:
 | `qa-cartographer` / `toolprops` / `prop-render-smoke` | **Pre-existing failures**, not ours | 7 capability props have no sprite renderer / no tool mapping (`414b05161`, `446987fac`). Confirmed pre-existing by commit archaeology; untouched by this work. |
 | §25 remote monitoring | **Deliberately absent** | Brief asks for "architecture-ready" only |
 
+*(Update 2026-09-27: the visible-identity rebrand — the transformation brief's §3 — was the one open
+product item after this ledger was written. It is now **DONE** in commit `cba3891a5`, guarded by
+`test/brand-identity.test.js` (27 assertions). With that closed, the only item still deliberately
+not built is §25 remote monitoring.)*
+
 ---
 
 ## 5. Honesty checks that were run against the new modules

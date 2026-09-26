@@ -191,3 +191,22 @@ Two things are explicitly **not** owed and should not be chased:
 - **§25 remote monitoring** — the brief scopes it to "architecture-ready" only.
 - **Re-running the full 674-step gate here** — this sandbox blocks nested process spawns; see
   `docs/BRIEF-LEDGER.md` §4 for the evidence.
+
+---
+
+## 8. Postscript — Phase 1 was authorised and is now DONE
+
+The four-step scope recommended in §7 was carried out in commit `cba3891a5` ("Phase 1 — identity:
+rebrand visible STARNET to SPACESTATION"). Outcome against §3:
+
+| §3 item | Result |
+|---|---|
+| Visible `STARNET` strings | **gone from the rendered chrome** — boot mark, all 5 titlebar tags, splash, masthead label + subtitle, and every provisioning/update/recovery/credit/identity prompt. |
+| SpaceStation logo asset | **added** — `frontend/assets/brand/spacestation-wordmark.svg`; splash + masthead masks repointed. |
+| Guard test | **added** — `test/brand-identity.test.js` (27 assertions), registered in `test/fast.list`; proven to fail on injection before passing. |
+| Identifiers untouched | **yes** — CSS prefixes, element ids, store keys, `__STARNET_*` globals, and the `X-StarNet-Token` header all preserved. |
+| MIT attribution untouched | **yes** — `LICENSE` and `package.json` unmodified; the guard asserts this. |
+
+So the "one remaining job" this audit identified is closed. The only brief item still deliberately
+not built is **§25 remote monitoring**. The website mirror was re-synced (`--check` → OK), and the
+recovery backup in `BACKUP-business-os/` was refreshed to `cba3891a5`.
