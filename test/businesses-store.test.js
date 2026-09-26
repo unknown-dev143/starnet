@@ -4,7 +4,7 @@
 // across an update (a rename must never re-key the business, or namespaced child stores detach);
 // memoryNamespace is the tenancy key; ids de-duplicate deterministically (no rng).
 const assert = require('assert');
-const { makeBusinessesStore, STAGES, TEMPLATES, slugFor } = require('../sidecar/businesses-store.js');
+const { makeBusinessesStore, STAGES, INACTIVE_STAGES, TEMPLATES, slugFor } = require('../sidecar/businesses-store.js');
 
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 
@@ -56,6 +56,36 @@ function fakeStore() {
   ok(bs.create({ name: 'X', stage: 'moonshot' }).ok === false, 'unknown stage refused');
   ok(bs.create({ name: 'X', template: 'pyramid-scheme' }).ok === false, 'unknown template refused');
   ok(STAGES.indexOf('live') >= 0 && TEMPLATES.indexOf('saas') >= 0, 'the whitelists are exported');
+}
+
+// --- THE LIFECYCLE (§2): the brief's ten stages, and the inactive subset is derived from them ---
+{
+  // The audit's §6 item 8 called the 6-vs-10 divergence "a decision to make, not a bug". This is the
+  // decision, locked: the ten the brief names, minus `launching` (folded into `live` — nothing in this
+  // system can be true in "launching" and false in "live", so it would be a state nothing enters).
+  ok(STAGES.length === 10, 'the lifecycle carries ten stages');
+  for (const s of ['idea', 'validating', 'planning', 'building', 'testing', 'live', 'growing', 'paused', 'winding-down', 'archived']) {
+    ok(STAGES.indexOf(s) >= 0, 'the lifecycle includes ' + s);
+  }
+  ok(STAGES.indexOf('launching') < 0,
+    '`launching` is deliberately absent — folded into `live` rather than kept as a state nothing can enter');
+  ok(/launching/.test(require('fs').readFileSync(require('path').join(__dirname, '..', 'sidecar', 'businesses-store.js'), 'utf8')),
+    'the absence of `launching` is EXPLAINED in the source, not just missing');
+
+  // INACTIVE_STAGES must be a real subset of STAGES — a typo here would gate a stage that cannot exist.
+  for (const s of INACTIVE_STAGES) ok(STAGES.indexOf(s) >= 0, 'inactive stage ' + s + ' is a real stage');
+  ok(INACTIVE_STAGES.indexOf('paused') >= 0 && INACTIVE_STAGES.indexOf('archived') >= 0,
+    'paused and archived are inactive');
+  ok(INACTIVE_STAGES.indexOf('winding-down') >= 0, 'winding-down is inactive (it is on its way to archived)');
+  ok(INACTIVE_STAGES.indexOf('live') < 0 && INACTIVE_STAGES.indexOf('growing') < 0,
+    'live and growing are NOT inactive — they are the operating states');
+
+  // the new states are reachable through the same path as the old ones (not decoration).
+  const bs = makeBusinessesStore({ records: [], persist: fakeStore().persist, now: () => 1 });
+  bs.create({ name: 'Reachable Ltd' });
+  for (const s of ['planning', 'testing', 'growing', 'winding-down']) {
+    ok(bs.setStage('reachable-ltd', s).ok === true, 'a business can be moved into ' + s);
+  }
 }
 
 // --- FAIL CLOSED: a thrown persist leaves memory untouched ---

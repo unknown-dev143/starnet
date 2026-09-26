@@ -48,15 +48,24 @@ A.eq(BC.runGuard({ stage: 'live' }).allowed, true, 'a live business may run work
 A.eq(BC.runGuard({ stage: 'idea' }).allowed, true, 'an idea-stage business may run work (planning IS work)');
 A.eq(BC.runGuard({ stage: 'building' }).allowed, true, 'a building business may run work');
 A.eq(BC.runGuard({ stage: 'paused' }).allowed, false, 'a PAUSED business may not run work');
+A.eq(BC.runGuard({ stage: 'winding-down' }).allowed, false, 'a WINDING-DOWN business may not run work');
 A.eq(BC.runGuard({ stage: 'archived' }).allowed, false, 'an ARCHIVED business may not run work');
 A.ok(/PAUSED/.test(BC.runGuard({ stage: 'paused' }).reason), 'the pause refusal names the reason a human can act on');
 A.ok(/resume/i.test(BC.runGuard({ stage: 'paused' }).reason), 'the pause refusal says how to fix it');
 A.eq(BC.runGuard(null).allowed, true, 'a missing business does not block (no false refusal)');
-// the sidecar enforces exactly these two stages — if it ever grows a third, this lock goes red.
-A.ok(/biz\.stage === 'paused' \|\| biz\.stage === 'archived'/.test(host),
-  'sidecar/index.js refuses runs for exactly paused|archived — the same two the UI guard blocks');
+// the UI guard's "inactive" set must be the SAME set the sidecar enforces. Both sides now read one list
+// (businesses-store.INACTIVE_STAGES) rather than each hardcoding a pair, so this lock checks the WIRING:
+// the store exports the list, index.js imports it, and the frontend mirror agrees with it.
+A.ok(/INACTIVE_STAGES/.test(host) && /require\('\.\/businesses-store\.js'\)/.test(host),
+  'sidecar/index.js gates on the store\'s INACTIVE_STAGES (single source of truth), not a hardcoded pair');
 A.ok(/409/.test(host) && /resume it before running work for it/.test(host),
   'the sidecar answers 409 with an actionable reason, matching the UI copy');
+{
+  const store = require('../sidecar/businesses-store.js');
+  A.ok(Array.isArray(store.INACTIVE_STAGES), 'the store exports INACTIVE_STAGES');
+  A.eq(JSON.stringify(store.INACTIVE_STAGES.slice().sort()), JSON.stringify(BC.INACTIVE_STAGES.slice().sort()),
+    'the UI\'s inactive set is byte-identical to the store\'s — the two cannot drift');
+}
 
 /* ---------- toRows ---------- */
 {

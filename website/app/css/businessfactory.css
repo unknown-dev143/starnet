@@ -1,0 +1,56 @@
+/* frontend/css/businessfactory.css — the SOFTWARE FACTORY console (Business OS Phase 12, §22).
+   Scoped .fac-* so it cannot collide with the other business consoles:
+     .bc-*/.bm-*/.tm-*/.mg-*/.ba-*/.wk-*/.in-*/.dt-*/.se-*/.mssn-*/.ap-* = Phases 1-12
+     .fac-* = Phase 12 (Software Factory)  ← this file
+
+   LIGHT THEME. Every surface below is light with dark text, matching the station's light console.
+
+   THE RULE THIS FILE EXISTS TO ENFORCE: a "factory" must NOT look like a progress bar. So:
+     · there is NO bar, NO track and NO fill anywhere in this sheet — the temptation is structurally removed;
+     · `.fac-state` is a WORD ("reached" / "not yet" / "blocked" / "cannot tell"), not a colour band that
+       implies a percentage;
+     · `.fac-on` is a quiet left rule for a reached stage — completing a stage is normal;
+     · `.fac-cannot` is LOUD, because an unreadable source must never pass for an empty one, and its count
+       shows "—", never a zero;
+     · `.fac-blocked` is muted, because blocked is a normal state with a named cause, not a failure. */
+
+.fac-wrap { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 18px; height: 100%; box-sizing: border-box; overflow: auto; }
+
+.fac-head { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; flex-wrap: wrap; }
+.fac-title { margin: 0; font-size: 13px; letter-spacing: 0.12em; font-weight: 700; color: #1a1d24; }
+.fac-spacer { flex: 1 1 auto; }
+.fac-select { font: inherit; font-size: 11px; color: #1a1d24; background: #fff; border: 1px solid #ccd4e0; border-radius: 4px; padding: 5px 8px; min-width: 180px; }
+.fac-btn { font: inherit; font-size: 11px; letter-spacing: 0.06em; color: #26303d; background: #eef1f6; border: 1px solid #ccd4e0; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+.fac-btn:hover { background: #e3e8f0; }
+
+.fac-banner { font-size: 11px; color: #3c4553; background: #f2f4f8; border: 1px solid #dce1ea; border-radius: 4px; padding: 3px 8px; }
+
+.fac-sum { font-size: 11px; color: #57606e; letter-spacing: 0.02em; }
+
+.fac-warn { display: flex; flex-direction: column; gap: 3px; }
+.fac-warn-line { margin: 0; font-size: 11px; font-weight: 600; color: #8a5a12; background: #fdf6e3; border: 1px solid #ecdcae; border-radius: 4px; padding: 5px 9px; }
+
+.fac-pipeline { display: flex; flex-direction: column; gap: 6px; }
+
+.fac-stage { border: 1px solid #e4e8f0; border-radius: 5px; padding: 7px 10px; background: #fbfcfe; }
+.fac-stage.fac-on { border-left: 3px solid #6f9ed8; }
+.fac-stage.fac-blocked { border-left: 3px solid #d7dce4; background: #f7f8fa; }
+.fac-stage.fac-cannot { border-left: 3px solid #c99a3a; background: #fdf9ef; }
+
+.fac-stage-head { display: flex; align-items: baseline; gap: 9px; }
+.fac-stage-n { font-size: 10px; color: #97a0ad; width: 14px; text-align: right; font-variant-numeric: tabular-nums; }
+.fac-stage-label { font-size: 12px; font-weight: 600; color: #1a1d24; }
+.fac-state { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; border: 1px solid #dce1ea; color: #57606e; background: #f2f4f8; }
+.fac-state-reached { color: #2c6a3c; border-color: #bfe0c8; background: #eef8f1; }
+.fac-state-blocked { color: #7a828d; }
+.fac-state-unobservable { color: #8a5a12; border-color: #ecdcae; background: #fdf6e3; }
+.fac-count { margin-left: auto; font-size: 11px; color: #57606e; font-variant-numeric: tabular-nums; }
+
+.fac-ev { margin: 3px 0 0; padding-left: 26px; list-style: none; }
+.fac-ev li { font-size: 10.5px; color: #57606e; line-height: 1.4; }
+.fac-ev li::before { content: '·'; margin-right: 6px; color: #b9c2cf; }
+.fac-why { margin: 3px 0 0 23px; font-size: 10.5px; color: #6b7480; }
+.fac-note { font-size: 10px; color: #6b7480; margin: 6px 0 0; line-height: 1.45; }
+
+.fac-empty { font-size: 11px; color: #6b7480; margin: 0; }
+.fac-err { font-size: 11px; color: #a3312c; margin: 0; }

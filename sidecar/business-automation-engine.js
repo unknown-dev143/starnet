@@ -50,11 +50,18 @@
   const EV = (typeof module !== 'undefined' && module.exports)
     ? require('../shared/events.js')
     : ((root.SK && root.SK.events) || null);
-  const api = factory(Autom, permsMod, EV);
+  /* The inactive-stage list comes from the store that OWNS the lifecycle, not a copy here — the gate below
+     and index.js's work-order admission must agree about when a business is standing down. */
+  const BIZ = (typeof module !== 'undefined' && module.exports)
+    ? require('./businesses-store.js')
+    : ((root.SK && root.SK.businessesStore) || null);
+  const api = factory(Autom, permsMod, EV, BIZ);
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else { (root.SK = root.SK || {}).businessAutomationEngine = api; }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (Autom, P, EV) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Autom, P, EV, BIZ) {
   'use strict';
+
+  const INACTIVE_STAGES = (BIZ && BIZ.INACTIVE_STAGES) || ['paused', 'winding-down', 'archived'];
 
   const MAX_DEPTH = 3;                  // how far a chain of automations may cascade
   const MAX_RULES_PER_EVENT = 25;       // a storm guard: one event cannot fan out without bound
@@ -151,7 +158,10 @@
       if (!businesses) return { ok: true };
       if (!businesses.has(biz)) return { ok: false, why: 'missing' };
       const b = businesses.get(biz);
-      if (b && b.stage === 'paused') return { ok: false, why: 'paused' };
+      /* A business that is not operating does not run scheduled work. The list lives in the store (single
+         source of truth) so this gate and index.js's work-order admission cannot drift apart. `why` names
+         the actual stage — "paused" and "winding-down" are different reasons to stand down. */
+      if (b && INACTIVE_STAGES.indexOf(b.stage) >= 0) return { ok: false, why: b.stage };
       return { ok: true };
     }
 

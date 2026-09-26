@@ -1,0 +1,83 @@
+/* frontend/css/businessautopilot.css — the GOAL AUTOPILOT console (Business OS Phase 12, §9).
+   Scoped .ap-* so it cannot collide with the other business consoles:
+     .bc-* = Phase 1 (Business Command Center)
+     .bm-* = Phase 2 (Business Maker)
+     .tm-* = Phase 3 (AI Team)
+     .mg-* = Phase 4 (Business Manager)
+     .ba-* = Phase 5 (Automation)
+     .wk-* = Phase 6 (AI Worker)
+     .in-* = Phase 7 (Intelligence)
+     .dt-* = Phase 9 (Digital Twin)
+     .se-* = Phase 10 (Security Center)
+     .mssn-* = Phase 11 (Mission Control)
+     .ap-* = Phase 12 (Goal Autopilot)  ← this file
+
+   LIGHT THEME. Every surface below is light with dark text, matching the station's light console.
+
+   THE RULE THIS FILE EXISTS TO ENFORCE: an AUTOPILOT must not LOOK cleverer than it is. So:
+     · `.ap-banner` is a persistent line saying the goal set is CLOSED and unknown goals are refused;
+     · `.ap-kw` shows the exact tokens a goal matches, so a match is CHECKABLE, not trusted;
+     · `.ap-refuse` is styled as a clear, calm statement (a refusal is a feature here, not an error state),
+       with the alternatives laid out beneath it;
+     · `.ap-staged` is the loudest line on the plan, because "this is a plan, nothing is written yet" is the
+       one thing a user must not misread. */
+
+.ap-wrap { display: flex; flex-direction: column; gap: 12px; padding: 12px 14px 18px; height: 100%; box-sizing: border-box; overflow: auto; }
+
+.ap-head { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; flex-wrap: wrap; }
+.ap-title { margin: 0; font-size: 13px; letter-spacing: 0.12em; font-weight: 700; color: #1a1d24; }
+.ap-spacer { flex: 1 1 auto; }
+.ap-sum { font-size: 11px; color: #57606e; letter-spacing: 0.02em; }
+
+.ap-banner { font-size: 11px; color: #3c4553; background: #f2f4f8; border: 1px solid #dce1ea; border-radius: 4px; padding: 3px 8px; }
+
+.ap-btn { font: inherit; font-size: 11px; letter-spacing: 0.06em; color: #26303d; background: #eef1f6; border: 1px solid #ccd4e0; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+.ap-btn:hover { background: #e3e8f0; }
+.ap-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.ap-xs { padding: 3px 7px; font-size: 10px; }
+.ap-primary { background: #2f6fd0; border-color: #2a63b8; color: #fff; }
+.ap-primary:hover { background: #2861bb; }
+
+.ap-sec { display: flex; flex-direction: column; gap: 6px; }
+.ap-h4 { margin: 0; font-size: 11px; letter-spacing: 0.1em; font-weight: 700; color: #57606e; }
+
+.ap-form { display: flex; gap: 8px; align-items: center; }
+.ap-input { font: inherit; font-size: 12px; color: #1a1d24; background: #fff; border: 1px solid #ccd4e0; border-radius: 4px; padding: 6px 9px; flex: 1 1 auto; }
+.ap-biz { flex: 0 0 auto; min-width: 190px; }
+
+.ap-msg { font-size: 11px; min-height: 14px; }
+.ap-ok { color: #2c6a3c; }
+.ap-bad { color: #a3312c; }
+
+.ap-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.ap-table th { text-align: left; font-weight: 700; color: #57606e; letter-spacing: 0.04em; border-bottom: 1px solid #dce1ea; padding: 4px 6px; }
+.ap-table td { border-bottom: 1px solid #eef1f6; padding: 4px 6px; color: #1a1d24; vertical-align: top; }
+.ap-num { text-align: right; width: 1%; white-space: nowrap; }
+.ap-goal-cell { font-weight: 600; }
+.ap-kw { color: #57606e; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; }
+.ap-pri { color: #57606e; text-transform: lowercase; }
+.ap-appr { color: #8a6d1f; font-size: 10px; }
+.ap-id { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; color: #57606e; }
+
+.ap-note { font-size: 10px; color: #6b7480; margin: 4px 0 0; line-height: 1.45; }
+.ap-empty { font-size: 11px; color: #6b7480; margin: 0; }
+.ap-err { font-size: 11px; color: #a3312c; margin: 0; }
+
+.ap-planout { display: flex; flex-direction: column; gap: 8px; }
+.ap-plan-head { display: flex; flex-direction: column; gap: 2px; }
+.ap-plan-goal { font-size: 13px; font-weight: 700; color: #1a1d24; }
+.ap-plan-meta { font-size: 10px; color: #6b7480; }
+.ap-plan-table { margin-top: 2px; }
+
+/* "this is a plan, nothing is written yet" — the one line that must not be missed. */
+.ap-staged { margin: 0; font-size: 11px; font-weight: 600; color: #8a6d1f; background: #fdf6e3; border: 1px solid #ecdcae; border-radius: 4px; padding: 5px 9px; }
+
+.ap-commit-bar { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+
+/* a refusal is a calm, deliberate statement here — the autopilot refusing to invent a plan is a feature. */
+.ap-refuse { border-left: 3px solid #b9c2cf; padding: 6px 10px; background: #f6f7fa; border-radius: 0 4px 4px 0; }
+.ap-refuse-line { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: #26303d; }
+.ap-known { margin: 0 0 4px; font-size: 11px; color: #3c4553; }
+
+.ap-committed { display: flex; flex-direction: column; gap: 6px; }
+.ap-committed-line { margin: 0; font-size: 12px; color: #2c6a3c; }

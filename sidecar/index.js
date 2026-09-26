@@ -161,7 +161,7 @@ const memcore = require('./memcore.js');
 const { makeConsentBroker } = require('./permissions.js');
 const { makeGrantManager } = require('./permgrants.js');
 const { makeProjectsStore } = require('./projects-store.js');   // NS-5: known-projects (blessed roots) durable store
-const { makeBusinessesStore } = require('./businesses-store.js');              // Business OS P1: the business ENTITY store (identity + the biz:<id> isolation namespace)
+const { makeBusinessesStore, INACTIVE_STAGES } = require('./businesses-store.js');              // Business OS P1: the business ENTITY store (identity + the biz:<id> isolation namespace)
 const { makeBusinessActivityStore } = require('./business-activity-store.js'); // Business OS P1: the per-business ACTIVITY LOG (append-only, bounded, fail-closed)
 const { makeBusinessRoutes } = require('./business-routes.js');                // Business OS P1: the /api/businesses surface — a MODULE, mounted into ROUTES (not inlined here)
 const { makeOpportunitiesStore } = require('./opportunities-store.js');        // Business OS P2: the OPPORTUNITY store — §4's claim set, where P1 is a data-model invariant (a claim needs an evidence label)
@@ -197,6 +197,14 @@ const { makeCostOptimizer } = require('./ai-cost-optimizer.js');               /
 const { makeIntelligenceRoutes } = require('./intelligence-routes.js');        // Business OS P7: the /api/intelligence + /api/businesses/:id/intelligence surface
 const { makeBusinessTwin } = require('./business-twin.js');                    // Business OS P9: §18 DIGITAL TWIN — what-if arithmetic on RECORDED readings; never a forecast
 const { makeTwinRoutes } = require('./twin-routes.js');                        // Business OS P9: the /api/businesses/:id/twin surface (catalog + simulate + compare)
+const { makeBusinessSecurity } = require('./business-security.js');             // Business OS P10: §13 SECURITY CENTER — composes permissions + grants + audit into one READ; owns no store
+const { makeSecurityRoutes } = require('./security-routes.js');                 // Business OS P10: the /api/businesses/:id/security surface (overview + audit + rules), all GET
+const { makeMissionControl } = require('./mission-control.js');                 // Business OS P11: §23 MISSION CONTROL — composes the business list + portfolio + signals + approvals + trail into one ranked board; owns no store
+const { makeMissionRoutes } = require('./mission-routes.js');                   // Business OS P11: the /api/mission surface (board + fleet + attention + alerts + trail), all GET
+const { makeBusinessAutopilot } = require('./business-autopilot.js');           // Business OS P12: §9 GOAL AUTOPILOT — the single "big objective → whole plan" entry; composes templates + tasks, owns no store
+const { makeAutopilotRoutes } = require('./autopilot-routes.js');               // Business OS P12: the /api/autopilot surface (catalog + plan + commit)
+const { makeSoftwareFactory } = require('./software-factory.js');               // Business OS P12: §22 AI SOFTWARE FACTORY — the Idea→…→Operate pipeline read; composes six stores, owns no store
+const { makeFactoryRoutes } = require('./factory-routes.js');                   // Business OS P12: the /api/factory surface (stages + pipeline), all GET
 /* P7 CATALOG-REFRESH SENTINEL. Declared HERE (not beside the router it points at, ~1500 lines below) for one
    reason: warmModelCatalog() is called during boot and its .then() runs asynchronously, and a `const` or
    `let` declared further down is still in its temporal dead zone at that moment — a bare `typeof` check does
@@ -3719,6 +3727,80 @@ const twinRoutes = makeTwinRoutes({
   activity: businessActivityStore,                 // the durable trail: a simulation that ran is worth logging
   readBody,
   emit: (name, payload) => chanEmit(name, payload)   // lazy wrapper — chanEmit is declared far below
+});
+
+/* §13 SECURITY CENTER (Phase 10). The audit's §6 item 6: "permissions + audit exist; the combined view does
+   not." This composes the four sources that DO exist — the §13 tier table (business-permissions.js), each
+   seat's own grants (agentsStore), the append-only trail (businessActivityStore) and the open approvals
+   (approvalsStore) — into one read. It owns no store and never mutates: granting and approving already have
+   their own guarded routes, and a security view that could also CHANGE authority would be a second, weaker
+   door to the same room (P4). Accessors are lazy so the wiring order below cannot matter. */
+const businessSecurity = makeBusinessSecurity({
+  agents: (businessId) => agentsStore.list(businessId),
+  activity: (businessId, o) => businessActivityStore.list(businessId, o),
+  pending: (businessId) => approvalsStore.pendingCount(businessId)
+});
+
+const securityRoutes = makeSecurityRoutes({
+  security: businessSecurity,
+  businesses: businessesStore
+});
+
+/* §23 MISSION CONTROL (Phase 11). The audit's §6 item 5: "Phase 7 read surfaces exist; no single unified
+   mission-control window." This composes the four that DO exist — the business list, the intelligence
+   engine's portfolio() and signals(), the approvals queue, and the cross-business activity feed — into one
+   ranked board. It owns no store and never writes: a mission view that could also ACT would be an unguarded
+   second door to every guarded mutation in the system. The ranking is not a score (P7): each row carries the
+   named reasons that placed it where it is. Accessors are lazy so the wiring order below cannot matter. */
+const missionControl = makeMissionControl({
+  businesses: () => businessesStore.list(),
+  portfolio: (o) => intelligenceEngine.portfolio(o),
+  signals: (businessId, o) => intelligenceEngine.signals(businessId, o),
+  pendingCount: (businessId) => approvalsStore.pendingCount(businessId),
+  pendingIds: () => approvalsStore.pendingBusinessIds(),
+  recent: (o) => businessActivityStore.recent(o),
+  now: () => Date.now()                           // the ONE clock read, injected (the module reads none itself)
+});
+
+const missionRoutes = makeMissionRoutes({
+  mission: missionControl
+});
+
+/* §9 GOAL AUTOPILOT (Phase 12). The audit's §6 item 4: "Worker plans+runs per order; no single 'big
+   objective → whole plan' entry." This is that entry. It is a COMPOSER: the goal vocabulary already lives in
+   business-templates.js (GOAL_PLANS / goalPlan) and the tasks already live in the task store, so the autopilot
+   reads those two and drives ONE admission — resolve a stated goal to a plan, or commit it into a business's
+   task list. It owns no store and invents no plan: an unknown goal is refused with the known set (P7). The
+   store's own guards (task cap, dependency validation, all-or-nothing persist) still run underneath a commit.
+   Accessors are passed by reference so the wiring order here cannot matter. */
+const businessAutopilot = makeBusinessAutopilot({
+  templates: businessTemplates,                   // owns the goal vocabulary + the plan shape
+  tasks: tasksStore,                              // owns the tasks + their dependency chain
+  businesses: businessesStore                     // a commit must name a business that exists
+});
+
+const autopilotRoutes = makeAutopilotRoutes({
+  autopilot: businessAutopilot,
+  readBody
+});
+
+/* §22 AI SOFTWARE FACTORY (Phase 12). The audit's §6 item 7: "terminal + code tools exist; no Idea→…→Deploy
+   artifact." This is that artifact — a READ that lays out the brief's eight stages for one business and says,
+   truthfully, where it actually is. It is a COMPOSER: the six stores already hold the facts (an opportunity,
+   a validation verdict, a promoted business, a task plan, work orders), so it owns no store and mutates
+   nothing — hence no POST. A stage is `reached` only when a recorded fact proves it; an unreadable source is
+   reported as `unobservable`, never as a zero; and there is no percentage, because any percentage would be
+   invented (P7). Accessors are lazy so the wiring order here cannot matter. */
+const softwareFactory = makeSoftwareFactory({
+  opportunities: opportunitiesStore,
+  validations: validationsStore,
+  businesses: businessesStore,
+  tasks: tasksStore,
+  workorders: workOrdersStore
+});
+
+const factoryRoutes = makeFactoryRoutes({
+  factory: softwareFactory
 });
 
 // the LIVE blessed-root set = every `path:*` grant, stripped of the prefix. Derived fresh each read so a
@@ -9234,6 +9316,26 @@ const ROUTES = [
   // /twin/simulate and /twin/compare (both POST, both STATELESS — they compute and return; nothing is
   // written). Mounted AFTER Phase 7's rows so the more specific /twin/... paths are tested first.
   ...twinRoutes.rows,
+  // ---- BUSINESS OS (Phase 10). §13 Security Center. Own module, mounted here, same rx + query-tolerant-tail
+  // discipline. Three rows, all GET, all under the business prefix: /security (the combined read),
+  // /security/audit (the trail slice) and /security/rules (the tier table). Read-only by construction — the
+  // mutations that change authority keep their own guarded routes. Mounted AFTER Phase 9 so no Phase 9 path
+  // can be shadowed, and /security/audit + /security/rules precede bare /security inside the module's rows.
+  ...securityRoutes.rows,
+  // ---- BUSINESS OS (Phase 11). §23 Mission Control. Own module, mounted here. STATION-level reads under a
+  // fresh /api/mission prefix (board · fleet · attention · trail · alerts), so none can shadow a Phase 1-10
+  // path. All GET, all read-only: the composer has no write path by construction.
+  ...missionRoutes.rows,
+  // ---- BUSINESS OS (Phase 12). §9 Goal Autopilot. Own module, mounted here. Three rows under a fresh
+  // /api/autopilot prefix (catalog · plan · commit), so none can shadow a Phase 1-11 path. All THREE are
+  // `qsplit` (path-verbatim, query-tolerant): the business and goal travel in the BODY, so no id ever appears
+  // in an autopilot path — and `exact` would 404 every ?query variant (the Phase 11 defect, fixed at source).
+  ...autopilotRoutes.rows,
+  // ---- BUSINESS OS (Phase 12). §22 AI Software Factory. Own module, mounted here. Two GET rows under a fresh
+  // /api/factory prefix (stages · pipeline): stages is qsplit (parameterless), pipeline is rx with the
+  // query-tolerant tail because its business id travels in ?business= (the §13 shape). Read-only by
+  // construction — the composer has no write path.
+  ...factoryRoutes.rows,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },
@@ -14388,7 +14490,10 @@ async function handleRun(req, res) {
   if (businessTag) {
     const biz = businessesStore.get(businessTag);
     if (!biz) { res.writeHead(400); return res.end('unknown business: ' + businessTag); }
-    if (biz.stage === 'paused' || biz.stage === 'archived') {
+    /* A business that is not operating does not run work. The list is read from the store that owns the
+       lifecycle (single source of truth) so this gate and the automation engine's cannot drift apart —
+       `winding-down` is a distinct reason to refuse and is named in the message. */
+    if (INACTIVE_STAGES.indexOf(biz.stage) >= 0) {
       res.writeHead(409);
       return res.end('business "' + businessTag + '" is ' + biz.stage + ' — resume it before running work for it');
     }

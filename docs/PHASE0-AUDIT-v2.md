@@ -118,18 +118,18 @@ Current metrics **[verified]**:
 | Brief § | Requirement | Status | Where |
 |---|---|---|---|
 | §1 Business Brain / C-suite roles | **done** | 12 roles bridged onto `shared/specialties.js` (**bridge, not duplicate** — P4) |
-| §2 Business lifecycle | **done (diverges)** | `idea·validating·building·live·paused·archived` (6 states, not the brief's 10) |
+| §2 Business lifecycle | **done** | `idea·validating·planning·building·testing·live·growing·paused·winding-down·archived` (the brief's **10** states; `launching` deliberately folded into `live` — see the rationale in `businesses-store.js`). `INACTIVE_STAGES` is one source of truth across the store, the automation engine, index.js's work-order gate and the UI. |
 | §3 Business memory | **done** | `business-memory.js`, 4 scopes + namespaced `biz:<id>` |
 | §4 Business Factory | **done** | templates + maker funnel; 6 evidence classes enforced by the data model |
 | §5 Opportunity Radar | **done** | opportunity store + routes (`opportunity.*` events) |
 | §6 Experiment Lab | **done** | `business-experiments-store.js` (397) |
 | §7 AI Workforce registry | **done** | `business-agents-store.js` — every field the brief lists |
 | §8 Task orchestration | **done** | `business-tasks-store.js` (436) + work-orders |
-| §9 Goal Autopilot | **partial** | `business-worker.js` plans+runs orders; no single "big objective → whole plan" entry |
+| §9 Goal Autopilot | **done** | `business-autopilot.js` — the single entry: a stated goal → a full plan → committed tasks. CLOSED goal set; an unknown goal is refused with the known list (P7). `autopilot-routes.js` (catalog·plan·commit). |
 | §10 Browser Worker | **done** | `tools/builtin/browser.js` (2,873 ln, **35 tools**). Worker now gets the **read-only half** (12 `research` tools, `wired:true`); interactive half stays absent + restricted. See §6b/§6c. |
 | §11 Computer Worker foundation | **done** | `business-worker-policy.js` — tool→§13 action table, fail-closed |
 | §12 Approval system | **done** | `business-approvals-store.js` (310) + held review-tier actions |
-| §13 Security system | **partial** | permissions + audit exist; no single combined "Security Center" window |
+| §13 Security system | **done** | `business-security.js` (composing reader) + `security-routes.js` + console `businesssecurity.js` — the combined "Security Center": every action's tier, who holds what, decisions, pending. Read-only by construction. |
 | §14 Audit log | **done** | `business-activity-store.js` append-only, bounded 500/business |
 | §15 AI cost management | **done** | cost/spend/ledger/budget (+ per-business tagging) |
 | §16 Model Router | **done** | `providers/factory.js` + `execution-router.js` + `fallbackchain.js` |
@@ -138,8 +138,8 @@ Current metrics **[verified]**:
 | §19 Business Intelligence | **done** | `intelligence-engine.js` — change/explain/anomalies |
 | §20 CRM | **done** | `business-crm-store.js` (391) |
 | §21 Automation engine | **done** | store + engine + depth bound + pass budget |
-| §22 AI Software Factory | **partial** | terminal + code tools exist; no Idea→…→Deploy pipeline artifact |
-| §23 Mission Control | **partial** | Phase 7 read surfaces exist; no single unified mission-control window |
+| §22 AI Software Factory | **done** | `software-factory.js` (composing reader) + `factory-routes.js` + console `businessfactory.js` — the Idea→Validate→Business→Spec→Build→Test→Ship→Operate pipeline, each stage proven by a recorded fact, **no percentage invented**. |
+| §23 Mission Control | **done** | `mission-control.js` (composing reader) + `mission-routes.js` + console `businessmission.js` — every business on one ranked board, the reasons ARE the ranking (no score). |
 | §24 Emergency Stop | **done** | `halt.js` — station E-STOP **and** scoped per-business stop |
 | §25 Remote monitoring | **missing by design** | no remote interface (brief says "architecture-ready" only) |
 | §26 Integration adapters | **done** | MCP manager + channels registry |
@@ -200,11 +200,11 @@ Ordered by value. Each is *verified absent or partial* above.
 | 1 | ~~Browser tools unclassified~~ **DONE** (`329b3aeb4`) | §10 | — | 35 tools classified by consequence. |
 | 2 | ~~**Browser callable by a worker** (the §6c decision)~~ **DONE** (`f7fa49c08`) | §10 | — | Read-only half wired (12 `research` tools, headless, anonymous profile). Interactive half still held. |
 | 3 | ~~**Business Digital Twin / scenario simulation**~~ **DONE** (Phase 9) | §18 | — | Runs **backward**: applies explicit assumptions to **recorded** readings; never forecasts. No reading → refuses. Every figure `kind:'simulation'` + `simulated:true` + `basis`. Rates clamped 0..1, clamps reported. |
-| 4 | **Goal Autopilot single entry** | §9 | Medium | Worker plans+runs per order; no "prepare this business for launch" → full plan. |
-| 5 | **Unified Mission Control window** | §23 | Medium | The reads exist (Phase 7); the single combined pane does not. |
-| 6 | **Security Center window** | §13 | Medium | Permissions + audit exist; the combined view does not. |
-| 7 | **AI Software Factory pipeline** | §22 | High | Terminal/code tools exist; no Idea→Spec→…→Deploy artifact. |
-| 8 | **Lifecycle divergence** | §2 | Low | 6 states vs the brief's 10 — a decision to make, not a bug. |
+| 4 | ~~**Goal Autopilot single entry**~~ **DONE** (Phase 12) | §9 | — | `business-autopilot.js` + `autopilot-routes.js` + console. A stated goal resolves to a full plan (read-only) and commits into a business's tasks. CLOSED goal set — an unknown goal is refused with the known list, never invented. |
+| 5 | ~~**Unified Mission Control window**~~ **DONE** (Phase 11) | §23 | — | `mission-control.js` + `mission-routes.js` + console. One ranked board; the ranking IS the named reasons (no score). Live-verified. |
+| 6 | ~~**Security Center window**~~ **DONE** (Phase 10) | §13 | — | `business-security.js` + `security-routes.js` + console. Tiers, holders, decisions, pending. Read-only. Live-verified. |
+| 7 | ~~**AI Software Factory pipeline**~~ **DONE** (Phase 12) | §22 | — | `software-factory.js` + `factory-routes.js` + console. The eight-stage pipeline, each stage proven by a recorded fact; an unreadable source shows "cannot tell", never a zero; **no percentage**. |
+| 8 | ~~**Lifecycle divergence**~~ **DONE** (Phase 12) | §2 | — | Extended to the brief's 10 states; `launching` folded into `live` with a recorded rationale; `INACTIVE_STAGES` is one source of truth. |
 
 ---
 

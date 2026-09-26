@@ -34,9 +34,37 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  // The lifecycle a business moves through. 'idea' and 'validating' are pre-build; 'building' is in-flight;
-  // 'live' is operating; 'paused' is a deliberate freeze; 'archived' is terminal-by-choice (never deleted).
-  const STAGES = ['idea', 'validating', 'building', 'live', 'paused', 'archived'];
+  /* THE BUSINESS LIFECYCLE (master prompt §2). The brief names ten stages; this list is the ten, in the
+     brief's order:
+
+       idea → validating → planning → building → testing → live → growing → paused → winding-down → archived
+
+     Three deliberate differences from the original six-state list, each recorded because the audit's §6
+     called the divergence "a decision to make, not a bug" (PHASE0-AUDIT-v2 §6 item 8):
+
+     1. `planning`, `testing` and `growing` are NEW. They were absent only because nothing had needed them
+        yet — not because the model rejects them. They are ordinary states: a business can be moved into any
+        of them through the same `setStage` path as the rest, and the UI offers them. Adding them closes the
+        gap by making the system able to SAY where a venture is, which is the point of a lifecycle.
+     2. `launching` (the brief's stage between testing and live) is NOT here, folded into `live`. A stage
+        only earns its place if something can be true in it and false outside it. Nothing in this system
+        distinguishes "launched but not yet live" from "live" — there is no launch gate that flips. Keeping
+        a stage nothing can enter would be decoration, so it is deliberately merged and the divergence is
+        named in the audit rather than papered over (P7 — no invented state).
+     3. `archived` is terminal-by-choice, never a delete, and `paused` is a deliberate freeze — both already
+        carried meaning (the automation engine reads `paused`; index.js reads `paused`/`archived`).
+
+     `winding-down` is the brief's `winding-down`: distinct from `paused` (temporary) because it is the
+     one-way approach to `archived`. */
+  const STAGES = [
+    'idea', 'validating', 'planning', 'building', 'testing',
+    'live', 'growing', 'paused', 'winding-down', 'archived'
+  ];
+
+  /* States a business is NOT operating in: the automation engine refuses to run scheduled work for these,
+     and index.js treats them as "not live" for the purposes of work-order admission. Kept as one exported
+     list so the two call sites cannot drift apart. */
+  const INACTIVE_STAGES = ['paused', 'winding-down', 'archived'];
 
   // Reusable business templates (master prompt §25). 'custom' = no template, user-defined flow.
   const TEMPLATES = ['saas', 'content', 'digital-product', 'agency', 'custom'];
@@ -197,8 +225,8 @@
       return { ok: true };
     }
 
-    return { STAGES, TEMPLATES, snapshot, list, count, get, has, create, update, setStage, remove, memoryNamespace, slugFor };
+    return { STAGES, INACTIVE_STAGES, TEMPLATES, snapshot, list, count, get, has, create, update, setStage, remove, memoryNamespace, slugFor };
   }
 
-  return { makeBusinessesStore, STAGES, TEMPLATES, slugFor };
+  return { makeBusinessesStore, STAGES, INACTIVE_STAGES, TEMPLATES, slugFor };
 });

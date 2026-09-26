@@ -32,14 +32,21 @@
 
   // ---- the vocabularies, mirrored from the sidecar stores (businesses-store.js / business-activity-store.js).
   // A value outside these renders as UNKNOWN rather than being coerced into something plausible.
-  const STAGES = ['idea', 'validating', 'building', 'live', 'paused', 'archived'];
+  const STAGES = [
+    'idea', 'validating', 'planning', 'building', 'testing',
+    'live', 'growing', 'paused', 'winding-down', 'archived'
+  ];
+  // States in which a business is not operating — mirrors the store's INACTIVE_STAGES (single source of truth
+  // is the sidecar; this list must match it or the UI offers a launch the engine will refuse).
+  const INACTIVE_STAGES = ['paused', 'winding-down', 'archived'];
   const TEMPLATES = ['saas', 'content', 'digital-product', 'agency', 'custom'];
   const RESULTS = ['ok', 'error', 'pending'];
   const APPROVALS = ['not-required', 'required', 'granted', 'denied'];
 
   const STAGE_LABEL = {
-    idea: 'IDEA', validating: 'VALIDATING', building: 'BUILDING',
-    live: 'LIVE', paused: 'PAUSED', archived: 'ARCHIVED'
+    idea: 'IDEA', validating: 'VALIDATING', planning: 'PLANNING', building: 'BUILDING',
+    testing: 'TESTING', live: 'LIVE', growing: 'GROWING', paused: 'PAUSED',
+    'winding-down': 'WINDING DOWN', archived: 'ARCHIVED'
   };
   const TEMPLATE_LABEL = {
     saas: 'SAAS', content: 'CONTENT', 'digital-product': 'DIGITAL PRODUCT',
@@ -78,6 +85,7 @@
   function runGuard(business) {
     const stage = String((business && business.stage) || 'idea');
     if (stage === 'paused') return { allowed: false, reason: 'This business is PAUSED — resume it before running work for it.' };
+    if (stage === 'winding-down') return { allowed: false, reason: 'This business is WINDING DOWN — it is on its way to archived and no longer runs work.' };
     if (stage === 'archived') return { allowed: false, reason: 'This business is ARCHIVED — it no longer runs work.' };
     return { allowed: true, reason: '' };
   }
@@ -102,7 +110,9 @@
         templateLabel: templateLabel(b.template),
         description: String(b.description || ''),
         paused: stage === 'paused',
+        windingDown: stage === 'winding-down',
         archived: stage === 'archived',
+        inactive: INACTIVE_STAGES.indexOf(stage) >= 0,
         createdBy: b.createdBy === 'ai' ? 'ai' : 'user',
         createdLabel: b.createdBy === 'ai' ? 'AI-PROPOSED' : 'YOURS',
         updatedRel: relTime(b.updatedAt, nowMs),
@@ -503,7 +513,7 @@
   }
 
   return {
-    STAGES, TEMPLATES, RESULTS, APPROVALS,
+    STAGES, INACTIVE_STAGES, TEMPLATES, RESULTS, APPROVALS,
     stageLabel, templateLabel, resultLabel, approvalLabel, actorLabel,
     relTime, runGuard, isPaused,
     toRows, activityRows, summarize, stageOptions, templateOptions, summaryLine,

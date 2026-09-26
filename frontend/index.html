@@ -39,6 +39,10 @@
 <link rel="stylesheet" href="css/businessworker.css"><!-- AI WORKER (Business OS Phase 6): scoped .wk-* styles for the work-order console — the plan builder, the order list, the §13 step decisions and the policy catalogue (businessworker.js). NOTE: .bc-*/.bm-*/.tm-*/.mg-*/.ba-* belong to Phases 1/2/3/4/5 — this one is .wk- so the consoles cannot collide. -->
 <link rel="stylesheet" href="css/businessintelligence.css"><!-- INTELLIGENCE (Business OS Phase 7): scoped .in-* styles for the intelligence console — what moved, the P1 explanation, the portfolio, the model router and the AI cost panel (businessintelligence.js). NOTE: .bc-*/.bm-*/.tm-*/.mg-*/.ba-*/.wk-* belong to Phases 1-6 — this one is .in- so the consoles cannot collide. -->
 <link rel="stylesheet" href="css/businessdtwin.css"><!-- DIGITAL TWIN (Business OS Phase 9, §18): scoped .dt-* styles for the scenario console — the what-if form, the simulated-vs-recorded table and the SIM markers (businessdtwin.js). NOTE: .bc-*/.bm-*/.tm-*/.mg-*/.ba-*/.wk-*/.in-* belong to Phases 1-7 — this one is .dt- so the consoles cannot collide. -->
+<link rel="stylesheet" href="css/businesssecurity.css"><!-- SECURITY CENTER (Business OS Phase 10, §13): scoped .se-* styles for the combined security read — the counts strip, the tier badges, the who-can-do-what grid and the authority slice of the audit trail (businesssecurity.js). NOTE: .bc-*/.bm-*/.tm-*/.mg-*/.ba-*/.wk-*/.in-*/.dt-* are taken — this one is .se- so the consoles cannot collide. A restricted action is styled MUTED (structural, not a fault) and an unreadable source is styled LOUD (never a tidy zero). -->
+<link rel="stylesheet" href="css/businessmission.css"><!-- MISSION CONTROL (Business OS Phase 11, §23): scoped .mssn-* styles for the ranked board, the fleet figures and the cross-business trail (businessmission.js). NOTE: .mc-* was already taken by the station's own stylesheets, so this one is .mssn- — scoped so the consoles cannot collide. The ranking reads as REASONS in place (.mssn-why), never a colour band or a priority number; an unreadable source is styled LOUD. -->
+<link rel="stylesheet" href="css/businessautopilot.css"><!-- GOAL AUTOPILOT (Business OS Phase 12, §9): scoped .ap-* styles (businessautopilot.js). The one line that must not be missed is .ap-staged — "this is a plan, nothing is written yet". A refusal (.ap-refuse) is styled as a calm statement, because the autopilot refusing to invent a plan is a feature, not an error. -->
+<link rel="stylesheet" href="css/businessfactory.css"><!-- SOFTWARE FACTORY (Business OS Phase 12, §22): scoped .fac-* styles (businessfactory.js). There is NO bar/track/fill class anywhere in this sheet — the progress-bar temptation is structurally removed. State reads as a WORD (.fac-state), an unreadable source is LOUD (.fac-cannot) and shows "—" not 0. -->
 
 </head>
 <body class="theme-amber">
@@ -640,6 +644,24 @@
              readings. Not a forecast — every simulated figure carries a SIM marker and the recorded basis it
              came from. Stores nothing. Title must stay in step with windows/digitaltwin.js. -->
         <button class="bb" data-term="digitaltwin" data-hint="digitaltwin"><span class="bb-i">⧉</span><span class="bb-tx"><b>DIGITAL TWIN</b><small>what-ifs on your real numbers — arithmetic, not a forecast</small></span></button>
+        <!-- BUSINESS OS (Phase 10). SECURITY CENTER (§13): the combined read of authority — the tier table,
+             the grants each seat actually holds, the recent authority decisions and what is waiting on you.
+             Read-only: granting and approving keep their own surfaces. No score, no grade. Title must stay
+             in step with windows/security.js. -->
+        <button class="bb" data-term="security" data-hint="securitycenter"><span class="bb-i">⛨</span><span class="bb-tx"><b>SECURITY CENTER</b><small>who can do what — tiers, grants, decisions &amp; what awaits you</small></span></button>
+        <!-- BUSINESS OS (Phase 11). MISSION CONTROL (§23): every business on one ranked board — work waiting
+             on you first, then anything not operating, then anything gone quiet — with the reasons named. The
+             ranking IS the reasons; there is no score. Read-only. Title must stay in step with windows/mission.js. -->
+        <button class="bb" data-term="mission" data-hint="missioncontrol"><span class="bb-i">◎</span><span class="bb-tx"><b>MISSION CONTROL</b><small>everything you run — ranked by what is blocking it</small></span></button>
+        <!-- BUSINESS OS (Phase 12). GOAL AUTOPILOT (§9): one stated objective → the whole plan, with the
+             matched words shown and the tasks written into a business only on commit. The goal set is CLOSED;
+             an unknown goal is refused with the list of known ones. Title must stay in step with
+             windows/autopilot.js. -->
+        <button class="bb" data-term="autopilot" data-hint="autopilot"><span class="bb-i">➤</span><span class="bb-tx"><b>GOAL AUTOPILOT</b><small>one objective → the whole plan, ready to work</small></span></button>
+        <!-- BUSINESS OS (Phase 12). SOFTWARE FACTORY (§22): the whole journey from idea to operating business,
+             one honest read — each stage shown only when a recorded fact proves it, no percentage invented.
+             Title must stay in step with windows/factory.js. -->
+        <button class="bb" data-term="factory" data-hint="softwarefactory"><span class="bb-i">⚙</span><span class="bb-tx"><b>SOFTWARE FACTORY</b><small>idea → operating, stage by stage — what is proven, not a bar</small></span></button>
         <button class="bb" data-term="quests" data-hint="quest"><span class="bb-i">⚑</span><span class="bb-tx"><b>QUESTS</b><small>progress &amp; suggestions — not a second to-do list</small></span></button>
         <!-- BUSINESS (Business OS Phase 1): the first surface about BUSINESSES rather than agents — the list,
              each one's audit log, and the per-business stop. Title must stay in step with windows/business.js. -->
@@ -857,6 +879,14 @@ document.write('<script src="' + ((window.__STARNET_API__ || '') + '/shared/spec
 <script src="app/windows/intelligence.js"></script><!-- INTELLIGENCE — the window slot (what moved · portfolio · signals · models · AI cost); MUST load after businessintelligence.js and stationui.js. TITLE LAW: the dock reads INTELLIGENCE and this registers 'INTELLIGENCE'. -->
 <script src="app/businessdtwin.js"></script><!-- BUSINESS OS engine (Phase 9, §18): pure value/delta formatting, catalog + scenario row shaping and the Digital Twin console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/digitaltwin.js (the window slot) and after stationui.js. -->
 <script src="app/windows/digitaltwin.js"></script><!-- DIGITAL TWIN — the window slot (run a what-if · compare); MUST load after businessdtwin.js and stationui.js. TITLE LAW: the dock reads DIGITAL TWIN and this registers 'DIGITAL TWIN'. -->
+<script src="app/businesssecurity.js"></script><!-- BUSINESS OS engine (Phase 10, §13): pure counts/capability/seat/decision shaping and the Security Center console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/security.js (the window slot) and after stationui.js. -->
+<script src="app/windows/security.js"></script><!-- SECURITY CENTER — the window slot (overview · who can do what · audit · rules); MUST load after businesssecurity.js and stationui.js. TITLE LAW: the dock reads SECURITY CENTER and this registers 'SECURITY CENTER'. -->
+<script src="app/businessmission.js"></script><!-- BUSINESS OS engine (Phase 11, §23): pure board/header/fleet/trail shaping and the Mission Control console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/mission.js (the window slot) and after stationui.js. -->
+<script src="app/windows/mission.js"></script><!-- MISSION CONTROL — the window slot (board · fleet figures · trail); MUST load after businessmission.js and stationui.js. TITLE LAW: the dock reads MISSION CONTROL and this registers 'MISSION CONTROL'. -->
+<script src="app/businessautopilot.js"></script><!-- BUSINESS OS engine (Phase 12, §9): pure goal-catalogue / plan-preview / refusal shaping and the Goal Autopilot console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/autopilot.js (the window slot) and after stationui.js. -->
+<script src="app/windows/autopilot.js"></script><!-- GOAL AUTOPILOT — the window slot (goal catalogue · plan preview · commit); MUST load after businessautopilot.js and stationui.js. TITLE LAW: the dock reads GOAL AUTOPILOT and this registers 'GOAL AUTOPILOT'. -->
+<script src="app/businessfactory.js"></script><!-- BUSINESS OS engine (Phase 12, §22): pure pipeline/stage/state shaping and the Software Factory console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/factory.js (the window slot) and after stationui.js. -->
+<script src="app/windows/factory.js"></script><!-- SOFTWARE FACTORY — the window slot (business picker · the eight-stage pipeline); MUST load after businessfactory.js and stationui.js. TITLE LAW: the dock reads SOFTWARE FACTORY and this registers 'SOFTWARE FACTORY'. -->
 <script src="app/navdock.js"></script>
 <script src="app/chatresize.js"></script>
 <script src="app/leftrail.js"></script><!-- hide/show the CREW rail (◂ in the rail header · ▸ CREW drawer tab on the stage edge); persisted per machine -->
