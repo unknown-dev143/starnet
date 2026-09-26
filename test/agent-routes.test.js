@@ -65,14 +65,16 @@ function harness(extra) {
 function last(seen, name) { for (let i = seen.length - 1; i >= 0; i--) if (seen[i].name === name) return seen[i].payload; return null; }
 
 // dispatch exactly as index.js does: method gate, then the single match key, then h(req,res,gm).
+// NOTE the asymmetry, which is the bug this suite pins: `rx` matches the FULL url and FILLS gm;
+// `qrx` tests the query-stripped path and leaves gm NULL. Mirrored verbatim from index.js ~9505.
 async function call(R, method, url, body) {
   const res = fakeRes();
-  const path = String(url).split('?')[0];
+  const bare = String(url).split('?')[0];
   const hit = R.routes.filter(r => (Array.isArray(r.m) ? r.m.indexOf(method) >= 0 : r.m === method))
     .filter(r => (r.exact !== undefined ? url === r.exact
-      : (r.rx ? !!String(url).match(r.rx) : (r.qrx ? !!path.match(r.qrx) : false))))[0];
+      : (r.rx ? !!String(url).match(r.rx) : (r.qrx ? !!bare.match(r.qrx) : false))))[0];
   if (!hit) throw new Error('no route for ' + method + ' ' + url);
-  const m = hit.rx ? String(url).match(hit.rx) : (hit.qrx ? path.match(hit.qrx) : null);
+  const m = hit.rx ? String(url).match(hit.rx) : null;
   await hit.h(fakeReq(method, url, body), res, m);
   return { code: res.code, json: res.body ? JSON.parse(res.body) : null };
 }
@@ -98,6 +100,29 @@ async function call(R, method, url, body) {
     A.ok(RX_TASK_ASSIGN.test('/api/tasks/acme~t1/assign'), 'RX_TASK_ASSIGN matches a task id');
     A.ok(RX_MEMORY.test('/api/memory/agent~acme~a1~2'), 'RX_MEMORY matches a nested agent-scope memory id');
     A.ok(!RX_MEMORY.test('/api/memory/agent~acme~a1#2'), 'a "#" id would never arrive — the pattern does not pretend otherwise');
+  }
+
+  /* ---------- THE ROUTE-TABLE TRAP: no qrx row may capture a path segment ----------
+     FOUND LIVE during app verification. index.js's dispatcher fills the match array ONLY for `rx` rows;
+     a `qrx` row reached its handler with match === null, so `POST /api/businesses/<id>/agents` answered
+     "no such business: null" for a business that existed. These locks make the trap a failing test rather
+     than a silent 404 (and mirror automation-routes.test.js's Phase-4 lesson). */
+  {
+    const { R } = harness();
+    const segQrx = R.routes.filter(r => r.qrx !== undefined && /\(/.test(String(r.qrx)));
+    A.eq(segQrx.length, 0, 'NO row is a segment-capturing qrx (a qrx row hands its handler match === null)');
+    for (const rx of [RX_BIZ_AGENTS, RX_BIZ_MEMORY, RX_BIZ_MESSAGES]) {
+      const row = R.routes.filter(r => r.rx === rx)[0];
+      A.ok(!!row, 'the family is registered as rx, not qrx');
+      A.ok(String(rx).indexOf('(?:\\?[^#]*)?$') >= 0, 'its regex carries the query-tolerant QS tail');
+    }
+    // a QUERY on a business-scoped GET must still match AND still capture the id (the whole point of rx+QS)
+    const q = '/api/businesses/acme/agents?role=ceo&specialty=strategist';
+    const m = q.match(RX_BIZ_AGENTS);
+    A.ok(!!m, 'a query string still matches the row');
+    A.eq(m[1], 'acme', 'and the businessId is captured out of the group — not null');
+    A.ok(!RX_BIZ_AGENTS.test('/api/businesses/acme/agents/acme~a1'),
+      'the QS tail does not loosen the anchor: an agent id is still refused');
   }
 
   /* ---------- the catalogs ---------- */
@@ -341,7 +366,7 @@ async function call(R, method, url, body) {
       'every event is in the Phase 3 namespace');
 
     const res = fakeRes();
-    const row = H.R.routes.filter(r => r.qrx === RX_BIZ_MEMORY)[0];
+    const row = H.R.routes.filter(r => r.rx === RX_BIZ_MEMORY)[0];
     await row.h(fakeReq('DELETE', '/api/businesses/acme/memory'), res, '/api/businesses/acme/memory'.match(RX_BIZ_MEMORY));
     A.eq(res.code, 405, 'an unsupported method on a known path is a 405');
   }

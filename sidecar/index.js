@@ -9143,7 +9143,10 @@ const ROUTES = [
   ...makerRoutes.routes,
   ...taskRoutes.routes,
   // ---- BUSINESS OS (Phase 3). Same rule again: its own module, mounted here. Its business-scoped rows use
-  // qrx (the GETs carry ?scope/?owner/?kind/?with), so they match the query-stripped path — see agent-routes.js.
+  // rx with a query-tolerant tail — NOT qrx, for the same reason the Phase-4 block below spells out: the
+  // dispatch only fills the match array for rx rows, and these handlers read the businessId from match[1].
+  // (They were qrx until app verification caught `POST /api/businesses/<id>/agents` answering
+  // "no such business: null". See agent-routes.js.)
   ...agentRoutes.routes,
   // ---- BUSINESS OS (Phase 4). Same rule again: its own module, mounted here. Its business-scoped rows use
   // rx with a query-tolerant tail — NOT qrx. (The rows used to be qrx; that was the bug manager-routes.js's

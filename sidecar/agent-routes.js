@@ -50,9 +50,25 @@ const MAX_BODY = 32 * 1024;
 // id and send the bare path, which matches nothing (the same bug fixed across Phase 2 — see validation-store.js).
 const ID = '([A-Za-z0-9_~-]+)';
 const BIZ = '([A-Za-z0-9_-]+)';
-const RX_BIZ_AGENTS = new RegExp('^/api/businesses/' + BIZ + '/agents$');
-const RX_BIZ_MEMORY = new RegExp('^/api/businesses/' + BIZ + '/memory$');
-const RX_BIZ_MESSAGES = new RegExp('^/api/businesses/' + BIZ + '/messages$');
+
+/* THE MATCH-KEY TRAP — this module had it, and it silently broke every business-scoped route on it.
+   index.js's dispatch (see its ~line 9505) does:
+       else if (r.rx)  { gm = url.match(r.rx); if (!gm) continue; }   // gm = the MATCH ARRAY, groups included
+       else if (r.qrx) { if (!r.qrx.test(bare)) continue; }           // gm stays NULL — no groups captured
+   and then calls r.h(req, res, gm). So a `qrx` row hands its handler match === null, and every handler below
+   reads the businessId out of match[1] — which meant `POST /api/businesses/<id>/agents` answered
+   "no such business: null" for a business that plainly existed (found live during app verification).
+
+   The three business-scoped families are READ WITH A QUERY (?scope, ?owner, ?kind, ?with=true) AND their
+   handlers need the id from the match groups, so they must be `rx` (which populates gm) with a regex that
+   ACCEPTS the query. QS is that optional-query tail — the same discipline manager-routes.js documents.
+   `qrx` would match the row and then 404, because the handler would have no id to look up. The exported
+   RX_BIZ_* still .test() a bare path unchanged (QS matches an empty query). */
+const QS = '(?:\\?[^#]*)?$';
+
+const RX_BIZ_AGENTS = new RegExp('^/api/businesses/' + BIZ + '/agents' + QS);
+const RX_BIZ_MEMORY = new RegExp('^/api/businesses/' + BIZ + '/memory' + QS);
+const RX_BIZ_MESSAGES = new RegExp('^/api/businesses/' + BIZ + '/messages' + QS);
 const RX_AGENT = new RegExp('^/api/agents/' + ID + '$');
 const RX_AGENT_STATUS = new RegExp('^/api/agents/' + ID + '/status$');
 const RX_AGENT_GRANTS = new RegExp('^/api/agents/' + ID + '/grants$');
@@ -370,14 +386,16 @@ function makeAgentRoutes(deps) {
 
   // Route rows for index.js. Every pattern is anchored, so order is not load-bearing today; the specific
   // rows are still listed before the generic :id rows so a future loosening cannot silently shadow them.
-  // qrx (not rx) for the three business-scoped families: their GETs carry ?scope/?owner/?kind/?with, and
-  // `rx` matches the FULL url — a query string would make the row miss entirely (see index.js's matcher notes).
+  // `rx` (NOT qrx) for the three business-scoped families. Their GETs carry ?scope/?owner/?kind/?with, and
+  // index.js's matcher only fills the match array for `rx` rows — a `qrx` row reaches its handler with
+  // match === null, and every handler here reads the businessId from match[1]. The regexes carry the QS tail
+  // so the query is accepted; see the note above the RX_ definitions.
   const routes = [
     { m: 'GET', exact: '/api/roles', h: handleRoles },
     { m: 'GET', exact: '/api/permissions', h: handlePermissions },
-    { m: ['GET', 'POST'], qrx: RX_BIZ_AGENTS, h: handleAgents },
-    { m: ['GET', 'POST'], qrx: RX_BIZ_MEMORY, h: handleMemory },
-    { m: ['GET', 'POST'], qrx: RX_BIZ_MESSAGES, h: handleMessages },
+    { m: ['GET', 'POST'], rx: RX_BIZ_AGENTS, h: handleAgents },
+    { m: ['GET', 'POST'], rx: RX_BIZ_MEMORY, h: handleMemory },
+    { m: ['GET', 'POST'], rx: RX_BIZ_MESSAGES, h: handleMessages },
     { m: 'POST', rx: RX_AGENT_STATUS, h: handleAgentStatus },
     { m: 'POST', rx: RX_AGENT_GRANTS, h: handleAgentGrants },
     { m: 'POST', rx: RX_TASK_ASSIGN, h: handleAssign },
