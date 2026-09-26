@@ -126,7 +126,7 @@ Current metrics **[verified]**:
 | §7 AI Workforce registry | **done** | `business-agents-store.js` — every field the brief lists |
 | §8 Task orchestration | **done** | `business-tasks-store.js` (436) + work-orders |
 | §9 Goal Autopilot | **partial** | `business-worker.js` plans+runs orders; no single "big objective → whole plan" entry |
-| §10 Browser Worker | **exists, but unreachable by a worker** | `tools/builtin/browser.js` (2,873 ln, **35 tools**) — worker policy maps only `browser.login`, so 34 are fail-closed-refused. See §6b. |
+| §10 Browser Worker | **done** | `tools/builtin/browser.js` (2,873 ln, **35 tools**). Worker now gets the **read-only half** (12 `research` tools, `wired:true`); interactive half stays absent + restricted. See §6b/§6c. |
 | §11 Computer Worker foundation | **done** | `business-worker-policy.js` — tool→§13 action table, fail-closed |
 | §12 Approval system | **done** | `business-approvals-store.js` (310) + held review-tier actions |
 | §13 Security system | **partial** | permissions + audit exist; no single combined "Security Center" window |
@@ -197,8 +197,8 @@ Ordered by value. Each is *verified absent or partial* above.
 
 | # | Gap | Brief § | Effort | Note |
 |---|---|---|---|---|
-| 1 | ~~Browser tools unclassified~~ **DONE** (`329b3aeb4`) | §10 | — | 35 tools classified; **but still not callable** — see §6c for the decision. |
-| 2 | **Browser callable by a worker** (the §6c decision) | §10 | Medium | Needs a session-lifetime + profile + headless decision. Read-only first. Recommend: **user decides**. |
+| 1 | ~~Browser tools unclassified~~ **DONE** (`329b3aeb4`) | §10 | — | 35 tools classified by consequence. |
+| 2 | ~~**Browser callable by a worker** (the §6c decision)~~ **DONE** (`f7fa49c08`) | §10 | — | Read-only half wired (12 `research` tools, headless, anonymous profile). Interactive half still held. |
 | 3 | **Business Digital Twin / scenario simulation** | §18 | High | The one whole feature with **no** implementation. Must be labelled a simulation, never a prediction. |
 | 4 | **Goal Autopilot single entry** | §9 | Medium | Worker plans+runs per order; no "prepare this business for launch" → full plan. |
 | 5 | **Unified Mission Control window** | §23 | Medium | The reads exist (Phase 7); the single combined pane does not. |
@@ -286,12 +286,12 @@ quest, station) and does **not** register browser / shell / terminal / computer.
 runner must **distinguish "the policy refuses this" from "the policy would allow it but the worker has no
 route to it"** — *"those are different facts and a user acting on them would do different things."*
 
-**Honest conclusion:** the fix makes browser steps **correctly classified** (no longer silently dead), but the
-browser is **still not callable** by a business worker, because the worker registry does not carry it. That is
-a *separate, deliberate* decision, not an oversight. **Making the browser callable means adding
-`makeBrowserTools({...}).register(reg)` to `makeWorkerRegistry()` — a real capability change with security
-weight (it hands an unattended worker a live Playwright session), and therefore a decision for the user, not
-a unilateral edit.** Flagged, not made. See §6c.
+**Honest conclusion (as of Phase 0):** the `329b3aeb4` fix made browser steps **correctly classified** (no
+longer silently dead), but at that moment the browser was **still not callable** by a business worker,
+because the worker registry does not carry it. That was a *separate, deliberate* decision, not an oversight.
+**That decision has since been made and implemented** (`f7fa49c08`, see §6c): the read-only half is wired,
+the interactive half remains absent. The general lesson stands, though — **`wired` and `tier` are two
+different facts about a tool**, and a change to one does not imply the other. Always check both.
 
 ---
 
@@ -326,7 +326,33 @@ on a **clean profile**, headless. That gives a business worker real research cap
 exposure and no ability to act. Interactive browser work (click/type/upload) should stay **held for human
 approval** even after that, which the policy already does correctly as of this commit.
 
-**Status:** not started. Awaiting the user's decision.
+**Status: DECIDED AND IMPLEMENTED** (`f7fa49c08`). The user took the recommended option — read-only browser
+access — and it is now wired. `makeWorkerRegistry()` builds `makeBrowserTools({...})` with the hardened
+posture (headless, `syntheticInputOnly`, `cdpPort: 0`, throwaway profile, `cleanupProfile: true`) and then
+**filters the toolset to the 12 `research` tools before registering**. Q1 (session lifetime) resolved the
+same way `browser.js` already resolves it for a normal run: **per-run session**, fresh registry per work
+order. Q2 (profile) resolved as **clean throwaway profile** — and deliberately *no* `persistentProfile`
+lease and *no* `attendedLogin`, so an unattended worker cannot inherit the Commander's cookies; Q3 headless
+only; Q4 unchanged — the two gates still AND.
+
+The result, verified live on a fresh boot:
+
+| check | value |
+|---|---|
+| browser rows in `/api/worker/catalog` | 36 |
+| **wired** browser tools | **12** (all `safe` / `research`) |
+| wired interactive browser tools | **0** |
+| total wired tools | 32 → **44** |
+
+and end-to-end on a dry-run work order: `browser.navigate`/`browser.get_text` → `wired:true`, `outcome:run`;
+`browser.click` → `tier:restricted`, `wired:false`, `outcome:deny`. **The worker can read the web and
+cannot act on it**, and the two fences (policy tier + registry membership) agree.
+
+The invariant is pinned at the source in `test/business-os-hardening.test.js` (116 → 189 assertions), with a
+comment-stripping scan of `makeWorkerRegistry()`'s body plus a per-tool cross-check against the policy table.
+Confirmed to bite: injecting `browser.click` or `persistentProfile` into the registry fails the gate.
+
+**Interactive browser work stays held for human approval** — as recommended, and as the policy already did.
 
 ---
 
