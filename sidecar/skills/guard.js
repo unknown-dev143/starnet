@@ -3,6 +3,14 @@
    The scanner is intentionally regex-based and deterministic. It catches
    common prompt-injection, exfiltration, destructive command, persistence,
    and obfuscation patterns before a skill package is trusted.
+
+   Extended 2026-09-27 (credential access · self-protection evasion · remote
+   control · escalation · scheduled persistence). The threat TAXONOMY for the
+   additions came from comparing this scanner against skill-firewall, the
+   standalone predecessor of this module that still sits in the workspace: its
+   own shipped malicious sample reads ~/.ssh/id_rsa and silences telemetry, and
+   neither shape was matched by any pattern here. Eight of twelve named threat
+   classes scanned as SAFE before this change (see docs/PHASE0-AUDIT-v3.md §12).
 */
 'use strict';
 (function (root, factory) {
@@ -41,7 +49,42 @@
     [/Remove-Item\s+.*-Recurse\s+.*-Force/i, 'ps_remove_recurse', 'critical', 'destructive', 'destructive PowerShell removal'],
     [/>+\s*~\/\.(bashrc|zshrc|profile|powershell)/i, 'shell_profile_persist', 'medium', 'persistence', 'shell profile persistence'],
     [/\b(base64|fromCharCode|eval|Invoke-Expression)\b/i, 'obfuscation_eval', 'medium', 'obfuscation', 'obfuscation or dynamic execution'],
-    [/https?:\/\/[^\s`'")]+/i, 'network_url', 'low', 'network', 'embedded network URL']
+    [/https?:\/\/[^\s`'")]+/i, 'network_url', 'low', 'network', 'embedded network URL'],
+
+    /* ============ THE CLASSES A DETERMINISTIC SCANNER WAS MISSING (2026-09-27) ============
+       Every rule below closes a gap found by running twelve named threat classes through this
+       scanner: eight scanned as SAFE, including the two shapes in skill-firewall's own shipped
+       malicious sample. Severity is chosen so the TRUST table stays honest rather than maximally
+       alarming — a credential file read is `critical` (no procedure does that), while merely
+       READING a secret-shaped env var is `medium` (a skill that calls its own API has a
+       legitimate shape) and therefore lands in `ask` for community content, not `block`. */
+    // private key material — an SSH private key filename has no benign role in a skill
+    [/\b(id_rsa|id_ed25519|id_ecdsa)\b/i, 'private_key_ref', 'critical', 'credential-access', 'references an SSH private key file'],
+    // a credential STORE opened by path (the verb is required, so prose that merely names one is not flagged)
+    [/(readFileSync|readFile|Get-Content|\bcat\s|\bopen\s*\()\s*[^\n]{0,60}(\.ssh|\.aws|\.netrc|\.pgpass|\.git-credentials|\.kube|\.docker[\/\\]config\.json)/i, 'credential_store_read', 'critical', 'credential-access', 'reads a credential store by path'],
+    // a secret-shaped env var READ (not merely interpolated into curl — that is env_exfil_* above)
+    [/(process\.env|os\.environ|\$env:|getenv\s*\()[^\n]{0,14}(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)/i, 'secret_env_read', 'medium', 'credential-access', 'reads a secret-shaped environment variable'],
+
+    /* ---- SELF-PROTECTION EVASION ------------------------------------------------------------
+       ⛔ THE MOST IMPORTANT ADDITION. A skill that turns off the audit trail, the consent broker,
+          or THIS scanner is attacking the mechanism that would report it — and no pattern here
+          covered it, so `fs.appendFileSync = () => {}` scanned as SAFE. `high`/`critical` is
+          deliberate: nothing legitimate reconfigures the guard from inside a skill. */
+    [/(console\.(log|error|warn|info)\s*=\s*(\(\)\s*=>|function|null|noop)|logger\.disabled\s*=\s*true|logging\.(disable|enabled\s*=\s*false))/i, 'disable_logging', 'high', 'evasion', 'silences logging from inside the skill'],
+    [/((appendFileSync|writeFileSync|logDecision|auditLog|activityStore)\s*=\s*(\(\)\s*=>|function|null))|(audit\w*\.(disabled|enabled)\s*=\s*(true|false))/i, 'disable_audit', 'high', 'evasion', 'disables or nulls the audit trail'],
+    [/(skillGuard|SKILL_GUARD\w*|skillGate|guardAction|scanSkillRecord)\s*=\s*(null|false|undefined|\(\)\s*=>|\{\})/i, 'disable_guard', 'critical', 'evasion', 'disables or nulls the skill guard itself'],
+    [/(permissions?\.(bypass|disabled|enabled)\s*=\s*(true|false)|bypassPermissions|skipConsent|requireConsent\s*=\s*false|autoApprove\s*=\s*true)/i, 'bypass_consent', 'critical', 'evasion', 'bypasses the consent / permission gate'],
+    [/--no-(audit|verify|sandbox|permission)\b/i, 'disable_flags', 'high', 'evasion', 'passes a flag that disables a safety mechanism'],
+
+    /* ---- REMOTE CONTROL · ESCALATION · SCHEDULED PERSISTENCE --------------------------------- */
+    [/(\/dev\/tcp\/|\bnc\s+(-e|--exec)|\bncat\s+(-e|--exec)|socat\s+[^\n]*exec|bash\s+-i\s*>&)/i, 'reverse_shell', 'critical', 'remote-control', 'reverse shell or remote command channel'],
+    [/(chmod\s+(\+s|u\+s|g\+s|777\s+[\/.])|setcap\s|NOPASSWD|\/etc\/sudoers)/i, 'privilege_escalation', 'high', 'escalation', 'privilege escalation or a world-writable critical path'],
+    [/(crontab\s+-|@reboot|\/etc\/cron|systemctl\s+enable|launchctl\s+load|LaunchAgents|schtasks\s+\/create)/i, 'scheduled_persistence', 'high', 'persistence', 'installs a scheduled or boot-time persistence hook'],
+
+    /* ---- OBFUSCATED EXECUTION, NARROWED ------------------------------------------------------
+       `obfuscation_eval` above stays `medium` because a bare `eval` has innocent uses; the
+       COMBINATION of dynamic decode plus execution is the shape that never is. */
+    [/(eval|Function|exec)\s*\([^\n]*(base64|atob|fromCharCode|unescape|decode)/i, 'obfuscated_exec', 'critical', 'obfuscation', 'executes dynamically decoded code']
   ];
   const SEV_RANK = { low: 1, medium: 2, high: 3, critical: 4 };
 
