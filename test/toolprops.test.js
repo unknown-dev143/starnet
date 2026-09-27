@@ -13,7 +13,11 @@ const map = ToolProps.toolPropType;
 // computer=the compute gate, workbench=dedicated shell/verify events, orchestrator=handoff boxes).
 const EXPECT = {
   computer: null, notebook: 'notebook', cabinet: 'cabinet', dish: 'dish',
-  connector: null, workbench: null, orchestrator: null, studio: 'studio', jukebox: 'jukebox'
+  connector: null, workbench: null, orchestrator: null, studio: 'studio', jukebox: 'jukebox',
+  // the 7 capability props added this session — each grants its own same-named objectType, so each of
+  // its tools must light that exact prop id (the floor pulse the placement toast promises).
+  audiolab: 'audiolab', cinema: 'cinema', editingbay: 'editingbay', publishinghouse: 'publishinghouse',
+  briefingroom: 'briefingroom', printshop: 'printshop', listingdesk: 'listingdesk'
 };
 for (const [objectType, grants] of Object.entries(CAP_REGISTRY)) {
   A.ok(objectType in EXPECT, 'registry objectType "' + objectType + '" has an expected mapping (update toolprops when the registry grows)');
@@ -33,6 +37,15 @@ A.eq(map('recall_conversation'), 'notebook', 'recall_conversation -> notebook');
 A.eq(map('todo'), null, 'todo rides the computer (taskplan freebie, 2026-08-17) — no cap-prop pulse, same rule as quest.update');
 A.eq(map('image_generate'), 'studio', 'image_generate -> studio');
 A.eq(map('spotify_play'), 'jukebox', 'spotify_play -> jukebox');
+/* the 7 session props: named explicitly so a rename in the registry fails HERE by name, not only via
+   the objectType sweep above (which would still catch a dropped row, but not a swapped tool). */
+A.eq(map('audio_generate'), 'audiolab', 'audio_generate -> audiolab');
+A.eq(map('video_generate'), 'cinema', 'video_generate -> cinema');
+A.eq(map('video_compose'), 'editingbay', 'video_compose -> editingbay');
+A.eq(map('doc_publish'), 'publishinghouse', 'doc_publish -> publishinghouse');
+A.eq(map('report_publish'), 'briefingroom', 'report_publish -> briefingroom');
+A.eq(map('print_prep'), 'printshop', 'print_prep -> printshop');
+A.eq(map('etsy_listing_check'), 'listingdesk', 'etsy_listing_check -> listingdesk');
 
 /* ---- the no-double-fire law: tools with their OWN floor visual return null ---- */
 A.eq(map('mcp__github__search_issues'), null, 'mcp__ tools stay with the connector portal pulse');

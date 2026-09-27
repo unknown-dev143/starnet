@@ -301,3 +301,64 @@ no second auth path, no mutation route — an approval *decision* still goes thr
 `dock-terms-open` (9), all 12 sibling `*-routes` suites, `business-os-hardening` (**196**, up from 189 —
 the sweep now covers 14 modules), `business-os-lifecycle` (39). `source-text-integrity` env-fails
 (`spawnSync git EBUSY`) — the sandbox, not the change. Website mirror `--check`: **OK**.
+
+## 11. Postscript — the 7 capability props were shipping with NO ART (and 2 red gates)
+
+A regression sweep of the *product* surfaces (rather than the Business OS surfaces) found that the seven
+capability props added in the previous session were **registered but never drawn**. Because
+`PropSprites.draw()` returns early when a prop has no `F[id]` entry — `const fn = F[f.t]; if (!fn) return;`
+— a placed one **granted its capability, blocked walkers, and painted nothing**: an invisible wall. Nothing
+errored, nothing logged, and every objectType-level gate still passed.
+
+**Two gates in `test/fast.list` were red, and only one of them noticed the art:**
+
+```
+prop-render-smoke: FAIL: every catalog prop actually paints …
+  got ["audiolab (0 rects)","cinema (0 rects)","editingbay (0 rects)","publishinghouse (0 rects)",
+       "briefingroom (0 rects)","printshop (0 rects)","listingdesk (0 rects)"]
+toolprops: 14 problem(s), 144 ok
+```
+
+`prop-render-smoke.test.js` walks the **entire catalog** through a recording 2D context and asserts three
+things per prop — that it does not throw, that it paints at least `MIN_RECTS` rects, and that everything it
+painted lands inside its own footprint (`PAD_X` 10 / `PAD_UP` 44 / `PAD_DOWN` 8). It was the single test
+sensitive to a prop that draws nothing; `capprop-map.contract.test.js` (the other per-prop-id lock) had
+**already** been updated for the seven, which is why the omission read as "done".
+
+**The repair.** Seven draw functions authored in `frontend/app/propsprites.js`, in the catalog's established
+language (baseplate + conduit socket, foreshortened top deck over a south front face, one warm key
+high-and-west, silhouette ink a dark tint of the material's own hue). Measured against the reference prop
+`studio` — the bounding box of each new 2×2 is **identical** to studio's, `[12,30..41,61]` in a 48×70 cell
+with the footprint at `[12,36..36,60]`:
+
+| prop | rects | bbox | tell |
+|---|---|---|---|
+| `audiolab` | 220 | `[12,30..41,61]` | waveform trace + tape hubs + speaker cones + VU needle |
+| `cinema` | 266 | `[12,20..41,61]` | spoked film reel standing proud of the deck + lens barrel + gate |
+| `editingbay` | 129 | `[12,30..41,61]` | timeline of source-tinted clips under a sweeping playhead |
+| `publishinghouse` | 61 | `[11,30..29,61]` | bound book stack + ribbon under a dropping press platen |
+| `briefingroom` | 53 | `[11,28..29,61]` | dated wall chart (newest row lit) on a lectern |
+| `printshop` | 62 | `[11,30..29,61]` | CMYK process bars + registration cross |
+| `listingdesk` | 68 | `[11,30..29,61]` | swing tag with a barcode + a character ruler |
+
+`frontend/app/toolprops.js` gained the seven `EXACT` tool→prop rules so each tool lights its own machine
+(`audio_generate→audiolab`, `video_generate→cinema`, `video_compose→editingbay`, `doc_publish→publishinghouse`,
+`report_publish→briefingroom`, `print_prep→printshop`, `etsy_listing_check→listingdesk`), and
+`test/toolprops.test.js` gained both the seven `EXPECT` rows and **seven named assertions** so a swapped
+tool fails by name rather than only through the objectType sweep.
+
+**Gates after the repair (all green):** `prop-render-smoke` **9** (was red), `toolprops` **165** (was 14
+failures), `prop-search` 260, `proprotate` 498, `prop-mount` 91, `propanchor` 92, `prop-flat-decal` 45,
+`prop-starter-shelf` 35, `prop-awareness` 9, `g1bprops` 43, `sprite-assets` 15324, `worldmodel` 342,
+`capprop-map.contract` 143, `capdrift` 99, `cap-tool-registration` 306, `capgate` 54, `onboarding-legibility`
+49, `lint-determinism` (336 files, OK). `sprite-detached-prop` env-fails (`spawnSync EBUSY`) — the sandbox.
+Website mirror `--check`: **OK**.
+
+**Live end-to-end proof.** The sidecar was booted on a scratch workspace and the **served** bytes fetched
+over HTTP: all seven `F.<id>` functions present in `/app/propsprites.js`, `"No custom sprite yet"` present
+**0** times, and all seven mappings present in `/app/toolprops.js`. The unit tests say the art paints; the
+HTTP fetch says the browser receives it.
+
+**Not touched on purpose:** the short `ultron` (8 frame keys), `minion` (16) and `pikachu` (16) character
+sprite sets. Pre-existing gaps in a different subsystem (character art, not prop art); changing them would
+alter how already-saved agents render, which is not this repair's business.

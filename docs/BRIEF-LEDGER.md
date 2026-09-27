@@ -124,10 +124,11 @@ created business then appears in `/api/remote/summary` with real values; a bogus
 
 ## 6. Bottom line
 
-**Every requirement the brief lists is present**, with the single explicit exception of §25 remote
-monitoring, which the brief itself scopes to "architecture-ready" and which is therefore not owed.
+**Every requirement the brief lists is present**, including §25 remote monitoring, which the brief scopes
+to "architecture-ready" and which is built as exactly that — a composing read model plus a seam that
+defaults to OFF and opens no listener.
 
-The one thing **not** proven in this session is the *full* 732-step gate running green end-to-end, and that
+The one thing **not** proven in this session is the *full* 750-step gate running green end-to-end, and that
 is an artifact of the sandbox refusing nested process spawns — not of the change. The Business OS suites
 themselves were all executed and passed. Phase 10–12 alone is **12 suites, 792 assertions, 0 failures**:
 
@@ -147,7 +148,55 @@ themselves were all executed and passed. Phase 10–12 alone is **12 suites, 792
 | `businessfactory` | 37 |
 | **total** | **792** |
 
-Plus the broad guards: `business-os-hardening` 189, `business-os-lifecycle` 39, `station-tooltip` 443,
+Plus the broad guards: `business-os-hardening` 196, `business-os-lifecycle` 39, `station-tooltip` 443,
 `events-contract` 9, `onboarding-legibility` 49, `dock-terms-open` 9, `module-scope-shadowing` 7,
 `bottle-wiring` 22, `brand-wordmark-mask` 22, `boot-security` 16. Across the whole Phase 9–12 set the
 cumulative count is **1,144 assertions, 0 failures**.
+
+---
+
+## 7. Postscript — the 7 capability props' art (and two gates they had left red)
+
+The session that added the seven capability props (`audiolab`, `cinema`, `editingbay`, `publishinghouse`,
+`briefingroom`, `printshop`, `listingdesk`) registered them in the catalog and in `CAP_REGISTRY`, but
+**shipped them without art**. That left a footprint that granted a capability, blocked walkers, and painted
+**nothing** — an invisible wall — and it left **two gates red**, both of which are in `test/fast.list`:
+
+| Gate | What it caught |
+|---|---|
+| `test/prop-render-smoke.test.js` | walks the **whole catalog** through a recording 2D context; all seven reported `0 rects` ("this is what 'drew nothing' looks like") |
+| `test/toolprops.test.js` | 14 failures — the seven objectTypes had no entry in its `EXPECT` lock table, and `toolprops.js` had no rule for `audio_generate` / `video_generate` / `video_compose` / `doc_publish` / `report_publish` / `print_prep` / `etsy_listing_check` |
+
+**Why only one gate noticed.** `PropSprites.draw()` skips a prop with no `F[id]` entry **silently**
+(`const fn = F[f.t]; if (!fn) return;`). So the catalog row, `has(id)`, the module parse, the cap-prop
+contract and every objectType-level test all passed while the prop drew nothing. Only the whole-catalog
+paint walk was sensitive to it.
+
+**The repair.**
+
+| File | Change |
+|---|---|
+| `frontend/app/propsprites.js` | **7 draw functions authored** (+ a shared rationale block). Each paints **53–266 rects**, stays inside the house silhouette budget (`PAD_X` 10 / `PAD_UP` 44 / `PAD_DOWN` 8), and carries a mark no other prop has: a **waveform** (audiolab), a **spoked film reel** (cinema), a **timeline with a running playhead** (editingbay), a **bound book stack under a press platen** (publishinghouse), a **dated wall chart on a lectern** (briefingroom), **CMYK process bars with a registration cross** (printshop), a **swing tag with a barcode and a character ruler** (listingdesk). The seven catalog `desc` strings drop the stale *"No custom sprite yet"* line. |
+| `frontend/app/toolprops.js` | 7 `EXACT` tool→prop rules, so each tool now lights the machine that provides it instead of nothing. |
+| `test/toolprops.test.js` | the 7 objectTypes added to the `EXPECT` lock, **plus 7 named assertions** so a swapped tool fails by name and not only via the objectType sweep. |
+| `website/app/app/{propsprites,toolprops}.js` | mirror re-synced (`scripts/sync-website-app.mjs`; `--check` prints OK). |
+
+**Verified.** `prop-render-smoke` → `OK (9 assertions)`; `toolprops` → `OK (165)`. Both were red before.
+Every prop gate re-run green (`prop-search` 260, `proprotate` 498, `prop-mount` 91, `propanchor` 92,
+`prop-flat-decal` 45, `prop-starter-shelf` 35, `prop-awareness` 9, `g1bprops` 43, `sprite-assets` 15324,
+`worldmodel` 342, `capprop-map.contract` 143), plus `capdrift` 99, `cap-tool-registration` 306,
+`capgate` 54, `onboarding-legibility` 49, `lint-determinism` (336 files, OK).
+
+**The end-to-end proof, not just the unit tests.** The sidecar was booted on a scratch workspace and the
+**served** bytes were fetched over HTTP: all seven `F.<id>` functions are present in
+`/app/propsprites.js`, `"No custom sprite yet"` appears **0** times, and all seven mappings are present in
+`/app/toolprops.js` — i.e. what the browser receives carries the art.
+
+**Also rendered for review.** A contact sheet of the 7 (plus `studio` as the house-style reference) is
+written by a throwaway rasterizer at `../spacestation-new-props.png` — outside the repo, because it is a
+review tool and not a product file.
+
+**One thing deliberately NOT done:** the stale `ultron` (8 frame keys vs the standard 25), `minion` (16) and
+`pikachu` (16) sprite sets in `frontend/assets/sprites/manifest.json` are **left as they are**. They are
+pre-existing character-art gaps, unrelated to this repair, and touching them would change how existing
+saved agents render.

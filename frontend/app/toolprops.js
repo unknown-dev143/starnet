@@ -10,6 +10,13 @@
      notebook.* / skill.* / recall_conversation  -> 'notebook'  (memory; todo moved to `computer` 2026-08-17)
      image_*                                     -> 'studio'    (media)
      spotify_*                                   -> 'jukebox'   (spotify)
+     audio_generate                              -> 'audiolab'  (local audio lab)
+     video_generate                              -> 'cinema'    (video generation)
+     video_compose                               -> 'editingbay'(video assembly)
+     doc_publish                                 -> 'publishinghouse' (documents)
+     report_publish                              -> 'briefingroom'    (status reports)
+     print_prep                                  -> 'printshop'       (print checking)
+     etsy_listing_check                          -> 'listingdesk'     (listing validation)
 
    Everything else maps to null ON PURPOSE — those tools already have their own dedicated
    floor visual, so mapping them here would double-fire:
@@ -34,7 +41,18 @@ const ToolProps = (() => {
     'connectors.list': 'dish',
     voice_generate: 'studio',   // the studio makes audio as well as images — same prop, same pulse
     recall_conversation: 'notebook',
-    'widget.set': 'notebook'   // WIDGET RAILS Phase 2: agent-fed rail readout — a notebook-object (memory) grant
+    'widget.set': 'notebook',   // WIDGET RAILS Phase 2: agent-fed rail readout — a notebook-object (memory) grant
+    /* THE SESSION'S 7 CAPABILITY PROPS — each grants its OWN same-named objectType, so each tool lights
+       the one machine that provides it (no family prefix: the names share no common stem, and inventing
+       one would risk swallowing an unrelated future tool). Added with the props' art; until then these
+       tools lit NOTHING on the floor and test/toolprops.test.js was red. */
+    audio_generate: 'audiolab',
+    video_generate: 'cinema',
+    video_compose: 'editingbay',
+    doc_publish: 'publishinghouse',
+    report_publish: 'briefingroom',
+    print_prep: 'printshop',
+    etsy_listing_check: 'listingdesk'
     // QUEST V2 §B: quest.update is DELIBERATELY absent here → null. It moved from the notebook object to the `computer`
     // object (the 'quest' freebie capId), and the compute gate has no cap-prop pulse (model.chat is null for the same
     // reason). So updating a quest lights no placed-cap prop — correct: it rides compute, not a placeable object.

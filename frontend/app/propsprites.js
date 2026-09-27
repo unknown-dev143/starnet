@@ -2911,6 +2911,564 @@ const PropSprites = (() => {
     if (on) spill(x + 3, base - 5, w - 6, P, 0.14, 4);
   };
 
+  /* ============ THE SEVEN CAPABILITY PROPS ADDED THIS SESSION ============
+     Each of these grants a REAL capability — registry objectTypes audiolab / cinema / editingbay /
+     publishinghouse / briefingroom / printshop / listingdesk — so each is a MACHINE bolted to the deck
+     in the catalog's established language: baseplate + conduit socket, a foreshortened top deck over a
+     south front face, one warm key high-and-west.
+     ⛔ WHY THEY WERE BLANK. They were added to the CATALOG before their art, and a prop with no `F[id]`
+        entry is skipped SILENTLY (`draw()` returns early) — so a placed one granted its capability, drew
+        nothing, and still BLOCKED walkers: an invisible wall. Nothing caught it because every other gate
+        was satisfied by the catalog row alone; `test/prop-render-smoke.test.js` walks the whole catalog
+        and was the one thing that did.
+     ⛔ THE TELL IS THE POINT. Each carries a mark no other prop in the catalog has, so the floor stays
+        readable at a glance: a WAVEFORM (audiolab), a SPOKED FILM REEL (cinema), a TIMELINE with a
+        running PLAYHEAD (editingbay), a BOUND BOOK STACK under a press platen (publishinghouse), a
+        DATED WALL CHART on a lectern (briefingroom), CMYK PROCESS BARS with a registration cross
+        (printshop), a SWING TAG with a barcode and a character ruler (listingdesk).
+     ⛔ COLOUR IS THE CAPABILITY, not decoration — the rule studio (magenta) and jukebox already follow.
+        Amber = analog audio · magenta = generated motion (the media family studio opened) · cyan = the
+        edit timeline · violet = documents · green = the report · CMYK = print · Etsy orange = the listing.
+     ⛔ These are the same authoring rules as the rest of the catalog: `w`/`h` arrive in PIXELS, the
+        silhouette outline is a dark tint of the material's own hue (never near-black), and every
+        emissive is gated on `f.work` so a prop never claims work the harness has not done. */
+
+  F.audiolab = (x, y, w, h, f) => {
+    /* AUDIO LAB (2x2) — local music/audio generation (ACE-Step, no API key).
+       ⛔ THE WAVEFORM IS THE HERO: a sampled trace across a raked panel, symmetric about its centre
+          row, with the amber panel bezel around it. Nothing else in the catalog draws a waveform.
+       ⛔ THE TAPE HUBS on the top deck are the analog tell, and the two SPEAKER CONES flank a VU meter
+          on the front face — a needle over a green->amber scale that only swings while it is working. */
+    const r = MAT.steel, b = MAT.slate, br = MAT.brass, on = !!(f && f.work);
+    const base = y + h, cx = x + Math.round(w / 2);
+    const AM = ACC.flow, CY = ACC.data;
+    const DECK = y - 6, PAN = y - 1, PANH = 7;
+
+    shadow2(x + 2, base - 1, w - 4);
+    deckPlate(x + 1, base - 4, w - 2, 4);
+    deckSocket(x + w + 1, base - 3, on);
+
+    px(x + 1, DECK, w - 2, base - DECK - 2, r.ink);
+    px(x + 2, PAN + PANH, w - 4, base - PAN - PANH - 4, r.face);
+    px(x + 2, PAN + PANH, 1, base - PAN - PANH - 4, r.mid);
+    px(x + w - 3, PAN + PANH, 1, base - PAN - PANH - 4, r.dk);
+
+    for (let j = 0; j < 5; j++) { const i = j ? 1 : 2; px(x + i, DECK + j, w - i * 2, 1, U.shade(r.face, -0.12 + j * 0.05)); }
+    px(x + 2, DECK + 1, 2, 4, r.mid);
+    px(x + w - 3, DECK + 1, 1, 4, r.dk); rimEdge(x + w - 3, DECK + 1, 1, 4, 0.16);
+    px(x + 2, DECK + 4, w - 4, 1, r.lit);
+    px(x + 5, DECK + 1, w - 10, 3, r.ao);                        // the tape well recessed in the deck
+    for (const hx of [x + 8, x + w - 9]) {                        // its two hubs — the analog tell
+      px(hx - 2, DECK + 1, 4, 3, r.ink);
+      px(hx - 1, DECK + 2, 2, 1, on ? AM : U.shade(AM, -0.66));
+    }
+
+    const ins = (j) => j < 2 ? 3 : j < 4 ? 2 : j < 6 ? 1 : 0;
+    for (let j = 0; j < PANH; j++) { const i = ins(j); px(x + i, PAN + j, w - i * 2, 1, r.ink); }
+    px(x + ins(0) + 1, PAN, w - (ins(0) + 1) * 2, 1, on ? AM : U.shade(AM, -0.60));
+    if (on) bloom(x + ins(0) + 1, PAN, w - (ins(0) + 1) * 2, 1, AM, 0.14);
+    const gx = x + 4, gy = PAN + 1, gw = w - 8, gh = 5;
+    px(gx - 1, gy - 1, gw + 2, gh + 2, '#0a0c10');
+    for (const sx2 of [gx - 1, gx + gw]) px(sx2, gy, 1, gh, on ? U.shade(AM, -0.42) : U.shade(AM, -0.72));
+    if (on) {
+      px(gx, gy, gw, gh, '#0b1518');
+      for (let i = 0; i < gw; i++) {                              // THE WAVEFORM — this prop's hero mark
+        const t = i * 1.7 + now / 380;
+        const amp = Math.abs(Math.sin(t)) * 2.1 + Math.abs(Math.sin(t * 2.3)) * 0.6;
+        const hh = Math.max(1, Math.round(amp * 2)), wy = gy + Math.round((gh - hh) / 2);
+        px(gx + i, wy, 1, hh, U.shade(CY, -0.30));
+        px(gx + i, wy, 1, 1, CY);
+      }
+      scanl(gx, gy, gw, gh, 0.14);
+      bloom(gx, gy, gw, gh, CY, 0.16);
+      spill(x + 2, PAN + PANH, w - 4, AM, 0.16, 4);
+    } else {
+      px(gx, gy, gw, gh, '#12100a');
+      px(gx + 1, gy + 2, gw - 6, 1, '#2a2418');
+    }
+    px(x + 1, PAN + PANH - 1, w - 2, 1, '#05070a');
+
+    for (const scx of [x + 6, x + w - 7]) {                       // two speaker cones on the front face
+      const scy = y + 9, R = 3.4;
+      for (let dy = -R - 1; dy <= R + 1; dy++) for (let dx = -R - 1; dx <= R + 1; dx++) {
+        const d = Math.sqrt(dx * dx + dy * dy); if (d > R + 0.7) continue;
+        let c;
+        if (d > R - 0.3) c = r.ink;
+        else if (d > R - 1.2) c = (dx + dy) < 0 ? r.lit : r.dk;
+        else if (d > R - 2.1) c = r.ao;
+        else c = on ? AM : U.shade(AM, -0.74);
+        px(scx + dx, scy + dy, 1, 1, c);
+      }
+      px(scx, scy, 1, 1, r.dk);
+    }
+    const vx = cx - 4;                                            // the VU meter between them
+    px(vx - 1, y + 7, 9, 5, r.ink);
+    px(vx, y + 8, 7, 3, b.ao);
+    for (let i = 0; i < 7; i++) px(vx + i, y + 10, 1, 1, i < 5 ? ACC.work : ACC.alert);
+    const needle = on ? 2 + Math.round((1 + Math.sin(now / 340)) * 2) : 1;
+    px(vx + needle, y + 8, 1, 2, on ? '#ffe9b8' : r.dk);
+    if (on) bloom(vx, y + 8, 7, 3, AM, 0.14);
+
+    px(x + 2, base - 6, w - 4, 3, r.ink);
+    px(x + 3, base - 5, w - 6, 1, r.top);
+    px(x + 3, base - 5, 5, 1, on ? AM : U.shade(AM, -0.70));
+    px(x + w - 8, base - 5, 5, 1, on ? AM : U.shade(AM, -0.70));
+    px(x + 1, base - 3, w - 2, 1, r.mid); px(x + 2, base - 2, w - 4, 1, r.ao);
+    px(x, base - 2, 4, 2, r.ink); px(x + w - 4, base - 2, 4, 2, r.ink);
+    px(x + 1, base - 2, 1, 1, br.mid);
+    if (on) spill(x + 3, base - 5, w - 6, AM, 0.14, 4);
+  };
+
+  F.cinema = (x, y, w, h, f) => {
+    /* CINEMA (2x2) — short AI video clips (OpenRouter, billed per clip).
+       ⛔ THE SPOKED FILM REEL IS THE HERO: it stands PROUD of the top deck (a real elevation, not a
+          decal) and its four spokes TURN while a clip is rendering. A reel on a hub is a silhouette
+          nothing else in the catalog has.
+       ⛔ THE FILM STRIP runs down from the reel to the GATE, a bright aperture on the front face.
+       ⛔ THE PREVIEW shows a FRAME, not a UI: sky bands, a sun disc, a ridge, a water line — five big
+          shapes, because anything finer is mud at this size. Magenta ties it to studio: both props
+          GENERATE media, so they share the family colour. */
+    const r = MAT.steel, b = MAT.slate, br = MAT.brass, on = !!(f && f.work);
+    const base = y + h;
+    const P = ACC.lounge, CY = ACC.data;
+    const DECK = y - 6, PAN = y - 1, PANH = 7;
+
+    shadow2(x + 2, base - 1, w - 4);
+    deckPlate(x + 1, base - 4, w - 2, 4);
+    deckSocket(x + w + 1, base - 3, on);
+
+    px(x + 1, DECK, w - 2, base - DECK - 2, r.ink);
+    px(x + 2, PAN + PANH, w - 4, base - PAN - PANH - 4, r.face);
+    px(x + 2, PAN + PANH, 1, base - PAN - PANH - 4, r.mid);
+    px(x + w - 3, PAN + PANH, 1, base - PAN - PANH - 4, r.dk);
+
+    for (let j = 0; j < 5; j++) { const i = j ? 1 : 2; px(x + i, DECK + j, w - i * 2, 1, U.shade(r.face, -0.12 + j * 0.05)); }
+    px(x + 2, DECK + 1, 2, 4, r.mid);
+    px(x + w - 3, DECK + 1, 1, 4, r.dk); rimEdge(x + w - 3, DECK + 1, 1, 4, 0.16);
+    px(x + 2, DECK + 4, w - 4, 1, r.lit);
+    px(x + 3, DECK + 1, w - 6, 3, r.ao);                          // the reel well
+
+    /* THE SPOKED FILM REEL, standing proud of the deck — cinema's hero mark.
+       ⛔ A DARK INTERIOR IS WHAT MAKES THE SPOKES READ. An earlier pass filled the disc with the casing
+          ramp, so the spokes landed on a mid tone and the whole reel resolved as a fuzzy blob at 9px.
+          Rim lit on its west, interior dropped to `ao`, spokes in `mid`: three values, and the wheel
+          turns. The perforations ride the rim so it is a FILM reel and not a gear. */
+    const rcx = x + 7, rcy = DECK - 5, RR = 4.6, spin = on ? now / 820 : 0;
+    for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
+      const d = Math.sqrt(dx * dx + dy * dy); if (d > RR + 0.7) continue;
+      let c;
+      if (d > RR - 0.3) c = r.ink;                                // the contour
+      else if (d > RR - 1.2) c = (dx + dy) < 0 ? r.lit : r.dk;    // the rim's lit/shade split
+      else c = r.ao;                                             // the dark interior the spokes read against
+      px(rcx + dx, rcy + dy, 1, 1, c);
+    }
+    for (let s = 0; s < 8; s++) {                                 // the rim's perforations
+      const a = spin + s * Math.PI / 4;
+      px(rcx + Math.round(Math.cos(a) * (RR - 0.7)), rcy + Math.round(Math.sin(a) * (RR - 0.7)), 1, 1, '#0a0d10');
+    }
+    for (let s = 0; s < 4; s++) {                                 // four spokes, turning while it renders
+      const a = spin + s * Math.PI / 2;
+      for (let t = 1; t <= 3; t++) px(rcx + Math.round(Math.cos(a) * t), rcy + Math.round(Math.sin(a) * t), 1, 1, r.mid);
+    }
+    px(rcx, rcy, 1, 1, br.mid);                                   // the hub
+    if (on) bloom(rcx - 2, rcy - 2, 5, 5, P, 0.16);
+    for (let i = 0; i < 5; i++) px(x + 12, rcy + 4 + i, 2, 1, i % 2 ? r.dk : r.ao);   // the strip to the gate
+
+    /* the raked PREVIEW screen */
+    const ins = (j) => j < 2 ? 3 : j < 4 ? 2 : j < 6 ? 1 : 0;
+    for (let j = 0; j < PANH; j++) { const i = ins(j); px(x + i, PAN + j, w - i * 2, 1, r.ink); }
+    px(x + ins(0) + 1, PAN, w - (ins(0) + 1) * 2, 1, on ? P : U.shade(P, -0.60));
+    if (on) bloom(x + ins(0) + 1, PAN, w - (ins(0) + 1) * 2, 1, P, 0.14);
+    const gx = x + 4, gy = PAN + 1, gw = w - 8, gh = 5;
+    px(gx - 1, gy - 1, gw + 2, gh + 2, '#0a0612');
+    for (const sx2 of [gx - 1, gx + gw]) px(sx2, gy, 1, gh, on ? U.shade(P, -0.42) : U.shade(P, -0.72));
+    if (on) {
+      const sky = ['#5a2f6e', '#7a3d84', '#9a4e96', '#b865a6'];   // a frame of the generated clip
+      for (let j = 0; j < gh; j++) px(gx, gy + j, gw, 1, sky[Math.min(sky.length - 1, Math.floor(j * 4 / gh))]);
+      const sunx = gx + Math.round(gw * 0.68), suny = gy + 1;      // a sun disc
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
+        if (Math.abs(dx) + Math.abs(dy) <= 2) px(sunx + dx, suny + dy, 1, 1, dy < 0 ? '#ffe6f6' : '#f0b8e0');
+      for (let i = 0; i < gw; i++) {                              // one ridge line
+        const ht = Math.max(0, 3 - Math.round(Math.abs(i - gw * 0.30) * 0.7));
+        if (ht > 0) px(gx + i, gy + gh - ht, 1, ht, '#3a2a58');
+      }
+      px(gx, gy + gh - 1, gw, 1, '#2a3d78');
+      scanl(gx, gy, gw, gh, 0.14);
+      bloom(gx, gy, gw, gh, P, 0.16);
+      spill(x + 2, PAN + PANH, w - 4, P, 0.16, 4);
+    } else {
+      px(gx, gy, gw, gh, '#120a16');
+      px(gx + 1, gy + 2, gw - 6, 1, '#241528');
+    }
+    px(x + 1, PAN + PANH - 1, w - 2, 1, '#05070a');
+
+    /* the LENS BARREL on the front face: concentric rings around a hot core */
+    const lx2 = x + 7, ly2 = y + 9, LR = 3.6;
+    for (let dy = -LR - 1; dy <= LR + 1; dy++) for (let dx = -LR - 1; dx <= LR + 1; dx++) {
+      const d = Math.sqrt(dx * dx + dy * dy); if (d > LR + 0.7) continue;
+      const nl = (dx + dy * 1.1) / (LR * 1.9); let c;
+      if (d > LR - 0.3) c = r.ink;
+      else if (d > LR - 1.3) c = nl < -0.3 ? r.lit : nl < 0.25 ? r.mid : r.dk;
+      else if (d > LR - 2.0) c = r.ao;
+      else if (d > LR - 2.9) c = nl < -0.3 ? r.mid : nl < 0.25 ? r.face : r.dk;
+      else c = on ? U.shade(P, -0.34) : U.shade(P, -0.72);
+      px(lx2 + dx, ly2 + dy, 1, 1, c);
+    }
+    px(lx2 - 1, ly2 - 1, 2, 2, on ? '#ffd0f4' : U.shade(P, -0.55));
+    if (on) bloom(lx2 - 2, ly2 - 2, 4, 4, P, 0.30 + 0.08 * Math.sin(now / 760));
+    /* the film GATE beside the lens: the aperture the strip runs through */
+    px(x + 13, y + 7, 9, 6, r.ink);
+    px(x + 14, y + 8, 7, 4, b.ao);
+    px(x + 14, y + 8, 7, 1, r.mid);
+    px(x + 15, y + 9, 5, 2, on ? CY : U.shade(CY, -0.74));
+    if (on) bloom(x + 15, y + 9, 5, 2, CY, 0.18);
+    for (let i = 0; i < 3; i++) px(x + 15 + i * 2, y + 12, 1, 1, i < 2 ? ACC.flow : r.dk);
+
+    px(x + 2, base - 6, w - 4, 3, r.ink);
+    px(x + 3, base - 5, w - 6, 1, r.top);
+    px(x + 3, base - 5, 5, 1, on ? P : U.shade(P, -0.70));
+    px(x + w - 8, base - 5, 5, 1, on ? P : U.shade(P, -0.70));
+    px(x + 1, base - 3, w - 2, 1, r.mid); px(x + 2, base - 2, w - 4, 1, r.ao);
+    px(x, base - 2, 4, 2, r.ink); px(x + w - 4, base - 2, 4, 2, r.ink);
+    px(x + 1, base - 2, 1, 1, br.mid);
+    if (on) spill(x + 3, base - 5, w - 6, P, 0.14, 4);
+  };
+
+  F.editingbay = (x, y, w, h, f) => {
+    /* EDITING BAY (2x2) — assemble a finished video from generated audio + an image (local ffmpeg).
+       ⛔ THE TIMELINE IS THE HERO, and it is what separates this prop from cinema at a glance: cinema
+          has a REEL, this has a TRACK of clip blocks under a PLAYHEAD that sweeps while it renders.
+          The clip blocks are tinted per SOURCE (magenta = generated, cyan = image, amber = audio).
+       ⛔ TWO SOURCE REELS on the deck are deliberately SMALL so the timeline keeps the read.
+       ⛔ THE MONITOR is a two-up A/B split with a splice line down the middle — the editing picture. */
+    const r = MAT.steel, b = MAT.slate, br = MAT.brass, on = !!(f && f.work);
+    const base = y + h, cx = x + Math.round(w / 2);
+    const CY = ACC.data, AM = ACC.flow, MG = ACC.lounge;
+    const DECK = y - 6, PAN = y - 1, PANH = 7;
+
+    shadow2(x + 2, base - 1, w - 4);
+    deckPlate(x + 1, base - 4, w - 2, 4);
+    deckSocket(x + w + 1, base - 3, on);
+
+    px(x + 1, DECK, w - 2, base - DECK - 2, r.ink);
+    px(x + 2, PAN + PANH, w - 4, base - PAN - PANH - 4, r.face);
+    px(x + 2, PAN + PANH, 1, base - PAN - PANH - 4, r.mid);
+    px(x + w - 3, PAN + PANH, 1, base - PAN - PANH - 4, r.dk);
+
+    for (let j = 0; j < 5; j++) { const i = j ? 1 : 2; px(x + i, DECK + j, w - i * 2, 1, U.shade(r.face, -0.12 + j * 0.05)); }
+    px(x + 2, DECK + 1, 2, 4, r.mid);
+    px(x + w - 3, DECK + 1, 1, 4, r.dk); rimEdge(x + w - 3, DECK + 1, 1, 4, 0.16);
+    px(x + 2, DECK + 4, w - 4, 1, r.lit);
+    for (const hx of [x + 7, x + w - 8]) {                        // A/B source reels, kept small on purpose
+      px(hx - 2, DECK + 1, 4, 3, r.ao);
+      px(hx - 2, DECK + 1, 4, 1, r.ink);
+      px(hx - 1, DECK + 2, 2, 1, on ? AM : U.shade(AM, -0.68));
+    }
+
+    /* THE TIMELINE — editingbay's hero mark. */
+    const tx = x + 2, ty = PAN + 1, tw = w - 4, th = 4;
+    px(tx - 1, ty - 1, tw + 2, th + 2, '#0a0d10');
+    px(tx, ty, tw, th, '#101418');
+    const CLIPS = [[0, 4, MG], [5, 3, CY], [9, 6, AM], [16, 3, MG]];
+    for (const clip of CLIPS) {
+      const o = clip[0], cw2 = Math.max(1, clip[1] - 1), col = clip[2];
+      px(tx + o, ty + 1, cw2, 2, on ? col : U.shade(col, -0.72));
+      px(tx + o, ty + 1, cw2, 1, on ? U.shade(col, 0.30) : U.shade(col, -0.60));
+    }
+    px(tx, ty + th - 1, tw, 1, r.ao);                             // the scrub rail
+    for (let i = 0; i < tw; i += 3) px(tx + i, ty + th, 1, 1, r.mid);
+    const ph2 = on ? (Math.floor(now / 260) % (tw - 1)) : 2;      // the PLAYHEAD sweeps while it renders
+    px(tx + ph2, ty, 1, th, '#ff5a4a');
+    px(tx + ph2, ty - 1, 1, 1, '#ffd0c0');
+    if (on) bloom(tx + ph2 - 1, ty - 1, 3, th + 2, '#ff5a4a', 0.26);
+    px(x + 1, PAN + PANH - 1, w - 2, 1, '#05070a');
+
+    /* the preview MONITOR: a two-up A/B split with a splice line */
+    const mx = x + 3, my = y + 7, mw = w - 6, mh = 7;
+    px(mx - 1, my - 1, mw + 2, mh + 2, r.ink);
+    px(mx, my, mw, mh, b.ao);
+    px(mx, my, mw, 1, r.mid);
+    const half = Math.floor(mw / 2);
+    px(mx, my + 1, half - 1, mh - 2, on ? '#1a3a52' : '#0d1a22');   // A side
+    px(mx + half + 1, my + 1, mw - half - 2, mh - 2, on ? '#3a1a42' : '#1a0d20'); // B side
+    px(mx + half, my + 1, 1, mh - 2, r.ink);                        // the splice line
+    if (on) {
+      for (let i = 0; i < 4; i++) px(mx + 1, my + 1 + i, half - 3, 1, U.shade(CY, -0.40 + i * 0.06));
+      for (let i = 0; i < 4; i++) px(mx + half + 2, my + 1 + i, mw - half - 4, 1, U.shade(MG, -0.40 + i * 0.06));
+      scanl(mx, my, mw, mh, 0.14);
+      bloom(mx, my, mw, mh, CY, 0.12);
+      spill(x + 2, y + 14, w - 4, CY, 0.14, 4);
+    } else { px(mx + 2, my + 3, 3, 1, '#16303c'); px(mx + half + 3, my + 3, 3, 1, '#301636'); }
+
+    /* the jog wheel + transport buttons under the monitor */
+    const jx = cx - 2, jy = y + 17, JR = 2.4;
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const d = Math.sqrt(dx * dx + dy * dy); if (d > JR + 0.6) continue;
+      px(jx + dx, jy + dy, 1, 1, d > JR - 0.4 ? r.ink : (dx + dy) < 0 ? r.mid : r.dk);
+    }
+    px(jx, jy, 1, 1, on ? AM : U.shade(AM, -0.72));
+    for (const bx of [x + 4, x + w - 6]) { px(bx, jy - 1, 2, 3, r.ink); px(bx, jy, 2, 1, on ? ACC.work : r.dk); }
+    px(x + 9, jy, 1, 2, r.ink); px(x + 11, jy, 1, 2, r.ink);
+
+    px(x + 2, base - 6, w - 4, 3, r.ink);
+    px(x + 3, base - 5, w - 6, 1, r.top);
+    px(x + 3, base - 5, 5, 1, on ? CY : U.shade(CY, -0.70));
+    px(x + w - 8, base - 5, 5, 1, on ? MG : U.shade(MG, -0.70));
+    px(x + 1, base - 3, w - 2, 1, r.mid); px(x + 2, base - 2, w - 4, 1, r.ao);
+    px(x, base - 2, 4, 2, r.ink); px(x + w - 4, base - 2, 4, 2, r.ink);
+    px(x + 1, base - 2, 1, 1, br.mid);
+    if (on) spill(x + 3, base - 5, w - 6, CY, 0.14, 4);
+  };
+
+  F.publishinghouse = (x, y, w, h, f) => {
+    /* PUBLISHING HOUSE (1x2) — turn structured writing into a real .docx.
+       ⛔ THE BOUND BOOK STACK IS THE HERO: three volumes with sewn bands and a foil tick, plus a
+          RIBBON MARKER hanging off the top one. Spines stacked with a ribbon is the tell.
+       ⛔ THE PRESS PLATEN above them DROPS while it works — the machine is a press, not a printer, so
+          the book stack underneath it is the thing it produces. Violet = documents. */
+    const r = MAT.steel, b = MAT.slate, br = MAT.brass, on = !!(f && f.work);
+    const base = y + h;
+    const V = ACC.mem;
+    const T = y - 6, B = base - 1;
+
+    shadow2(x + 1, base - 1, w - 2);
+    deckPlate(x, base - 4, w, 4);
+    deckSocket(x + w + 1, base - 3, on);
+
+    px(x - 1, T, w + 2, B - T + 1, r.ink);
+    px(x, T, w, B - T, r.face);
+    px(x, T, 1, B - T, r.mid);
+    px(x + w - 1, T, 1, B - T, r.dk); rimEdge(x + w - 1, T + 1, 1, B - T - 2, 0.16);
+    px(x, T, w, 1, r.lit);
+    px(x + 1, T + 1, w - 2, 1, r.top);
+
+    /* THE PRESS PLATEN: a heavy bar that drops while it works */
+    const drop = on ? (Math.floor(now / 500) % 2) : 0;
+    const py = T + 3 + drop;
+    for (const gx2 of [x + 2, x + w - 3]) px(gx2, py - 3, 1, 3, r.mid);   // its two guides
+    px(x + 1, py - 1, w - 2, 1, br.mid);                          // the platen's brass crown
+    px(x + 1, py, w - 2, 3, r.ink);
+    px(x + 2, py + 1, w - 4, 1, r.top);
+    px(x + 2, py + 2, w - 4, 1, r.dk);
+    if (on) { px(x + 2, py + 3, w - 4, 1, U.shade(V, -0.30)); bloom(x + 2, py + 3, w - 4, 1, V, 0.14); }
+
+    /* THE BOUND BOOK STACK — publishinghouse's hero mark */
+    for (let i = 0; i < 3; i++) {
+      const by = T + 8 + i * 3;
+      px(x, by - 1, w, 4, r.ink);
+      px(x + 1, by, w - 2, 3, i === 1 ? V : U.shade(V, -0.26));
+      px(x + 1, by, w - 2, 1, U.shade(V, 0.24));                  // the spine's lit top edge
+      px(x + 2, by + 1, w - 4, 1, U.shade(V, -0.50));             // the sewn band
+      px(x + w - 3, by + 1, 1, 1, on ? '#ffe6a0' : br.mid);       // a foil tick
+    }
+    px(x + 4, T + 8, 1, 6, on ? '#e8d8a0' : U.shade('#e8d8a0', -0.42));    // the ribbon marker
+    px(x + 4, T + 13, 2, 1, on ? '#e8d8a0' : U.shade('#e8d8a0', -0.42));
+
+    /* the OUTPUT SLOT at the foot: a finished sheet standing in it while it prints */
+    px(x + 1, B - 6, w - 2, 5, r.ink);
+    px(x + 2, B - 5, w - 4, 3, b.ao);
+    if (on) {
+      px(x + 3, B - 5, w - 6, 3, '#e8e2d6');
+      px(x + 3, B - 5, w - 6, 1, '#fffaf0');
+      px(x + 4, B - 4, w - 8, 1, '#a8a294');
+      px(x + 4, B - 3, w - 10, 1, '#c8c2b4');
+    }
+
+    /* plinth + feet */
+    px(x, B - 1, w, 1, r.mid);
+    px(x + 1, B, w - 2, 1, r.ao);
+    px(x - 1, B, 3, 2, r.ink); px(x + w - 2, B, 3, 2, r.ink);
+    px(x + 1, B + 1, 1, 1, br.mid);
+    if (on) spill(x + 2, B - 6, w - 4, V, 0.14, 3);
+  };
+
+  F.briefingroom = (x, y, w, h, f) => {
+    /* BRIEFING ROOM (1x2) — save a dated morning/evening status report.
+       ⛔ THE DATED WALL CHART IS THE HERO: ruled paper with a title rule and FOUR dated rows, the
+          newest one lit while a report is being written. Ruled rows on a pinned chart is the tell.
+       ⛔ THE LECTERN beneath it is why it reads as a BRIEFING and not a filing cabinet: a sloped
+          reading top on a tapered column, with the report's own lines lying on it. Green = the report. */
+    const r = MAT.steel, b = MAT.slate, br = MAT.brass, on = !!(f && f.work);
+    const base = y + h;
+    const G = ACC.work;
+    const T = y - 6, B = base - 1;
+
+    shadow2(x + 1, base - 1, w - 2);
+    deckPlate(x, base - 4, w, 4);
+    deckSocket(x + w + 1, base - 3, on);
+
+    /* ---- the WALL CHART: the station's dated status rows ---- */
+    const cx2 = x + 1, cy2 = T, cw2 = w - 2, ch2 = 9;
+    px(cx2 - 1, cy2 - 1, cw2 + 2, ch2 + 2, r.ink);
+    px(cx2, cy2, cw2, ch2, '#e6e0d2');                            // paper
+    px(cx2, cy2, cw2, 1, '#f6f2e8');
+    px(cx2, cy2 + ch2, cw2, 1, b.ao);                             // the chart's own board shadow
+    px(cx2, cy2 + ch2 - 1, cw2, 1, '#b8b2a4');
+    px(cx2 + 1, cy2 + 1, cw2 - 2, 1, '#4a5a68');                  // the title rule
+    for (let i = 0; i < 4; i++) {                                 // four dated rows, the newest lit
+      const ry2 = cy2 + 3 + i;
+      px(cx2 + 1, ry2, 3, 1, '#8a8478');                          // the date block
+      const wl = on ? Math.max(2, cw2 - 6 - (i % 2) * 2) : 2;
+      px(cx2 + 5, ry2, wl, 1, i === 0 && on ? G : '#c0bcb0');
+    }
+    px(x + w - 2, cy2 + 1, 1, 1, br.mid);                         // the pin
+    if (on) bloom(cx2, cy2, cw2, ch2, G, 0.10);
+
+    /* ---- the LECTERN: a sloped reading top on a tapered column ---- */
+    const ly3 = T + 11;
+    px(x - 1, ly3, w + 2, 4, r.ink);                              // the reading top's slab
+    px(x, ly3 + 1, w, 2, r.top);
+    px(x, ly3 + 1, w, 1, r.lit);
+    px(x + 1, ly3 + 3, w - 2, 1, r.dk);
+    px(x + 1, ly3 + 1, 4, 1, on ? G : U.shade(G, -0.72));         // the lit strip on the desk lip
+    px(x + 3, ly3 + 4, w - 6, 11, r.ink);                         // the tapered column, down to the base
+    px(x + 4, ly3 + 4, w - 8, 11, r.face);
+    px(x + 4, ly3 + 4, 1, 11, r.mid);
+    px(x + w - 5, ly3 + 4, 1, 11, r.dk);
+    px(x + 4, ly3 + 6, w - 8, 1, r.ao);                           // a panel seam on the column
+    /* the SCRIPT on the lectern — a ruled line, so it reads as a report being given */
+    px(x + 5, ly3 + 2, w - 11, 1, '#e8e2d6');
+    px(x + 5, ly3 + 2, 3, 1, on ? G : '#9a9488');
+
+    /* ---- the base ---- */
+    px(x, B - 3, w, 3, r.ink);
+    px(x + 1, B - 2, w - 2, 1, r.top);
+    px(x + 1, B - 2, 4, 1, on ? G : U.shade(G, -0.74));
+    px(x + 1, B - 1, w - 2, 1, r.ao);
+    px(x - 1, B, 3, 2, r.ink); px(x + w - 2, B, 3, 2, r.ink);
+    px(x + 1, B + 1, 1, 1, br.mid);
+    if (on) spill(x + 2, B - 3, w - 4, G, 0.14, 3);
+  };
+
+  F.printshop = (x, y, w, h, f) => {
+    /* PRINT SHOP (1x2) — check/fix a design against real print-on-demand pixel requirements.
+       ⛔ THE CMYK PROCESS BARS ARE THE HERO: cyan, magenta, yellow and black side by side is the one
+          arrangement no other prop in the catalog carries, and it IS what this capability is about.
+       ⛔ THE REGISTRATION CROSS under them is the second half of the tell — the printer's own mark,
+          drawn on a white proof patch. A feed roller and a sheet emerging with a bar already on it
+          close the read. */
+    const r = MAT.steel, b = MAT.slate, br = MAT.brass, on = !!(f && f.work);
+    const base = y + h;
+    const C = ACC.data, M = ACC.lounge, Y2 = ACC.flow, K = '#20262c';
+    const T = y - 6, B = base - 1;
+
+    shadow2(x + 1, base - 1, w - 2);
+    deckPlate(x, base - 4, w, 4);
+    deckSocket(x + w + 1, base - 3, on);
+
+    px(x - 1, T, w + 2, B - T + 1, r.ink);
+    px(x, T, w, B - T, r.face);
+    px(x, T, 1, B - T, r.mid);
+    px(x + w - 1, T, 1, B - T, r.dk); rimEdge(x + w - 1, T + 1, 1, B - T - 2, 0.16);
+    px(x, T, w, 1, r.lit);
+
+    /* ---- THE COLOUR BAR STRIP: the four process inks, side by side ---- */
+    const sy4 = T + 3;
+    px(x, sy4 - 1, w, 6, r.ink);
+    const INKS = [C, M, Y2, K];
+    for (let i = 0; i < 4; i++) {
+      const bx2 = x + 1 + i * 3;
+      px(bx2, sy4, 2, 4, on ? INKS[i] : U.shade(INKS[i], -0.62));
+      px(bx2, sy4, 2, 1, on ? U.shade(INKS[i], 0.30) : U.shade(INKS[i], -0.50));
+    }
+
+    /* ---- the REGISTRATION CROSS on a white proof patch ---- */
+    const rx3 = x + 3, ry3 = T + 10;
+    px(rx3 - 1, ry3 - 2, 9, 5, r.ink);
+    px(rx3, ry3 - 1, 7, 3, '#f2eee2');
+    px(rx3, ry3, 7, 1, r.ao);                                     // the cross's horizontal arm
+    px(rx3 + 3, ry3 - 1, 1, 3, r.ao);                             // its vertical arm
+    px(rx3 + 3, ry3, 1, 1, on ? M : U.shade(M, -0.70));           // the register dot
+
+    /* ---- the FEED: a roller, and a sheet emerging with a bar already printed ---- */
+    px(x + 1, B - 8, w - 2, 5, r.ink);
+    px(x + 2, B - 7, w - 4, 3, r.top);
+    px(x + 2, B - 7, w - 4, 1, r.lit);
+    for (let i = 0; i < 8; i++) px(x + 2 + i, B - 6, 1, 1, i % 2 ? r.dk : r.mid);   // the knurl
+    if (on) { px(x + 2, B - 5, w - 4, 1, U.shade(C, -0.30)); bloom(x + 2, B - 5, w - 4, 1, C, 0.14); }
+    px(x + 2, B - 3, w - 4, 2, r.ao);
+    if (on) {
+      px(x + 3, B - 3, w - 6, 1, '#f2eee2');
+      for (let i = 0; i < 4; i++) px(x + 3 + i * 2, B - 3, 1, 1, INKS[i]);
+    }
+
+    /* ---- the base ---- */
+    px(x, B - 1, w, 1, r.mid);
+    px(x + 1, B, w - 2, 1, r.ao);
+    px(x - 1, B, 3, 2, r.ink); px(x + w - 2, B, 3, 2, r.ink);
+    px(x + 1, B + 1, 1, 1, br.mid);
+    if (on) spill(x + 2, B - 6, w - 4, C, 0.12, 3);
+  };
+
+  F.listingdesk = (x, y, w, h, f) => {
+    /* LISTING DESK (1x2) — validate an Etsy listing against real character/tag limits.
+       ⛔ THE SWING TAG IS THE HERO: a card on a loop, with a BARCODE of deliberately irregular bars
+          (never a uniform comb — that is the difference between a barcode and a grating) and a price
+          block. A tag on a loop is a silhouette nothing else in the catalog has.
+       ⛔ THE CHARACTER RULER under it is the second half: a measured strip whose fill walks up while
+          it validates, which is literally what this capability checks. Etsy orange is its colour. */
+    const r = MAT.steel, b = MAT.slate, br = MAT.brass, on = !!(f && f.work);
+    const base = y + h;
+    const OR = '#ff8a3d';
+    const T = y - 6, B = base - 1;
+
+    shadow2(x + 1, base - 1, w - 2);
+    deckPlate(x, base - 4, w, 4);
+    deckSocket(x + w + 1, base - 3, on);
+
+    px(x - 1, T, w + 2, B - T + 1, r.ink);
+    px(x, T, w, B - T, r.face);
+    px(x, T, 1, B - T, r.mid);
+    px(x + w - 1, T, 1, B - T, r.dk); rimEdge(x + w - 1, T + 1, 1, B - T - 2, 0.16);
+    px(x, T, w, 1, r.lit);
+
+    /* ---- THE HANGING TAG ---- */
+    const tagY = T + 2, tagH = 12;
+    px(x, tagY - 1, w, 1, r.ink); px(x, tagY + tagH, w, 1, r.ink);
+    px(x, tagY, 1, tagH, r.ink); px(x + w - 1, tagY, 1, tagH, r.ink);
+    px(x + 1, tagY, w - 2, tagH, '#f6f1e4');                      // the card
+    px(x + 1, tagY, w - 2, 1, '#fffaf0');
+    px(x + 1, tagY + tagH - 1, w - 2, 1, '#c0b8a4');
+    px(x + 4, tagY + 1, 2, 2, b.ao);                              // the punched hole
+    px(x + 4, tagY + 1, 1, 1, r.ao);
+    for (let i = 0; i < 4; i++) px(x + 2, tagY + 1 + i, 1, 1, i < 2 ? r.mid : r.dk);   // the tag's loop
+    /* the BARCODE — the tell: irregular bars, never a uniform comb */
+    const BAR = [1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1];
+    let bxp = x + 2;
+    for (let i = 0; i < BAR.length && bxp < x + w - 2; i++) {
+      const wd = BAR[i] === 3 ? 2 : 1;
+      if (i % 2 === 0) px(bxp, tagY + 5, wd, 4, on ? '#12181d' : '#5a6068');
+      bxp += wd + 1;
+    }
+    px(x + 2, tagY + 10, 4, 2, on ? OR : U.shade(OR, -0.62));      // the price block
+    px(x + 7, tagY + 10, 3, 1, '#9a9488');
+    if (on) bloom(x + 1, tagY + 5, w - 2, 5, OR, 0.10);
+
+    /* ---- THE CHARACTER RULER: the listing limits made physical ---- */
+    const ruY = T + 17;
+    px(x + 1, ruY - 1, w - 2, 6, r.ink);
+    px(x + 2, ruY, w - 4, 4, b.ao);
+    for (let i = 0; i < 8; i++) px(x + 2 + i, ruY, 1, i % 2 ? 1 : 2, on ? OR : U.shade(OR, -0.66));
+    const fill = on ? 2 + (Math.floor(now / 500) % 7) : 3;        // the count walking up
+    px(x + 2, ruY + 3, fill, 1, on ? ACC.work : r.dk);
+    if (on) { px(x + 2 + fill, ruY + 2, 1, 2, '#ffffff'); bloom(x + 1, ruY + 2, 2 + fill, 2, ACC.work, 0.12); }
+
+    /* a small stack of finished listing cards at the foot */
+    px(x + 1, B - 8, w - 2, 4, r.ink);
+    px(x + 2, B - 7, w - 4, 2, '#e8e2d6');
+    px(x + 2, B - 7, w - 4, 1, '#fffaf0');
+    px(x + 4, B - 6, w - 8, 1, on ? OR : '#b8b2a4');
+
+    /* ---- the base ---- */
+    px(x, B - 3, w, 3, r.ink);
+    px(x + 1, B - 2, w - 2, 1, r.top);
+    px(x + 1, B - 2, 4, 1, on ? OR : U.shade(OR, -0.74));
+    px(x + 1, B - 1, w - 2, 1, r.ao);
+    px(x - 1, B, 3, 2, r.ink); px(x + w - 2, B, 3, 2, r.ink);
+    px(x + 1, B + 1, 1, 1, br.mid);
+    if (on) spill(x + 2, B - 3, w - 4, OR, 0.14, 3);
+  };
+
   F.missionboard = (x, y, w, h, f) => {
     // MISSION BOARD (3x1) — v4 REBUILD. This prop predated the locked style law and was still drawn as a
     // flat outlined slab. It is now a WALL-HUNG briefing frame: chamfered slate carcass on two lugs, a
@@ -10416,13 +10974,13 @@ const PropSprites = (() => {
     { id: "gigs_servercart", label: "SERVER CART", cat: "capability", tier: "functional", w: 1, h: 1, animated: true, blocks: true, desc: D_MEM },
     { id: "bridge_relaystack", label: "RELAY STACK", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: D_MEM },
     { id: "studio", label: "STUDIO", cat: "capability", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a media studio (generate & analyze images). It glows magenta while an image renders." },
-    { id: "audiolab", label: "AUDIO LAB", cat: "capability", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a local audio lab (generate music/audio via ACE-Step, no API key needed). No custom sprite yet — renders blank until one is added; the capability itself works." },
-    { id: "cinema", label: "CINEMA", cat: "capability", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a video generator (short AI video clips via OpenRouter, billed per clip). No custom sprite yet." },
-    { id: "editingbay", label: "EDITING BAY", cat: "capability", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a video editing bay (assemble a finished video from generated audio + an image, using local ffmpeg). No custom sprite yet." },
-    { id: "publishinghouse", label: "PUBLISHING HOUSE", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a publishing house (turn structured writing into a real .docx document). No custom sprite yet." },
-    { id: "briefingroom", label: "BRIEFING ROOM", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a briefing room (save a dated morning/evening status report). No custom sprite yet." },
-    { id: "printshop", label: "PRINT SHOP", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a print shop (check/fix a design against real print-on-demand pixel requirements). No custom sprite yet." },
-    { id: "listingdesk", label: "LISTING DESK", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a listing desk (validate an Etsy listing against real character/tag limits). No custom sprite yet." },
+    { id: "audiolab", label: "AUDIO LAB", cat: "capability", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a local audio lab (generate music/audio via ACE-Step, no API key needed). Its waveform panel and VU meter run amber while audio renders." },
+    { id: "cinema", label: "CINEMA", cat: "capability", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a video generator (short AI video clips via OpenRouter, billed per clip). Its film reel turns while a clip renders." },
+    { id: "editingbay", label: "EDITING BAY", cat: "capability", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a video editing bay (assemble a finished video from generated audio + an image, using local ffmpeg). Its timeline playhead sweeps while it renders." },
+    { id: "publishinghouse", label: "PUBLISHING HOUSE", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a publishing house (turn structured writing into a real .docx document). Its press platen drops while a document prints." },
+    { id: "briefingroom", label: "BRIEFING ROOM", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a briefing room (save a dated morning/evening status report). Its wall chart lights the newest dated row while it writes." },
+    { id: "printshop", label: "PRINT SHOP", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a print shop (check/fix a design against real print-on-demand pixel requirements). Its CMYK process bars light while it checks." },
+    { id: "listingdesk", label: "LISTING DESK", cat: "capability", tier: "functional", w: 1, h: 2, animated: true, blocks: true, desc: "CAPABILITY — gives the agent in this room a listing desk (validate an Etsy listing against real character/tag limits). Its character ruler fills while it validates." },
     // ISOLATION — seal a room off on the floor.
     { id: "airlock", label: "AIRLOCK", cat: "isolation", tier: "functional", w: 1, h: 1, animated: true, blocks: false, desc: "AIRLOCK — seals a room on the floor (a staging / merge gate); the agent's body can't path in or out. Click to cycle open / sealed / jammed." },
     // COMMAND — mission surfaces (functional-but-not-capability: they grant no tools; they make the
