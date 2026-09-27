@@ -88,9 +88,13 @@ environment**, not product:
 | §25 remote monitoring | **Deliberately absent** | Brief asks for "architecture-ready" only |
 
 *(Update 2026-09-27: the visible-identity rebrand — the transformation brief's §3 — was the one open
-product item after this ledger was written. It is now **DONE** in commit `cba3891a5`, guarded by
-`test/brand-identity.test.js` (27 assertions). With that closed, the only item still deliberately
-not built is §25 remote monitoring.)*
+product item after this ledger was written. It is now **DONE**: Phase 1 (`cba3891a5`) rebranded the
+in-app chrome, and Phase 2 (`7b1d2f154`) carried the same rule out to the packaged app metadata, the
+installer, the Rust shell's user-visible strings, the README and the public website. Guarded by
+`test/brand-identity.test.js` (40 assertions). With that closed, the only item still deliberately not
+built is §25 remote monitoring. Two incidental fixes came with Phase 2: a Phase 1 regression in
+`test/brand-wordmark-mask.test.js`, and three pre-existing `test/font.law.test.js` failures from the
+Phase 10–12 CSS.)*
 
 ---
 

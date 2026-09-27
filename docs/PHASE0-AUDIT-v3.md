@@ -210,3 +210,32 @@ rebrand visible STARNET to SPACESTATION"). Outcome against §3:
 So the "one remaining job" this audit identified is closed. The only brief item still deliberately
 not built is **§25 remote monitoring**. The website mirror was re-synced (`--check` → OK), and the
 recovery backup in `BACKUP-business-os/` was refreshed to `cba3891a5`.
+
+---
+
+## 9. Postscript — Phase 2 carried the rebrand to the shipped package and the public surfaces
+
+Commit `7b1d2f154`. §3's scope was written for the *in-app* chrome; the same identity rule applies
+to everything a user receives or reads, so it was extended:
+
+| Surface | Change | Kept (identifier / attribution) |
+|---|---|---|
+| `src-tauri/tauri.conf.json` | `productName` → **SpaceStation** (installer, Start menu, taskbar, window title) | `identifier` `ai.skynet.harness`; `publisher` **Andrew Sims**; the updater endpoint |
+| `src-tauri/installer/hooks.nsh` | uninstall registry key → `Uninstall\SpaceStation` **in lockstep** with `productName` | `StarNetManualUpgradeInit`, `STARNET_STOP_INSTALL_PROCESSES`, the `skynet-desktop` binary name |
+| `src-tauri/src/*.rs` | 36 **user-visible** strings + prose comments (dialogs, tray tooltips, menus, window title) | every `STARNET_*` env name, `__STARNET_*` global, `X-StarNet-Token` header, and legacy app-data path |
+| `src-tauri/{Info.plist, capabilities, Cargo.toml}` | mic prompt, description | crate name `skynet-desktop` (the binary name) |
+| `README.md` | logo, prose, download asset names, honest fork note | the upstream brand clause (it reserves Andrew Sims' StarNet name) |
+| `website/**` (21 files, 239 replacements) | public marketing pages, docs, legal | the live domain `starnetos.com`, the `androoAGI/starnet(-releases)` URLs, `starnet.*` localStorage keys |
+
+Two things came out of this that were **not** in the original scope, both worth recording:
+
+1. **A Phase 1 regression.** Phase 1's wordmark was `<text>`-based, which broke
+   `test/brand-wordmark-mask.test.js` (3 assertions) — that suite pins the mask recipe and had not
+   been run during Phase 1. The asset is now a real path-based 5×7 matrix, reproducible from the new
+   `dev/make-spacestation-wordmark.mjs`, with an **explicit** fill (a `currentColor` asset renders
+   near-black when loaded via `<img>`, which the splash and README both do).
+2. **A pre-existing failure from the Phase 10–12 work.** `test/font.law.test.js` was failing on
+   `businessautopilot.css` / `businessdtwin.css` (non-VT323 font stacks). Fixed.
+
+`test/brand-identity.test.js` now runs **40 assertions** covering all of the above, and was proven to
+bite (injecting `StarNet` into `productName` and the website fails 3 of them).
