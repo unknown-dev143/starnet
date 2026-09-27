@@ -30,7 +30,13 @@ A.ok(/getBoundingClientRect\(\)[\s\S]{0,300}anchor/.test(ui) && /CASCADE_STEP/.t
   'PL-11: large consoles retain a visible offset from the window beneath');
 A.ok(/class="deliverables-toolbar"/.test(deliverables) && /class="bb sm" id="dl-refresh"/.test(deliverables),
   'PL-12: Deliverables toolbar opts into themed controls');
-A.ok(/previews open safely inside StarNet/i.test(deliverables) && !/opaque-origin sandbox/.test(deliverables),
+/* The brand is NOT pinned here on purpose. This lock's job is the PLAIN-LANGUAGE claim ("previews
+   open safely inside <product> in a browser") and the ABSENCE of the old jargon ("opaque-origin
+   sandbox"). It used to hardcode `StarNet`, so the §3 rebrand renamed the sentence in
+   deliverables.js to "inside SpaceStation" and this assertion went red for a reason that had
+   nothing to do with plain language. Which brand appears in a rendered string is
+   test/brand-identity.test.js's job — one lock, one concern. */
+A.ok(/previews open safely inside \w+/i.test(deliverables) && !/opaque-origin sandbox/.test(deliverables),
   'PL-13: Deliverables introduction uses plain outcome language');
 A.ok(/\.deliverables-toolbar/.test(style), 'PL-12: Deliverables toolbar has explicit themed layout');
 A.ok(/controls\.setAttribute\('aria-hidden', 'true'\)/.test(titlebar) && /b\.tabIndex = -1/.test(titlebar),

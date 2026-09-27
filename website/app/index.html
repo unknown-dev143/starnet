@@ -43,6 +43,12 @@
 <link rel="stylesheet" href="css/businessmission.css"><!-- MISSION CONTROL (Business OS Phase 11, §23): scoped .mssn-* styles for the ranked board, the fleet figures and the cross-business trail (businessmission.js). NOTE: .mc-* was already taken by the station's own stylesheets, so this one is .mssn- — scoped so the consoles cannot collide. The ranking reads as REASONS in place (.mssn-why), never a colour band or a priority number; an unreadable source is styled LOUD. -->
 <link rel="stylesheet" href="css/businessautopilot.css"><!-- GOAL AUTOPILOT (Business OS Phase 12, §9): scoped .ap-* styles (businessautopilot.js). The one line that must not be missed is .ap-staged — "this is a plan, nothing is written yet". A refusal (.ap-refuse) is styled as a calm statement, because the autopilot refusing to invent a plan is a feature, not an error. -->
 <link rel="stylesheet" href="css/businessfactory.css"><!-- SOFTWARE FACTORY (Business OS Phase 12, §22): scoped .fac-* styles (businessfactory.js). There is NO bar/track/fill class anywhere in this sheet — the progress-bar temptation is structurally removed. State reads as a WORD (.fac-state), an unreadable source is LOUD (.fac-cannot) and shows "—" not 0. -->
+<!-- a11y.css MUST STAY LAST. It answers three OS-level preferences the design had no rules for —
+     forced-colors (Windows High Contrast Mode), prefers-contrast and prefers-reduced-transparency —
+     and most of what it does is RESTATE a value an earlier sheet already set (.term's border,
+     --text, --panel). At EQUAL SPECIFICITY the last sheet wins, so loading it anywhere else makes
+     those rules silently dead. test/theme-contrast.test.js asserts it is last. -->
+<link rel="stylesheet" href="css/a11y.css">
 
 </head>
 <body class="theme-amber">

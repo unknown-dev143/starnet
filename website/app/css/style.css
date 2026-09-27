@@ -97,6 +97,32 @@
      body level (or below) — otherwise their var(--ph) bakes to the :root amber
      and the bezel "borders" stay amber no matter which theme is picked. */
 }
+/* ---- THEME PALETTES ----
+   ⚠️ `--ph-dim` CARRIES TEXT, NOT JUST LINES. It paints 600+ `color:` declarations — `.dim`,
+   `.dimb`, `.crew-room`, `.h3-aux`, `.deliverable-row small`, `.set-slider-name`, and every
+   console's `.xx-note`/`.xx-sub` — so it owes WCAG 1.4.3 (4.5:1 for normal text), not the 3:1
+   that a 1px border owes. It is also the border/dividers token, which is why one value has to
+   satisfy the stricter floor; clearing 4.5:1 clears 3:1 for free.
+
+   Measured against the WORST ground a dim label ever sits on (`--panel2`, the raised-card
+   surface — lighter than both `--bg` and the `--panel` glass, so it is the tightest case), three
+   of the six stock palettes were below AA and are corrected here:
+
+       amber  #b9791c  5.55:1  already AA          (unchanged)
+       green  #1fae4e  6.14:1  already AA          (unchanged)
+       blue   #1e87ba  4.49:1  MISSED by 0.01      -> #228ec1  4.90:1
+       purple #7d3fc4  3.06:1  below AA            -> #a15cea  4.74:1
+       red    #b3271c  2.99:1  below AA *and* 1.4.11 -> #e8392e  4.70:1
+       white  #97a397  6.90:1  already AA          (unchanged)
+
+   THE KNOWN COST, named rather than hidden: in purple and red `--ph` is itself only 5.88:1 and
+   5.63:1 on `--panel2`, so once `--ph-dim` clears 4.5:1 the dim↔accent luminance gap narrows to
+   ~1.0. Those two palettes simply do not have the headroom for a wide ramp under AA. Raising the
+   accent instead would restyle the entire theme (buttons, headings, every border and glow), and
+   splitting `--ph-dim` into separate text/line tokens would touch 600+ declarations across 18
+   sheets for no further accessibility gain. Text legibility wins; the ramp stays ordered
+   (dim 4.7 < accent 5.6 < text 10.0 < bright 13.8) and `--ph-bright` still carries the top tier.
+   `test/theme-contrast.test.js` is the standing guard — it re-measures all of this on every run. */
 body.theme-amber {
   --ph: #ffaa33; --ph-bright: #ffd9a3; --ph-dim: #b9791c; --ph-faint: #1e1404;
   --ink: #190f02; --ph-glow: rgba(255, 170, 51, 0.5); --ph-glow2: rgba(255,170,51,0.14);
@@ -112,21 +138,21 @@ body.theme-green {
   --cam-grade: saturate(0.72) contrast(1.08) brightness(0.88);
 }
 body.theme-blue {
-  --ph: #46c8ff; --ph-bright: #c8efff; --ph-dim: #1e87ba; --ph-faint: #0a2c40;
+  --ph: #46c8ff; --ph-bright: #c8efff; --ph-dim: #228ec1; --ph-faint: #0a2c40;
   --ink: #021320; --ph-glow: rgba(70, 200, 255, 0.45); --ph-glow2: rgba(70,200,255,0.14);
   --bg: #010305; --panel: rgba(2, 12, 20, 0.92); --panel2: #051826; --warn: #ffc861; --text: #97d5ee;
   --gold: #5ce8c8; --ph-rgb: 70, 200, 255; --ph-bright-rgb: 200, 239, 255; --gold-rgb: 92, 232, 200;
   --cam-grade: saturate(0.72) contrast(1.08) brightness(0.88);
 }
 body.theme-purple {
-  --ph: #b46bff; --ph-bright: #e6d4ff; --ph-dim: #7d3fc4; --ph-faint: #251038;
+  --ph: #b46bff; --ph-bright: #e6d4ff; --ph-dim: #a15cea; --ph-faint: #251038;
   --ink: #120720; --ph-glow: rgba(180, 107, 255, 0.45); --ph-glow2: rgba(180,107,255,0.14);
   --bg: #040208; --panel: rgba(10, 4, 20, 0.92); --panel2: #150a26; --warn: #ffb84a; --text: #c8a9ee;
   --gold: #f07ae0; --ph-rgb: 180, 107, 255; --ph-bright-rgb: 230, 212, 255; --gold-rgb: 240, 122, 224;
   --cam-grade: saturate(0.72) hue-rotate(8deg) contrast(1.08) brightness(0.88);
 }
 body.theme-red {
-  --ph: #ff4136; --ph-bright: #ffc9c2; --ph-dim: #b3271c; --ph-faint: #3a0c08;
+  --ph: #ff4136; --ph-bright: #ffc9c2; --ph-dim: #e8392e; --ph-faint: #3a0c08;
   --ink: #1f0603; --ph-glow: rgba(255, 65, 54, 0.45); --ph-glow2: rgba(255,65,54,0.14);
   --bg: #080201; --panel: rgba(18, 4, 3, 0.92); --panel2: #1a0705; --warn: #ffd24a; --text: #f0a89f;
   --gold: #ffab4a; --ph-rgb: 255, 65, 54; --ph-bright-rgb: 255, 201, 194; --gold-rgb: 255, 171, 74;
@@ -337,7 +363,7 @@ h3::after { /* engraved double rule */
 .scrolly::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
 
 .pos { color: var(--ok); } .neg, .bad { color: var(--bad); } .warn { color: var(--warn); } .gold { color: var(--gold); }
-.dim { opacity: 1; }   /* was .5 (~2:1 on --bg, WCAG fail); .dim color comes from app.css var(--ph-dim) which is solid >=4.5:1 — only the text opacity is dropped, border/line uses of --ph-dim are untouched */
+.dim { opacity: 1; }   /* was .5 (~2:1 on --bg, WCAG fail); .dim color comes from app.css var(--ph-dim), so the dim tier is a SOLID token and only the text opacity is dropped — border/line uses of --ph-dim are untouched. That "solid" value is not assumed: the theme palettes are measured against WCAG 1.4.3 on every ground (worst case --panel2) and blue/purple/red were raised to clear 4.5:1 — see THEME PALETTES above. test/theme-contrast.test.js re-measures it. */
 b { font-weight: normal; color: var(--ph-bright); }
 ::selection { background: var(--ph); color: var(--ink); text-shadow: none; }
 

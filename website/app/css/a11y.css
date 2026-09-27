@@ -1,0 +1,163 @@
+/* SPACESTATION — a11y.css : THE ACCESSIBILITY LAYER.
+   ============================================================
+   Loaded LAST in index.html, and that is load-bearing rather than tidiness: at EQUAL SPECIFICITY
+   the last stylesheet wins, and most of what follows deliberately restates a value some earlier
+   sheet already set (`.term`'s border, `--text`, `--panel`). A sheet loaded earlier would simply
+   lose those ties and be dead weight. `test/theme-contrast.test.js` asserts this file is last and
+   that these media features appear in exactly ONE sheet.
+
+   WHY IT EXISTS. The shipped design answers three OS-level preferences nowhere:
+     · forced-colors        — Windows High Contrast Mode. The whole chrome is box-shadow bezels and
+                              background-image glass, and forced-colors forces BOTH to none, so
+                              panels and windows lose every edge they were drawn with.
+     · prefers-contrast     — the OS-level request for more contrast. The phosphor bloom
+                              (text-shadow on <body>) is the opposite of what that user asked for.
+     · prefers-reduced-
+       transparency         — the panels, floating windows and modal scrims are translucent by
+                              design (--panel is an rgba, and three scrims carry backdrop-filter).
+   Each block below is a floor, not a restyle: it adds only what the OS setting makes necessary and
+   touches no colour the themes own, except where a token must be raised to stay legible.
+
+   ⚠️ THE RULE THIS FILE MUST NOT BREAK (see frontend/css/panel-brightness.test.js): panels may get
+   BRIGHTER but never via a bright ground. Every block here moves FOREGROUND tokens and never lifts
+   --bg / --panel / --panel2 toward white. `prefers-contrast` is asserted not to reassign any of
+   those three at all.
+   ============================================================ */
+
+
+/* ============================================================
+   1 · FORCED COLOURS — Windows High Contrast Mode / Edge forced-colors
+   ============================================================
+   WHAT THE USER AGENT DOES FIRST (and why the audit came before the rules):
+     · background-image      -> none          so the CRT scanlines, every `--glass` overlay and
+                                              every radial phosphor bloom on a panel simply vanish
+     · box-shadow            -> none          so `--bezel` and `--raise` stop drawing ANYTHING
+     · text-shadow           -> none          so the phosphor glow goes
+     · background-color, color, border-color, outline-color, scrollbar-color
+                             -> forced to system colours
+   Custom properties are NOT stripped — they just stop reaching the paint. The consequence is the
+   one that matters here: ANY SURFACE WHOSE ONLY BOUNDARY IS A box-shadow LOSES ITS EDGE.
+
+   So the audit question was "which surfaces are framed by a shadow and have no real border?".
+   Every `var(--bezel)` / `var(--raise)` surface in the shipped sheets was checked:
+     #topbar #left #right #bottombar #center · .panel · .lv-retry · .prov-card · .key-row
+     .q-track · .ts-row · .cc-card · .ab-route
+   — all of them declare a real `border`, so the UA recolours it and they stay visible. `.term`
+   (and its `.term.feature` variant, which inherits from it) is THE SOLE EXCEPTION: the floating
+   window's entire frame is `box-shadow: var(--bezel)`. Open a window in High Contrast Mode and,
+   without the rule below, it has no edge at all — the content floats on the page background.
+   ============================================================ */
+@media (forced-colors: active) {
+
+  /* Decorative glass and bloom. The UA already drops these (background-image -> none); asserting
+     it keeps the intent in the source instead of leaving it as an undocumented side effect. */
+  body::after,                                   /* CRT scanlines + aperture grille */
+  .term::before,                                 /* window curved-glass overlay */
+  #topbar::before, #left::before, #right::before,
+  #bottombar::before, #center::before            /* panel curved-glass overlay */
+  { display: none; }
+
+  /* THE ONE REAL FIX. `.term`'s only frame is a box-shadow, which forced-colors forces to none.
+     A bare `1px solid` takes border-color from currentColor, and `color` IS forced to a system
+     colour — so the UA picks the edge colour and the window is a window again. (Deliberately NOT
+     naming a system colour keyword: the frontend bans OS system-control colours outright, see
+     test/control-floor-theming.test.js §3 — and letting the UA choose is more correct anyway.) */
+  .term { border: 1px solid; }
+
+  /* Status markers. `.dot` / `.live-dot` are 6–7px filled squares whose fill the UA flattens, so
+     a running and an idle agent would look identical. They already carry a status WORD beside them
+     (.crew-status), so colour is redundant here rather than load-bearing — the border just keeps
+     the marker readable as a marker. */
+  .dot, .live-dot { border: 1px solid; }
+
+  /* COLOUR IS THE CONTENT, so opt these out of forcing entirely.
+     `.phosphor-swatches .swatch` IS the six palettes: forcing its fill to Canvas erases the control
+     and leaves six identical grey circles. Selection is still legible — `.sel` and `:focus-visible`
+     already carry a real outline, which is NOT suppressed. */
+  .phosphor-swatches .swatch { forced-color-adjust: none; }
+
+  /* The station view is DRAWN, not styled. A canvas bitmap is never forced, but its CSS
+     background-color is — and the starfield sits under exactly that. Keep both as rendered. */
+  #stage, #sp-stars { forced-color-adjust: none; }
+}
+
+
+/* ============================================================
+   2 · PREFERS-CONTRAST: MORE
+   ============================================================
+   The single biggest legibility win here is KILLING THE GLOW. `body` paints
+   `text-shadow: 0 0 4px var(--ph-glow2)` behind every glyph, and headings add 10px of bloom on
+   top. That halo is the aesthetic at normal contrast, but it is strictly harmful to a user who has
+   asked the OS for more contrast: it blurs the glyph edge. Dropping it is theme-agnostic — it
+   works for theme-custom too, whose palette is written as INLINE custom properties and therefore
+   cannot be reached by any stylesheet rule (see the specificity note below).
+
+   Then the two foreground tokens. `--text` is raised toward the theme's own `--ph-bright` — a
+   75/25 mix, computed so it is never DARKER than the stock value in any of the six themes
+   (worst case 11.06:1 on --panel2, up from 9.40:1). `--ph-dim` is the dim label tier and is the
+   token that actually failed AA in three palettes (fixed in style.css); here it is raised further
+   for anyone who wants more.
+
+   ⚠️ SPECIFICITY, and why the theme classes are enumerated. The palettes live on `body.theme-*`
+   (0,1,1). A plain `body` selector (0,0,1) CANNOT override them — class beats element no matter
+   what the load order is. Restating the six class selectors keeps specificity equal and lets the
+   load order decide, which is the only reason this file is last. `theme-custom` is deliberately
+   absent: its tokens are inline on <body>, and no stylesheet rule can beat an inline declaration.
+   Its glow is still killed by the `body` rule above, because nothing writes text-shadow inline.
+   ============================================================ */
+@media (prefers-contrast: more) {
+
+  body { text-shadow: none; }                    /* no phosphor halo behind the glyphs */
+  h3, .term-title, .sp-tag, b { text-shadow: none; }
+
+  body,
+  body.theme-amber, body.theme-green, body.theme-blue,
+  body.theme-purple, body.theme-red, body.theme-white {
+    --text: color-mix(in srgb, var(--ph-bright) 75%, var(--ph));
+    --ph-dim: color-mix(in srgb, var(--ph) 62%, var(--ph-bright));
+  }
+
+  /* the inverted-block headers paint --ink on --ph; at high contrast the flat pair is fine, but
+     the ink edge needs to hold, so the glow there goes too. */
+  ::selection { text-shadow: none; }
+}
+
+
+/* ============================================================
+   3 · PREFERS-REDUCED-TRANSPARENCY: REDUCE
+   ============================================================
+   Three surfaces are translucent on purpose and one is blurred:
+     · --panel          rgba(…, .92–.97) — the glass the five panels and .panel sit on
+     · .term            rgba(5, 3, 1, .97) — the floating window body
+     · .term-scrim / .mkt-scrim / .refit-guide — the modal scrims, which ALSO carry
+                        backdrop-filter: blur(...) / saturate(...)
+   A user who has asked for less transparency gets the same grounds at full opacity, and the blur
+   behind a scrim — which only exists to smear what is showing through — is dropped with it.
+
+   `--panel` is repointed at `--panel2`, the theme's solid raised-card colour: same hue family, no
+   alpha, and it is ALREADY the shipped value for `.prov-card` / `.deliverable-row` grounds — so
+   this is a token the theme owns, not a colour invented here. Grounds stay dark.
+
+   Same specificity caveat as §2: the six theme classes are enumerated, and a user on theme-custom
+   with the PANEL BRIGHTNESS knob above 0 will keep their inline value — applySettings writes
+   --panel inline, and an inline declaration outranks every stylesheet. Documented, not worked
+   around: overriding a slider the user set with their own hand would be the wrong call.
+   ============================================================ */
+@media (prefers-reduced-transparency: reduce) {
+
+  body,
+  body.theme-amber, body.theme-green, body.theme-blue,
+  body.theme-purple, body.theme-red, body.theme-white {
+    --panel: var(--panel2);
+  }
+
+  /* the window body: override only the COLOUR layer of its `background` shorthand, so the
+     decorative radial glow above it survives untouched. */
+  .term { background-color: var(--panel2); }
+
+  /* the scrims: opaque enough to still separate the modal from the page, and no blur. */
+  .term-scrim, .mkt-scrim, .refit-guide {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

@@ -19,7 +19,10 @@ A.ok(native.includes('const CREDITS_LINK: &str = ".secrets/credits.json"'), 'the
 A.ok(native.includes('owner_pid_alive(owner_pid)'), 'a dead PID stamp cannot strand the fresh-start escape');
 A.ok(native.includes('MIGRATION_MARKER') && native.includes('acknowledged_roots'), 'the clean generation cannot resurrect legacy state on Mac or Windows relaunch');
 A.ok(html.includes('id="btn-unreachable-fresh"'), 'the unreachable screen exposes the escape');
-A.ok(html.includes('does not remove your StarNet account link or purchased credits'), 'the screen explains the credit-preserving scope');
+/* brand NOT pinned: the §3 rebrand renamed this sentence's product name to SpaceStation and left
+   the lock red for a reason unrelated to what it checks. This locks the CLAIM ("does not remove
+   your <product> account link or purchased credits"); brand-identity.test.js owns the brand. */
+A.ok(/does not remove your \w+ account link or purchased credits/.test(html), 'the screen explains the credit-preserving scope');
 A.ok(app.includes('FreshStart.resetDesktop(core)'), 'the two-click UI calls the native transaction rather than dead sidecar HTTP');
 A.ok(app.includes("freshBtn.textContent = '✦ CONFIRM — START COMPLETELY FRESH'"), 'the destructive choice requires an explicit second click');
 A.ok(app.includes('browserResetBlocked = true'), 'an uncleared browser cache cannot silently repopulate the clean station');
