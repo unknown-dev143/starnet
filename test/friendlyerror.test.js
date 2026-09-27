@@ -329,7 +329,10 @@ for (const raw of [
     'BROWSER: a bare sidecar 500 keeps the local-service copy');
   A.eq(friendlyError(Object.assign(new Error('sidecar HTTP 500 — internal error'), { status: 500 })).kind,
     'server_error', 'DELEGATE: a bare sidecar 500 keeps the local-service copy');
-  A.ok(/local starnet service/i.test(KINDS.server_error.msg), 'the local copy still exists for the proven-local case');
+  /* brand NOT pinned — see test/errorclass.test.js. The claim under test is that the PROVEN-LOCAL
+     case still has its own local-service copy at all (the 2026-07-30 fix was about not claiming
+     "local" without sidecar evidence); the §3 rebrand renamed the product inside that copy. */
+  A.ok(/local \w+ service/i.test(KINDS.server_error.msg), 'the local copy still exists for the proven-local case');
   // the two ladders must agree on the flagship shape, or the halves drift again
   A.eq(kindFromRaw('anthropic http 529 - overloaded', null),
     friendlyError(new Error('Anthropic http 529 - Overloaded')).kind,
