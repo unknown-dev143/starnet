@@ -212,7 +212,7 @@ error (a tally is not a triage) gave the real breakdown:
 | **false red — the sweep's classifier was wrong** | 11 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `# duration_ms`, `… : ok`); the classifier only recognised `OK (n assertions)` |
 | environment — the sandbox | 27 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
 
-### 8a. The §3 rebrand left five stale locks and one real divergence
+### 8a. The §3 rebrand left six stale locks and one real divergence
 
 `test/brand-identity.test.js` **passed** throughout — it correctly found no stale `StarNet` in
 `frontend/`. It only guards the **source**; nothing guarded the **tests that pin the source's rendered

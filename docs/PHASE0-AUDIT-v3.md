@@ -501,7 +501,7 @@ served `index.html`; and the served `style.css` carries the three new `--ph-dim`
 once each (the old values survive only inside the explanatory before→after comment).
 `website-app-sync --check` **OK** (3925 files + 2 embed-only).
 
-### 13c. What the §3 rebrand left behind — five stale locks and one real divergence
+### 13c. What the §3 rebrand left behind — six stale locks and one real divergence
 
 The rebrand's own verification was **incomplete**, and the full-sweep triage found it. Six gates were
 red because they pinned a rendered string the rebrand legitimately renamed:
