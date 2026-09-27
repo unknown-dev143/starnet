@@ -200,3 +200,85 @@ review tool and not a product file.
 `pikachu` (16) sprite sets in `frontend/assets/sprites/manifest.json` are **left as they are**. They are
 pre-existing character-art gaps, unrelated to this repair, and touching them would change how existing
 saved agents render.
+
+## 8. Postscript — full-suite sweep: 8 real defects, and 38 things that only *looked* red
+
+A sweep of all 750 `test/fast.list` steps flagged **46 suites red**. Re-running each and reading its actual
+error (a tally is not a triage) gave the real breakdown:
+
+| category | count | detail |
+|---|---|---|
+| **real defects, now fixed** | **8** | §8a + §8b below |
+| **false red — the sweep's classifier was wrong** | 11 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `# duration_ms`, `… : ok`); the classifier only recognised `OK (n assertions)` |
+| environment — the sandbox | 27 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
+
+### 8a. The §3 rebrand left five stale locks and one real divergence
+
+`test/brand-identity.test.js` **passed** throughout — it correctly found no stale `StarNet` in
+`frontend/`. It only guards the **source**; nothing guarded the **tests that pin the source's rendered
+strings**, so six gates were red for a reason that had nothing to do with what they test:
+
+| gate | pinned | source now says |
+|---|---|---|
+| `poweruser-shell-repairs` PL-13 | `previews open safely inside StarNet` | `… inside SpaceStation` |
+| `desktop-fresh-start-contract` | `your StarNet account link` | `your SpaceStation account link` |
+| `errorclass` (4 assertions) | `local StarNet service…` | `… SpaceStation …` |
+| `friendlyerror` | `local starnet service` | `local SpaceStation service` |
+| `saveversion` | `newer StarNet` | `newer SpaceStation` |
+| `run-recovery-ui` | `StarNet will not repeat it` | `SpaceStation will not repeat it` |
+
+All six are re-pointed at the **claim**, not the brand (`/local \w+ service/i`) — brand-identity owns the
+brand, these own the claim.
+
+**The one that was a real bug:** `test/slash.parity.test.js` exists to stop the frontend and sidecar
+slash-command registries drifting, and the rebrand had drifted them —
+`frontend/app/chat.js:6383` said *"show SpaceStation version information"* while `sidecar/slash.js:310`
+still said *"show StarNet version information"*. **The rebrand covered `frontend/`, `src-tauri/`, `README`
+and `website/` — but not `sidecar/`.** Fixed in the **source**, because the two halves must agree.
+
+⚠️ **Reported, not changed:** the sidecar holds further user/operator-visible old-brand strings — notably
+`sidecar/acp/core.js:195` `'Allow StarNet to work in …'` (an ACP **permission prompt a human approves**),
+plus `sidecar/acp/serve.js:147`, `sidecar/manual.js:25`, `sidecar/runtimeinfo.js:58`,
+`sidecar/configexport.js:140`, `sidecar/mcp/bridge-core.js:41`. Their tests **pass**, so they are not
+stale locks — they are a branding-completeness decision, and extending §3 into the sidecar is the owner's
+call.
+
+### 8b. One test was reporting a false security breach
+
+`test/fs.jail.test.js` creates a real directory symlink and proves `resolveInside()` rejects the escape.
+Its skip-guard only catches a **throw**, but the failure mode here is **silent** — measured on Windows
+under the sandbox: `fsp.symlink(outside, link, 'dir')` **reports success** while
+`lstat().isSymbolicLink()` is `false`, `readlink()` throws `EINVAL`, and `realpath()` resolves the path to
+itself. No link is created, so there is no link to escape *through*, so the containment proof failed **red**
+and read as "the jail let an escape through" when no escape existed. The test now verifies the link is real
+and skips explicitly; the security assertion is **not weakened**. The jail itself was checked and is **not
+at fault**. One latent note: `realpathOrSelf()` returns the **input path on any `realpath` error** — it
+fails **open**, where this codebase's convention is to report a source unavailable rather than assume.
+
+### 8c. Two more measured defects closed this session
+
+- **The skill scanner was missing 8 of 12 threat classes** (§12 of `PHASE0-AUDIT-v3.md`). Found by reading
+  the sibling repo `skill-firewall/`; proved with a 14-sample probe (before: 4 detected / 8 missed — after:
+  13 / 0). Twelve `PATTERNS` rows added; `skills.test` 135 → **149**. The taxonomy transferred, not the LLM
+  method — this scanner must stay deterministic and offline-first.
+- **`--ph-dim` failed WCAG AA in 3 of 6 themes** (§13 of `PHASE0-AUDIT-v3.md`): purple 3.06:1, red 2.99:1
+  (below even the 3:1 non-text floor), blue 4.49:1 — against a `style.css` comment that *claimed* ≥4.5:1.
+  Fixed in the palette, the false comment replaced with the measured table, and a new gate
+  (`theme-contrast`, **186** assertions) added that composites the translucent `--panel` over `--bg` and
+  holds every text-bearing token to 4.5:1 on all three grounds. Written **first** and proven to bite.
+- **Three OS-level preferences the design answered nowhere** (`forced-colors`, `prefers-contrast`,
+  `prefers-reduced-transparency`) now have a layer — `frontend/css/a11y.css`, loaded **last** because most
+  of it restates values earlier sheets set and equal specificity is decided by order. The forced-colors pass
+  found `.term`'s floating-window frame is `box-shadow`-only, so in Windows High Contrast Mode an open
+  window had **no edge at all**.
+
+**Gates after:** `theme-contrast` 186, `control-floor-theming` 153, `font.law` 216, `panel-brightness` 12,
+`theme-custom-phosphor` 36, `station-tooltip` 443, `brand-identity` 40, `crew-rail-fit` 84,
+`slash.parity` 180, `saveversion` 23, `run-recovery-ui` 10, `fs.jail` 96, `skills.test` 149,
+`skills.gate.test` 96, `errorclass` 211, `friendlyerror` 225, `poweruser-shell-repairs` 14,
+`desktop-fresh-start-contract` 15. Website mirror `--check` **OK** (3925 files + 2 embed-only).
+
+**Live proof:** sidecar booted on a scratch workspace, **served** bytes fetched — `/css/a11y.css`
+**HTTP 200 / 10273 bytes / text/css**, `a11y.css` is the **last** stylesheet in the served `index.html`,
+and the served `style.css` carries the three new `--ph-dim` declarations exactly once each.
+

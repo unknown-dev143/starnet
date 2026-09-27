@@ -362,3 +362,217 @@ HTTP fetch says the browser receives it.
 **Not touched on purpose:** the short `ultron` (8 frame keys), `minion` (16) and `pikachu` (16) character
 sprite sets. Pre-existing gaps in a different subsystem (character art, not prop art); changing them would
 alter how already-saved agents render, which is not this repair's business.
+
+## 12. Postscript — the skill scanner was missing 8 of 12 threat classes
+
+`sidecar/skills/guard.js` is the deterministic regex scanner behind a skill's trust verdict
+(`safe` / `caution` / `dangerous` → `allow` / `ask` / `block`) before it is installed. Its `PATTERNS`
+table covered command execution, network egress, filesystem destruction and prompt injection.
+
+The other workspace repo `skill-firewall/` is a *less* complete predecessor of the same idea — it
+inspects skill code with an LLM and returns APPROVE / REWRITE / REJECT. It is less complete
+mechanically, but its **threat taxonomy was the richer of the two**, so it was worth reading.
+
+**Measured, not assumed.** `guard-gap-probe.mjs` ran 13 threat samples plus one clean control through
+the real scanner:
+
+| | caught / detected | missed | clean-control false positives |
+|---|---|---|---|
+| before | 4 | **8 of 12 classes scanned `safe`** | 0 |
+| after | 13 | 0 | 0 |
+
+The misses included `skill-firewall`'s own malicious sample: a `~/.ssh/id_rsa` read,
+`fs.appendFileSync = () => {}` silencing the audit trail, and `skillGuard = null` disabling the gate
+**from inside the skill it was meant to guard**. All three scanned `safe`.
+
+**What transferred was the taxonomy, not the method.** This scanner must stay deterministic and
+offline-first (the determinism lint forbids `Date.now`/rng in sidecar modules, and the brief forbids
+fabricated verdicts), so an LLM in the trust path would break the architecture. Twelve `PATTERNS`
+rows were added after `network_url`:
+
+| class | patternIds |
+|---|---|
+| credential-access | `private_key_ref`, `credential_store_read`, `secret_env_read` |
+| evasion | `disable_logging`, `disable_audit`, `disable_guard`, `bypass_consent`, `disable_flags` |
+| remote-control | `reverse_shell` |
+| escalation | `privilege_escalation` |
+| persistence | `scheduled_persistence` |
+| obfuscation | `obfuscated_exec` |
+
+Severity is chosen per pattern so the **existing** `verdictFor()` maths lands correctly (max severity
+≥ 3 → `dangerous`, ≥ 1 → `caution`, else `safe`); `rankOf()` already treats an unknown level as worst,
+so a new pattern cannot silently downgrade a verdict.
+
+**Gates:** `skills.test` **149** (was 135) — a `MUST_BLOCK` table of 10 (patternId, code) pairs plus
+three honesty assertions (`secret_env_read` is *detected* but rates only `caution` for community
+source; an ordinary procedure yields **zero** findings; a credential path merely *named in prose* is
+not flagged as a read). `skills.gate.test` **96** — the `EXPECT` verdict table is unchanged, so no
+existing classification moved. The new gate was proven to bite by injecting a bogus patternId
+(→ 1 problem, 148 ok, naming the exact assertion) and reverting.
+
+**Deliberately NOT adopted:** `skill-firewall`'s LLM reviewer itself (breaks determinism/offline-first)
+and `boss-agent`'s `node:sqlite` task registry (SpaceStation has its own durable store).
+
+## 13. Postscript — a real WCAG AA failure in 3 themes, and the accessibility layer that was absent
+
+### 13a. `--ph-dim` failed WCAG AA in three of six themes
+
+`frontend/css/style.css` carried a claim on `.dim` since its opacity was dropped from .5:
+
+> ".dim color comes from app.css var(--ph-dim) which is solid >=4.5:1"
+
+An asserted invariant that **nothing checked** — and it was false. Measured against the worst ground a
+dim label ever sits on (`--panel2`, the raised-card surface: lighter than both `--bg` and the
+translucent `--panel` glass, so the tightest case):
+
+| theme | stock `--ph-dim` | on `--panel2` | | fixed to | |
+|---|---|---|---|---|---|
+| amber | `#b9791c` | 5.55:1 | AA | *(unchanged)* | |
+| green | `#1fae4e` | 6.14:1 | AA | *(unchanged)* | |
+| blue | `#1e87ba` | **4.49:1** | missed by 0.01 | `#228ec1` | 4.90:1 |
+| purple | `#7d3fc4` | **3.06:1** | below AA | `#a15cea` | 4.74:1 |
+| red | `#b3271c` | **2.99:1** | below AA **and** below the 3:1 non-text floor | `#e8392e` | 4.70:1 |
+| white | `#97a397` | 6.90:1 | AA | *(unchanged)* | |
+
+This is not a decorative token: `--ph-dim` carries **608 `color:` declarations across 18 sheets** —
+`.dim`, `.dimb`, `.crew-room`, `.crew-id`, `.h3-aux`, `.deliverable-row small`, `.set-slider-name`,
+every console's `.xx-note`/`.xx-sub` — i.e. the label tier of every screen. It is *also* the 1px
+border/dividers token, which is why one value has to clear the stricter floor; clearing 4.5:1 clears
+3:1 for free.
+
+**The known cost, named rather than hidden.** In purple and red `--ph` is itself only 5.88:1 and
+5.63:1 on `--panel2`, so once `--ph-dim` clears 4.5:1 the dim↔accent luminance gap narrows to ~1.0.
+Those two palettes have no headroom for a wide ramp under AA. Both alternatives were worse: raising
+the accent restyles the entire theme (buttons, headings, every border and glow), and splitting
+`--ph-dim` into separate text/line tokens would touch 608 declarations across 18 sheets for no
+further accessibility gain. Text legibility wins; the ramp stays ordered
+(dim 4.7 < accent 5.6 < text 10.0 < bright 13.8) and `--ph-bright` still holds the top tier. The
+false comment was replaced with the measured table **in the source**.
+
+**New gate:** `test/theme-contrast.test.js` (**186** assertions, in `test/fast.list`). It parses every
+`body.theme-*` block, **composites the translucent `--panel` over `--bg`** (the glass, not the raw
+token, is what text sits on), and holds every text-bearing token to 4.5:1 on all three grounds. It
+was written **first** and run against the unfixed tree to prove it bites — it named purple 3.06:1,
+red 2.99:1 and red's 1.4.11 failure individually before the fix existed.
+
+### 13b. Three OS-level preferences the design answered nowhere
+
+`forced-colors`, `prefers-contrast` and `prefers-reduced-transparency` appeared in **zero** of the 26
+stylesheets. New `frontend/css/a11y.css`, **loaded last**.
+
+**Why last is load-bearing:** most of what it does is *restate* a value an earlier sheet already set
+(`.term`'s border, `--text`, `--panel`). At **equal specificity the last sheet wins**; loaded anywhere
+else those rules are silently dead. The gate asserts it is last, and that no other sheet carries
+these media queries.
+
+**`forced-colors` (Windows High Contrast Mode).** The audit came before the rules. The UA forces
+`background-image`, `box-shadow` **and** `text-shadow` to `none`, so **any surface whose only
+boundary is a `box-shadow` loses its edge**. Every `var(--bezel)`/`var(--raise)` surface was checked:
+`#topbar` `#left` `#right` `#bottombar` `#center`, `.panel`, `.lv-retry`, `.prov-card`, `.key-row`,
+`.q-track`, `.ts-row`, `.cc-card`, `.ab-route` — all declare a real `border`, so the UA recolours it
+and they survive. **`.term` (and `.term.feature`, which inherits) is the sole exception**: the
+floating window's entire frame is `box-shadow: var(--bezel)`. In HCM an open window had **no edge at
+all**. That is the one real fix, plus: colour-carried meaning is preserved
+(`.phosphor-swatches .swatch` *is* the six palettes → `forced-color-adjust: none`, or it is six
+identical grey circles), the drawn canvas is opted out, and the decorative CRT glass is asserted off.
+Deliberately no system-colour keyword is named — the frontend bans OS system-control colours
+(`control-floor-theming.test.js` §3) and letting the UA choose is more correct anyway.
+
+**`prefers-contrast: more`.** The biggest win is killing the **glow**: `body` paints
+`text-shadow: 0 0 4px` behind every glyph and headings add 10px of bloom, and that halo is strictly
+harmful to a user who asked for more contrast. Theme-agnostic, so it works for `theme-custom` too.
+`--text` is then raised to a 75/25 mix of `--ph-bright`/`--ph`, computed to be **never darker** than
+stock in any of the six themes (worst case 11.06:1 on `--panel2`, up from 9.40:1). The six theme
+classes are enumerated deliberately: `body` alone is 0,0,1 and **cannot** beat `body.theme-*` at
+0,1,1 — class beats element whatever the load order. `theme-custom` is absent on purpose: its tokens
+are inline on `<body>`, and no stylesheet rule can beat an inline declaration.
+
+**`prefers-reduced-transparency: reduce`.** `--panel` repointed at `--panel2` (the theme's own solid
+raised-card colour, not a colour invented here), `.term`'s `background-color` overridden so its
+decorative radial glow survives, and `backdrop-filter` dropped from the three scrims
+(`.term-scrim`, `.mkt-scrim`, `.refit-guide`).
+
+The **panel-brightness promise** is respected and asserted: the contrast block must not reassign
+`--bg`, `--panel` or `--panel2` at all — brighter *text*, never a brighter *ground*.
+
+**Live end-to-end proof.** Sidecar booted on a scratch workspace, **served** bytes fetched:
+`/css/a11y.css` → **HTTP 200 / 10273 bytes / text/css**; `a11y.css` is the **last** stylesheet in the
+served `index.html`; and the served `style.css` carries the three new `--ph-dim` declarations exactly
+once each (the old values survive only inside the explanatory before→after comment).
+`website-app-sync --check` **OK** (3925 files + 2 embed-only).
+
+### 13c. What the §3 rebrand left behind — five stale locks and one real divergence
+
+The rebrand's own verification was **incomplete**, and the full-sweep triage found it. Six gates were
+red because they pinned a rendered string the rebrand legitimately renamed:
+
+| gate | pinned | source now says |
+|---|---|---|
+| `poweruser-shell-repairs` PL-13 | `previews open safely inside StarNet` | `… inside SpaceStation` |
+| `desktop-fresh-start-contract` | `your StarNet account link` | `your SpaceStation account link` |
+| `errorclass` (4 assertions) | `local StarNet service…`, `Can't reach StarNet's local service` | `… SpaceStation …` |
+| `friendlyerror` | `local starnet service` | `local SpaceStation service` |
+| `saveversion` | `newer StarNet` | `newer SpaceStation` |
+| `run-recovery-ui` | `StarNet will not repeat it` | `SpaceStation will not repeat it` |
+
+`test/brand-identity.test.js` **passed** throughout — it correctly found no stale `StarNet` left in
+`frontend/`. It only guards the **source**; nothing guarded the **tests that pin the source's rendered
+strings**. All six are re-pointed at the **claim**, not the brand (e.g. `/local \w+ service/i`), which
+is the right split of concerns: brand-identity owns the brand, these own the claim.
+
+**The one that was a real bug, not a stale test:** `test/slash.parity.test.js` exists to stop the
+frontend and sidecar slash-command registries drifting — and the rebrand had drifted them:
+
+```
+frontend/app/chat.js:6383   'show SpaceStation version information'
+sidecar/slash.js:310        'show StarNet version information'      <- fixed (the SOURCE)
+```
+
+**The rebrand covered `frontend/`, `src-tauri/`, `README` and `website/` — but not `sidecar/`.** Here
+the fix is the source, not the lock: the two halves must agree. ⚠️ **Still open, reported not
+changed:** the sidecar holds further user/operator-visible old-brand strings — notably
+`sidecar/acp/core.js:195` `'Allow StarNet to work in …'` (an ACP **permission prompt a human
+approves**), `sidecar/acp/serve.js:147` `'StarNet is not running … start StarNet and try again'`,
+`sidecar/manual.js:25`, `sidecar/runtimeinfo.js:58`, `sidecar/configexport.js:140`,
+`sidecar/mcp/bridge-core.js:41`. Their tests **pass** (source and lock agree), so they are not stale
+locks — they are a branding-completeness decision, and extending §3 into the sidecar is the owner's
+call.
+
+### 13d. One test was reporting a false security breach
+
+`test/fs.jail.test.js` creates a real directory symlink and proves `resolveInside()` rejects the
+escape. Its catch-block is meant to skip on filesystems that disallow symlinks — but it only catches a
+**throw**, and the failure mode here is **silent**. Measured on Windows under the sandbox:
+
+```
+fsp.symlink(outside, link, 'dir')   -> reports SUCCESS
+lstat(link).isSymbolicLink()        -> false
+readlink(link)                      -> EINVAL
+realpath(link)                      -> the link path itself
+```
+
+No link is created, so there is no link to escape *through*, so the containment proof failed **red**
+and read as "the jail let an escape through" when no escape existed. The test now verifies the link is
+real and skips explicitly. **The security assertion is not weakened**: wherever a real link is
+created, the escape is proven exactly as before.
+
+The jail itself was checked and **is not at fault** — `resolveInside()` does string containment, then
+`deepestExisting()`, then realpath containment, in that order. Noted while there: `realpathOrSelf()`
+returns the **input path on any `realpath` error**, so a filesystem where `realpath` fails would trust
+the string path. Narrow, and not what bit here — but it fails **open**, where this codebase's
+convention is to report a source unavailable rather than assume.
+
+### 13e. The sweep's own tally was wrong, and that is worth recording
+
+A `test/fast.list` sweep (750 steps) flagged 46 suites red. Triaged by **re-running each and reading
+the actual error**, the real breakdown was:
+
+| category | count | why |
+|---|---|---|
+| real defects, now fixed | 8 | §13c + §13d |
+| **false red — the sweep's classifier was wrong** | 11 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `# duration_ms`, `… : ok`) and the classifier only recognised `OK (n assertions)` |
+| environment — the sandbox | 27 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
+
+**Lesson:** a tally is not a triage. `grep '^FAIL'` on a sweep's output is a *candidate* list, not a
+defect list — the only way to classify is to re-run the suite and read its error.
+
