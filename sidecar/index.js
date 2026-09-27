@@ -205,6 +205,9 @@ const { makeBusinessAutopilot } = require('./business-autopilot.js');           
 const { makeAutopilotRoutes } = require('./autopilot-routes.js');               // Business OS P12: the /api/autopilot surface (catalog + plan + commit)
 const { makeSoftwareFactory } = require('./software-factory.js');               // Business OS P12: §22 AI SOFTWARE FACTORY — the Idea→…→Operate pipeline read; composes six stores, owns no store
 const { makeFactoryRoutes } = require('./factory-routes.js');                   // Business OS P12: the /api/factory surface (stages + pipeline), all GET
+const { makeRemoteReadModel } = require('./business-remote.js');                // Business OS §25: the REMOTE MONITORING read model — composes status/activity/approvals/revenue/errors/tasks; owns no store, writes nothing
+const { makeRemoteSeam } = require('./business-remote-seam.js');                // Business OS §25: the remote BINDING SEAM — disabled by default, opens no listener; the "architecture-ready" half
+const { makeRemoteRoutes } = require('./remote-routes.js');                     // Business OS §25: the /api/remote surface (summary + businesses/:id + status), all GET
 /* P7 CATALOG-REFRESH SENTINEL. Declared HERE (not beside the router it points at, ~1500 lines below) for one
    reason: warmModelCatalog() is called during boot and its .then() runs asynchronously, and a `const` or
    `let` declared further down is still in its temporal dead zone at that moment — a bare `typeof` check does
@@ -3801,6 +3804,41 @@ const softwareFactory = makeSoftwareFactory({
 
 const factoryRoutes = makeFactoryRoutes({
   factory: softwareFactory
+});
+
+/* §25 REMOTE MONITORING (the brief's §27). "Eventually let the user monitor SpaceStation remotely:
+   business status · AI activity · alerts · pending approvals · revenue · errors · running tasks", and
+   "prioritize monitoring and approvals — not attempt to reproduce the whole workstation."
+
+   This is a READ MODEL plus a SEAM, not a second workstation and not a second monitor. The stores above
+   already hold every fact, so the composer OWNS NOTHING and WRITES NOTHING — it reads through these
+   accessors and shapes one compact, phone-sized snapshot. That is why there is no POST here.
+
+   The SEAM is the "architecture-ready" half: `makeRemoteSeam` opens no listener and defaults to DISABLED.
+   The install switch is read from the env ONCE, here, and must be the literal string '1' to arm — anything
+   else (unset, 'true', 'yes') leaves the remote interface off, because widening the attack surface is a
+   deliberate act, never a default. Even when armed, the seam refuses to report bound until a real
+   transport is attached, and status() says so truthfully. */
+const remoteReadModel = makeRemoteReadModel({
+  now: () => Date.now(),
+  businesses: businessesStore,
+  approvals: approvalsStore,
+  activity: businessActivityStore,
+  finance: financeStore,
+  workOrders: workOrdersStore,
+  // the errors feed is the activity log filtered to error-shaped kinds by the read model; passing the same
+  // store keeps ONE source of truth (a second error store would drift).
+  errors: businessActivityStore
+});
+
+const remoteSeam = makeRemoteSeam({
+  readModel: remoteReadModel,
+  isEnabled: ENV('REMOTE_INTERFACE') === '1'
+});
+
+const remoteRoutes = makeRemoteRoutes({
+  readModel: remoteReadModel,
+  seam: remoteSeam
 });
 
 // the LIVE blessed-root set = every `path:*` grant, stripped of the prefix. Derived fresh each read so a
@@ -9336,6 +9374,13 @@ const ROUTES = [
   // query-tolerant tail because its business id travels in ?business= (the §13 shape). Read-only by
   // construction — the composer has no write path.
   ...factoryRoutes.rows,
+  // ---- BUSINESS OS (§25). §27 Remote Monitoring. Own module, mounted here. THREE GET rows under a fresh
+  // /api/remote prefix (summary · businesses/:id · status), so none can shadow a Phase 1-12 path. All
+  // read-only by construction — the composer has no write path, and an approval DECISION stays on its
+  // existing guarded route rather than gaining a second door here. Each row is `rx` with the
+  // query-tolerant tail (`?limit`) rather than `qrx`: the dispatch fills the match array only for rx rows,
+  // and the business row reads the id from match[1] — a qrx row would reach its handler with match === null.
+  ...remoteRoutes.routes,
   { m: 'POST', exact: '/api/update/prepare', h: handleUpdatePrepare },
   { m: 'POST', exact: '/api/update/cancel', h: handleUpdateCancel },
   { m: 'GET', exact: '/api/update/status', h: handleUpdateStatus },

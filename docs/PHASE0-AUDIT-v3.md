@@ -239,3 +239,65 @@ Two things came out of this that were **not** in the original scope, both worth 
 
 `test/brand-identity.test.js` now runs **40 assertions** covering all of the above, and was proven to
 bite (injecting `StarNet` into `productName` and the website fails 3 of them).
+
+---
+
+## 10. Postscript — §25 remote monitoring is BUILT (the "architecture-ready" seam + read model)
+
+With §3 closed, §25 was the last item on the brief. The brief (its own §27) says: *"Eventually let the
+user monitor SpaceStation remotely: business status · AI activity · alerts · pending approvals · revenue
+· errors · running tasks,"* and *"the remote interface should prioritize **monitoring and approvals** — not
+attempt to reproduce the whole workstation."* That wording is the whole scoping decision: build the SEAM
+and the READ MODEL, not a remote workstation and not a second network listener.
+
+**Three modules, none inlined into `index.js` beyond a require + wiring rows:**
+
+| Module | What it is | Writes? |
+|---|---|---|
+| `sidecar/business-remote.js` | The composing **read model**. Projects the seven facts from the stores that already own them into one phone-shaped snapshot. | **No** — owns no store |
+| `sidecar/remote-routes.js` | The HTTP surface: `GET /api/remote/summary · /api/remote/businesses/:id · /api/remote/status`. | **No** — three GET rows, no POST |
+| `sidecar/business-remote-seam.js` | The **binding seam**. Documents the four requirements a transport must satisfy; opens no listener; **disabled by default**. | No |
+
+**Why a read model, not a new monitor (P4).** `diagnostics.js`, `harness-snapshot.js` and
+`business-metrics.js` already compute health/metrics/telemetry; a second monitor would be exactly the
+duplication §28 forbids. The composer therefore reads through **injected accessors** and shapes output —
+it is pure and boot-free.
+
+**The honesty rules, all asserted in `test/business-remote.test.js` (60 assertions):**
+
+- a section that could not be read is `ok:false` **with a reason**, never an empty list;
+- a count is `null` when unreadable, and a real `0` only when the source *was* read (the same rule
+  `business-metrics.js::latest()` follows);
+- no fabricated score / health / grade / percentage anywhere (a recursive key scan asserts this).
+
+**The seam, asserted in `test/business-remote-seam.test.js` (43 assertions):** `isEnabled` must be the
+literal `true` (a truthy string leaves it off); `attach()` throws on a disarmed seam and on a malformed
+transport; `status()` never says `bound:true` without a real transport. The guard was proven to bite
+(relaxing `=== true` to a truthy check fails 6 assertions). The module is **source-locked to open no
+listener** (no `createServer` / `.listen(` / `WebSocket` / `require(` in its code).
+
+**Route discipline, asserted in `test/remote-routes.test.js` (79 assertions):** three `rx` rows with the
+query-tolerant tail, **zero `qrx` rows**, no `exact` / no POST — plus the module-level sweep (now covering
+all 14 `sidecar/*-routes.js`) that fails on any `qrx` row carrying a capture group. Also proven to bite.
+
+**Live smoke (scratch workspace, port 8787, fixed token):**
+
+| Probe | Result |
+|---|---|
+| `GET /api/remote/status` | 200 — `bound:false, enabled:false`, naming all four missing requirements |
+| `GET /api/remote/summary` (empty workspace) | 200 — every section `ok:true`, every count a real `0` |
+| create a business, re-read | 200 — `businesses:1`, the real name/stage, real `0`s |
+| `GET /api/remote/businesses/<id>` | 200 — `complete:true`, real values |
+| unknown id | **404** (scoped refusal, not another business's rows — P6) |
+| wrong token | **403** (the route exists and `apiauth.js` covers it) |
+
+**What was deliberately NOT built** (and this is the point of "architecture-ready"): no remote transport,
+no second auth path, no mutation route — an approval *decision* still goes through its one guarded route
+(`POST /api/approvals/<id>/approve|reject`), so there is exactly one door per mutation.
+
+**Gate sweep (all green):** `lint-determinism` (336 files), `events-contract` (9 — no events added),
+`failopen-ratchet` (157), `cap-tool-registration` (306), `capdrift` (99), `frontend-fetch-truth` (12),
+`brand-identity` (40), `brand-wordmark-mask` (22), `station-tooltip` (443), `onboarding-legibility` (49),
+`dock-terms-open` (9), all 12 sibling `*-routes` suites, `business-os-hardening` (**196**, up from 189 —
+the sweep now covers 14 modules), `business-os-lifecycle` (39). `source-text-integrity` env-fails
+(`spawnSync git EBUSY`) — the sandbox, not the change. Website mirror `--check`: **OK**.

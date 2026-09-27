@@ -17,7 +17,7 @@ row states what proves it; where a § is genuinely open, it says so plainly and 
 
 | | |
 |---|---|
-| Brief phases §1–§29 | **29 of 29 present**, 1 deliberately absent (§25, "architecture-ready only") |
+| Brief phases §1–§29 | **29 of 29 present** (§25 now built as the "architecture-ready" seam + read model the brief scopes) |
 | §6 gap items | **8 of 8 closed** |
 | Repo state | MIT-licensed; **zero** of the 8 researched repos are dependencies |
 | Honesty discipline | 71 Business OS events; no fabricated score/health/grade/percentage anywhere (§11 check below) |
@@ -52,7 +52,7 @@ row states what proves it; where a § is genuinely open, it says so plainly and 
 | §22 | AI Software Factory | **DONE** | `software-factory.js` (composing reader) + `factory-routes.js` + console `businessfactory.js`. Eight stages `idea·validate·business·spec·build·test·ship·operate`; each stage proven by a **recorded fact**; an unreadable source reads **"cannot tell"**, never `0`; **no percentage field exists**. Tests 54+37+37 = **128**. |
 | §23 | Mission Control | **DONE** | `mission-control.js` (composing reader) + `mission-routes.js` + console `businessmission.js`. Every business on **one ranked board**; the ranking **IS** the named reasons (no score). Tests 89 (engine) + 100 (routes) + 88 (console) = **277**. |
 | §24 | Emergency Stop | **DONE** | `halt.js` — station E-STOP **and** scoped per-business stop |
-| §25 | Remote monitoring | **ABSENT — by design** | The brief asks for "architecture-ready" only; no remote interface is built. Not a gap; a deliberate boundary. |
+| §25 | Remote monitoring | **DONE (seam + read model)** | Brief §27 asks "eventually let the user monitor remotely … prioritize monitoring and approvals", and scopes it "architecture-ready". Built as `business-remote.js` (a composing READ MODEL — owns no store, writes nothing) + `remote-routes.js` (`/api/remote/summary · businesses/:id · status`, all GET) + `business-remote-seam.js` (the binding point, **disabled by default**, opens no listener). No remote workstation was reproduced, per the brief. Tests 60 (read model) + 79 (routes) + 43 (seam). |
 | §26 | Integration adapters | **DONE** | MCP manager + channels registry |
 | §27 | License requirement | **SATISFIED** | Repo is MIT. **No external repo referenced anywhere.** |
 | §28 | Dependency rule | **SATISFIED** | Zero of the 8 researched repos are dependencies (repo-wide grep) |
@@ -85,7 +85,7 @@ environment**, not product:
 | The **full** `test/fast.list` gate (674 steps) green in one run | **Not achieved here** | This execution sandbox **blocks nested process spawns** (`spawnSync` of *any* child exits `EBUSY` / returns `status:null`, even with the sandbox disabled). ~65 of the 674 steps spawn a subprocess (git probes, PowerShell, release trains, eval CLIs) and therefore cannot pass **here** regardless of the code. They are expected to pass on a normal machine. `test/fast.list` in the commit is **unmodified** — no test is excluded in the shipped tree. |
 | `website-deploy-staging` | **Env artifact** | `website-deploy/` is a gitignored *generated* build artifact (`scripts/stage-website-deploy.mjs`); regenerating it fixes the initial `ENOENT`, leaving only the nested-`spawnSync` EBUSY step (`spawnSync(…).status === null`). 23 of 24 assertions pass. |
 | `qa-cartographer` / `toolprops` / `prop-render-smoke` | **Pre-existing failures**, not ours | 7 capability props have no sprite renderer / no tool mapping (`414b05161`, `446987fac`). Confirmed pre-existing by commit archaeology; untouched by this work. |
-| §25 remote monitoring | **Deliberately absent** | Brief asks for "architecture-ready" only |
+| §25 remote monitoring | **DONE — the "architecture-ready" seam + read model** | Built to the brief's own scope ("eventually … prioritize monitoring and approvals"): a composing read model + a disabled-by-default binding seam. No remote workstation, no second listener. See §2's row. |
 
 *(Update 2026-09-27: the visible-identity rebrand — the transformation brief's §3 — was the one open
 product item after this ledger was written. It is now **DONE**: Phase 1 (`cba3891a5`) rebranded the
@@ -95,6 +95,15 @@ installer, the Rust shell's user-visible strings, the README and the public webs
 built is §25 remote monitoring. Two incidental fixes came with Phase 2: a Phase 1 regression in
 `test/brand-wordmark-mask.test.js`, and three pre-existing `test/font.law.test.js` failures from the
 Phase 10–12 CSS.)*
+
+*(Update 2026-09-27, later: **§25 remote monitoring is now BUILT**, to the brief's own "architecture-ready"
+scope — see §2's row. The ledger's "deliberately absent" verdict above is superseded. Nothing in the brief
+remains unbuilt. The build is a READ MODEL (`business-remote.js`) over the existing stores plus a
+binding SEAM (`business-remote-seam.js`) that is DISABLED BY DEFAULT and opens no listener; three GET
+routes expose it (`/api/remote/summary · /businesses/:id · /status`). Live-smoked on a scratch workspace:
+`/api/remote/status` reports `bound:false, enabled:false` and names all four missing requirements; a
+created business then appears in `/api/remote/summary` with real values; a bogus id 404s and a wrong token
+403s (proving the route exists and auth covers it).)*
 
 ---
 

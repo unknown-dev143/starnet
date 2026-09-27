@@ -391,7 +391,7 @@ function rule(id, event, actions) { return { id, name: id, trigger: event, enabl
 
   // Route-table trap: no Business OS route module may use the `qrx` matcher (it leaves match===null and
   // every business-scoped lookup 404s). Asserted at the source so a future edit cannot silently regress it.
-  const routeFiles = ['business-routes', 'maker-routes', 'task-routes', 'agent-routes', 'manager-routes', 'automation-routes', 'worker-routes'];
+  const routeFiles = ['business-routes', 'maker-routes', 'task-routes', 'agent-routes', 'manager-routes', 'automation-routes', 'worker-routes', 'intelligence-routes', 'twin-routes', 'security-routes', 'mission-routes', 'autopilot-routes', 'factory-routes', 'remote-routes'];
   for (const f of routeFiles) {
     const lines = fs.readFileSync(path.join(__dirname, '..', 'sidecar', f + '.js'), 'utf8').split('\n');
     // A qrx is the route-table trap ONLY when its regex captures a path segment (a "("): qrx leaves the
