@@ -201,16 +201,18 @@ review tool and not a product file.
 pre-existing character-art gaps, unrelated to this repair, and touching them would change how existing
 saved agents render.
 
-## 8. Postscript — full-suite sweep: 9 real defects, and 37 things that only *looked* red
+## 8. Postscript — full-suite sweep: 9 real defects, and 68 things that only *looked* red
 
-A sweep of all 750 `test/fast.list` steps flagged **46 suites red**. Re-running each and reading its actual
-error (a tally is not a triage) gave the real breakdown:
+A sweep of all 751 `test/fast.list` steps ended **674 OK / 71 flagged FAIL / 6 tagged ENV**. Re-running
+every flagged suite and reading its actual error (a tally is not a triage) gave the real breakdown of the 71:
 
 | category | count | detail |
 |---|---|---|
-| **real defects, now fixed** | **9** | §8a + §8b below |
-| **false red — the sweep's classifier was wrong** | 11 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `# duration_ms`, `… : ok`); the classifier only recognised `OK (n assertions)` |
-| environment — the sandbox | 26 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
+| **real defects, now fixed** | **9** | §8a + §8b below — all nine now exit 0 |
+| **false red — the sweep's classifier was wrong** | 30 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `lint-determinism: scanned 336 file(s); OK`, `station-bridge.test.js: ok`); the classifier only recognised `OK (n assertions)` |
+| environment — the sandbox | 32 | `spawnSync` of **any** child returns `status:null`; a `symlink()` **reports success but creates nothing**; `C:/Users/User` is itself a git repo. All show `actual: null` / `EBUSY` or a custom "N problem(s)" line |
+
+(The 6 the sweep tagged ENV are the same class.) So **zero real defects remain**.
 
 ### 8a. The §3 rebrand left seven stale locks and one real divergence
 

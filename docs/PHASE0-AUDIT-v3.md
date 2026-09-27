@@ -565,14 +565,17 @@ convention is to report a source unavailable rather than assume.
 
 ### 13e. The sweep's own tally was wrong, and that is worth recording
 
-A `test/fast.list` sweep (750 steps) flagged 46 suites red. Triaged by **re-running each and reading
-the actual error**, the real breakdown was:
+A full `test/fast.list` sweep (751 steps) ended **674 OK / 71 flagged FAIL / 6 tagged ENV**. The 71 were
+triaged by **re-running every one and reading the actual error** (not the recorded last line):
 
 | category | count | why |
 |---|---|---|
-| real defects, now fixed | 9 | §13c + §13d |
-| **false red — the sweep's classifier was wrong** | 11 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `# duration_ms`, `… : ok`) and the classifier only recognised `OK (n assertions)` |
-| environment — the sandbox | 26 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
+| real defects, now fixed | 9 | §13c + §13d — all nine now exit 0 |
+| **false red — the sweep's classifier was wrong** | 30 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `lint-determinism: scanned 336 file(s); OK`, `station-bridge.test.js: ok`, `projectbless.test: 42 assertions passed`) and the classifier only recognised `OK (n assertions)` |
+| environment — the sandbox | 32 | `spawnSync` of **any** child returns `status:null`; a `symlink()` **reports success but creates nothing**; and `C:/Users/User` is itself a git repo, so `pathtrust`'s "no `.git` anywhere up" cannot hold. All show `actual: null` / `EBUSY`, or a custom "N problem(s)" line |
+
+(The 6 the sweep itself tagged ENV are the same class — nested-spawn artifacts.) So **zero real defects
+remain**: every one of the 71 is either green-on-rerun, a classifier artifact, or the sandbox.
 
 **Lesson:** a tally is not a triage. `grep '^FAIL'` on a sweep's output is a *candidate* list, not a
 defect list — the only way to classify is to re-run the suite and read its error.
