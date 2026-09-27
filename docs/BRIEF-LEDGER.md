@@ -37,7 +37,7 @@ row states what proves it; where a § is genuinely open, it says so plainly and 
 | §7 | AI Workforce registry | **DONE** | `business-agents-store.js` — every field the brief lists |
 | §8 | Task orchestration | **DONE** | `business-tasks-store.js` (436) + work-orders |
 | §9 | Goal Autopilot | **DONE** | `business-autopilot.js` + `autopilot-routes.js` + console `businessautopilot.js`. Goal → plan (read-only) → commit (the one mutating door). CLOSED goal set; unknown goal refused **with the known list**. Tests 56+60+43 = **159**. |
-| §10 | Browser Worker | **DONE** | `tools/builtin/browser.js` (2,873 ln, 35 tools). Worker holds the **read-only half** (12 `research` tools, `wired:true`); interactive half absent + restricted. Pinned in `business-os-hardening.test.js` (189). |
+| §10 | Browser Worker | **DONE** | `tools/builtin/browser.js` (2,873 ln, 35 tools). Worker holds the **read-only half** (12 `research` tools, `wired:true`); interactive half deliberately absent + restricted. Pinned in `business-os-hardening.test.js` (196 — the count grew when the §25 commit extended the qrx sweep to all 14 route modules). |
 | §11 | Computer Worker foundation | **DONE** | `business-worker-policy.js` — tool→§13 action table, fail-closed |
 | §12 | Approval system | **DONE** | `business-approvals-store.js` (310) + held review-tier actions |
 | §13 | Security system | **DONE** | `business-security.js` (composing reader) + `security-routes.js` + console `businesssecurity.js`. Tiers (`safe/review/restricted`), holders, decisions, pending. Read-only by construction — no POST where a guarded route already mutates. Tests 70 (engine) + 82 (routes) + 76 (console) = **228**. |
