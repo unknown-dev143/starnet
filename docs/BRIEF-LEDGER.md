@@ -201,22 +201,22 @@ review tool and not a product file.
 pre-existing character-art gaps, unrelated to this repair, and touching them would change how existing
 saved agents render.
 
-## 8. Postscript — full-suite sweep: 8 real defects, and 38 things that only *looked* red
+## 8. Postscript — full-suite sweep: 9 real defects, and 37 things that only *looked* red
 
 A sweep of all 750 `test/fast.list` steps flagged **46 suites red**. Re-running each and reading its actual
 error (a tally is not a triage) gave the real breakdown:
 
 | category | count | detail |
 |---|---|---|
-| **real defects, now fixed** | **8** | §8a + §8b below |
+| **real defects, now fixed** | **9** | §8a + §8b below |
 | **false red — the sweep's classifier was wrong** | 11 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `# duration_ms`, `… : ok`); the classifier only recognised `OK (n assertions)` |
-| environment — the sandbox | 27 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
+| environment — the sandbox | 26 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
 
-### 8a. The §3 rebrand left six stale locks and one real divergence
+### 8a. The §3 rebrand left seven stale locks and one real divergence
 
 `test/brand-identity.test.js` **passed** throughout — it correctly found no stale `StarNet` in
 `frontend/`. It only guards the **source**; nothing guarded the **tests that pin the source's rendered
-strings**, so six gates were red for a reason that had nothing to do with what they test:
+strings**, so seven gates were red for a reason that had nothing to do with what they test:
 
 | gate | pinned | source now says |
 |---|---|---|
@@ -226,9 +226,12 @@ strings**, so six gates were red for a reason that had nothing to do with what t
 | `friendlyerror` | `local starnet service` | `local SpaceStation service` |
 | `saveversion` | `newer StarNet` | `newer SpaceStation` |
 | `run-recovery-ui` | `StarNet will not repeat it` | `SpaceStation will not repeat it` |
+| `genesis-starnet-link` (3 assertions) | `link your StarNet account first`, `checking your StarNet credits…`, `…but StarNet could not verify it` | `… SpaceStation …` |
 
-All six are re-pointed at the **claim**, not the brand (`/local \w+ service/i`) — brand-identity owns the
-brand, these own the claim.
+All seven are re-pointed at the **claim**, not the brand (`/local \w+ service/i`) — brand-identity owns the
+brand, these own the claim. (The 7th, `genesis-starnet-link`, was found only on a **second pass**: the
+sweep records each suite's *last* line, and a thrown assertion ends with the same `Node.js v22.x` crash
+banner a sandbox env-fail prints. A crash banner says *the process exited non-zero*, never *why*.)
 
 **The one that was a real bug:** `test/slash.parity.test.js` exists to stop the frontend and sidecar
 slash-command registries drifting, and the rebrand had drifted them —

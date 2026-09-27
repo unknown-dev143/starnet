@@ -43,7 +43,7 @@ ok(/harness_adopt_credits_token/.test(app), 'a fresh link hands the token to the
 ok(/refreshCreditsConfigured/.test(app), "a fresh link teaches Harness so configured('starnet') answers without a restart");
 
 // WAKE is gated: an unlinked STARNET pick is refused with the remedy named, before any agent exists.
-ok(/pickedProvider === 'starnet'[\s\S]{0,1800}!creditState\.linked[\s\S]{0,240}link your StarNet account first/i.test(app),
+ok(/pickedProvider === 'starnet'[\s\S]{0,1800}!creditState\.linked[\s\S]{0,240}link your \w+ account first/i.test(app),
   'WAKE refuses an unlinked STARNET pick and names the one-button remedy');
 
 // Leaving the screen (or switching provider) drops the in-flight pairing poll — no orphan pollers.
@@ -58,7 +58,7 @@ ok(/async function switchStarnetAccount\(\)[\s\S]{0,1400}harness_clear_credits_t
   'switch account clears keychain + sidecar link and immediately starts the normal pairing flow');
 ok(/function starnetOutOfCredit\(\)/.test(app), 'a linked-but-empty wallet is a named state');
 ok(/no credits yet/.test(app) && /btn-starnet-credits/.test(app), 'the status line names the empty wallet and the button opens the store');
-const wakeCreditsStart = app.indexOf("msg.textContent = 'checking your StarNet credits…'");
+const wakeCreditsStart = app.search(/msg\.textContent = 'checking your \w+ credits/);
 const wakeCreditsRefresh = app.indexOf('const creditState = await refreshStarnetGenesisStatus();', wakeCreditsStart);
 const wakeCreditsZero = app.indexOf('if (!(creditState.balanceUsd > 0))', wakeCreditsRefresh);
 ok(wakeCreditsStart >= 0 && wakeCreditsRefresh > wakeCreditsStart && wakeCreditsZero > wakeCreditsRefresh,
@@ -107,7 +107,7 @@ ok(/previous link was removed from your account/.test(app),
   'genesis names the removed link and tells the Commander to reconnect credits');
 ok(/lk\.reason === 'link_revoked'[\s\S]{0,220}previous link was removed from your account/.test(stationui),
   'Settings renders the same relink recovery from backend truth');
-ok(/LINK SAVED · SERVICE UNAVAILABLE/.test(stationui) && /link saved on this station, but StarNet could not verify it/.test(app),
+ok(/LINK SAVED · SERVICE UNAVAILABLE/.test(stationui) && /link saved on this station, but \w+ could not verify it/.test(app),
   'temporary cloud failure is presented separately and never overclaimed as LINKED');
 
 console.log('genesis-starnet-link.test.js OK -', n, 'assertions');

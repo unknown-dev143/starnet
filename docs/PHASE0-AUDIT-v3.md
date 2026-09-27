@@ -501,9 +501,9 @@ served `index.html`; and the served `style.css` carries the three new `--ph-dim`
 once each (the old values survive only inside the explanatory before→after comment).
 `website-app-sync --check` **OK** (3925 files + 2 embed-only).
 
-### 13c. What the §3 rebrand left behind — six stale locks and one real divergence
+### 13c. What the §3 rebrand left behind — seven stale locks and one real divergence
 
-The rebrand's own verification was **incomplete**, and the full-sweep triage found it. Six gates were
+The rebrand's own verification was **incomplete**, and the full-sweep triage found it. Seven gates were
 red because they pinned a rendered string the rebrand legitimately renamed:
 
 | gate | pinned | source now says |
@@ -514,10 +514,11 @@ red because they pinned a rendered string the rebrand legitimately renamed:
 | `friendlyerror` | `local starnet service` | `local SpaceStation service` |
 | `saveversion` | `newer StarNet` | `newer SpaceStation` |
 | `run-recovery-ui` | `StarNet will not repeat it` | `SpaceStation will not repeat it` |
+| `genesis-starnet-link` (3 assertions) | `link your StarNet account first`, `checking your StarNet credits…`, `…but StarNet could not verify it` | `… SpaceStation …` |
 
 `test/brand-identity.test.js` **passed** throughout — it correctly found no stale `StarNet` left in
 `frontend/`. It only guards the **source**; nothing guarded the **tests that pin the source's rendered
-strings**. All six are re-pointed at the **claim**, not the brand (e.g. `/local \w+ service/i`), which
+strings**. All seven are re-pointed at the **claim**, not the brand (e.g. `/local \w+ service/i`), which
 is the right split of concerns: brand-identity owns the brand, these own the claim.
 
 **The one that was a real bug, not a stale test:** `test/slash.parity.test.js` exists to stop the
@@ -569,10 +570,17 @@ the actual error**, the real breakdown was:
 
 | category | count | why |
 |---|---|---|
-| real defects, now fixed | 8 | §13c + §13d |
+| real defects, now fixed | 9 | §13c + §13d |
 | **false red — the sweep's classifier was wrong** | 11 | the suite exits **0** with a non-standard output shape (`configexport.test.js OK — 41 assertions`, `# duration_ms`, `… : ok`) and the classifier only recognised `OK (n assertions)` |
-| environment — the sandbox | 27 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
+| environment — the sandbox | 26 | `spawnSync` of **any** child returns `status:null` here, so every git / PowerShell / release / eval-CLI probe fails by construction (`expected 0, got null`, `expected 2, got null`, `got -1`) |
 
 **Lesson:** a tally is not a triage. `grep '^FAIL'` on a sweep's output is a *candidate* list, not a
 defect list — the only way to classify is to re-run the suite and read its error.
+
+**⚠️ And one more: a crash BANNER is not a sandbox signature.** The sweep records each suite's **last**
+output line, and a thrown assertion ends with the same `Node.js v22.22.2` banner that a sandbox env-fail
+prints — so the first pass bucketed `genesis-starnet-link` as "sandbox" when it was a genuine
+`AssertionError`. The banner only says *the process exited non-zero*; it never says *why*. Read the
+error, not the banner: a sandbox fail shows `actual: null` / `EBUSY`, a real one names an assertion.
+That correction is why the count above is **9, not 8**.
 
