@@ -11,6 +11,6 @@
 <plist version="1.0">
 <dict>
   <key>NSMicrophoneUsageDescription</key>
-  <string>StarNet uses the microphone for push-to-talk and hands-free voice conversations with your selected agent.</string>
+  <string>SpaceStation uses the microphone for push-to-talk and hands-free voice conversations with your selected agent.</string>
 </dict>
 </plist>

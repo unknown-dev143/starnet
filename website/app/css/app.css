@@ -284,7 +284,7 @@ input[type=file]::file-selector-button:hover { border-color: var(--ph); backgrou
   justify-content: center; gap: 10px; padding-bottom: 8vh; pointer-events: none;
 }
 .sp-logo {
-  width: min(58vw, 640px); height: auto; aspect-ratio: 980 / 160; image-rendering: auto; user-select: none;
+  width: min(58vw, 640px); height: auto; aspect-ratio: 1460 / 180; image-rendering: auto; user-select: none;
   filter: drop-shadow(0 0 18px var(--ph-glow)) drop-shadow(0 0 60px var(--ph-glow2));
   animation: sp-breathe 4.2s ease-in-out infinite;
 }

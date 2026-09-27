@@ -86,7 +86,7 @@
 .dt-delta-sub { display: block; font-size: 9px; color: #8a93a3; font-weight: 400; }
 
 /* The assumption line under each result row — the arithmetic, stated in words. */
-.dt-assume td { font-size: 10px; color: #6b7382; padding-top: 0; border-bottom: 1px solid #eef1f6; font-family: var(--font-mono, monospace); }
+.dt-assume td { font-size: 10px; color: #6b7382; padding-top: 0; border-bottom: 1px solid #eef1f6; }
 
 /* A clamped assumption: the request was impossible and the result stopped at the edge of the definition.
    Marked so 1.0 is not read as a computed conversion rate. */

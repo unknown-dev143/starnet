@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "StarNet",
+  "productName": "SpaceStation",
   "version": "0.10.10",
   "identifier": "ai.skynet.harness",
   "build": {

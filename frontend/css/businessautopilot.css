@@ -54,10 +54,10 @@
 .ap-table td { border-bottom: 1px solid #eef1f6; padding: 4px 6px; color: #1a1d24; vertical-align: top; }
 .ap-num { text-align: right; width: 1%; white-space: nowrap; }
 .ap-goal-cell { font-weight: 600; }
-.ap-kw { color: #57606e; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; }
+.ap-kw { color: #57606e; font-size: 10px; }
 .ap-pri { color: #57606e; text-transform: lowercase; }
 .ap-appr { color: #8a6d1f; font-size: 10px; }
-.ap-id { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; color: #57606e; }
+.ap-id { font-size: 10px; color: #57606e; }
 
 .ap-note { font-size: 10px; color: #6b7480; margin: 4px 0 0; line-height: 1.45; }
 .ap-empty { font-size: 11px; color: #6b7480; margin: 0; }

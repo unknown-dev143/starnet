@@ -1,4 +1,4 @@
-// StarNet — native desktop shell (Tauri v2).
+// SpaceStation — native desktop shell (Tauri v2).
 //
 // Wraps the existing browser app: spawns the zero-dependency Node sidecar on a
 // private loopback port, waits for it to listen, then opens that URL in a native
@@ -194,7 +194,7 @@ impl KeepAwakeHandle {
         };
 
         let mut reason: Vec<u16> =
-            "StarNet scheduled tasks are allowed to run while the app is open"
+            "SpaceStation scheduled tasks are allowed to run while the app is open"
                 .encode_utf16()
                 .chain(std::iter::once(0))
                 .collect();
@@ -536,7 +536,7 @@ fn hash_file(path: &Path) -> std::io::Result<(u64, String)> {
 }
 
 /// A legacy root becomes an automatic station source only when its canonical save is readable and proves the
-/// StarNet save contract. This is intentionally stronger than "some JSON object": migration may carry other
+/// SpaceStation save contract. This is intentionally stronger than "some JSON object": migration may carry other
 /// durable stores, but it must never choose between two different stations by directory enumeration order.
 fn valid_station_save_hash(root: &Path) -> Option<String> {
     for name in ["agent.save.json", "agent.save.json.bak"] {
@@ -1757,7 +1757,7 @@ fn sidecar_command(state: &AppState, entry: &Path, node: &Path) -> Command {
             set_sidecar_branded_env(&mut cmd, "SKYNET_TELEGRAM_BOT_TOKENS", encoded);
         }
     }
-    // StarNet Cloud device token, same path. Because EVERY sidecar spawn goes through this builder,
+    // SpaceStation Cloud device token, same path. Because EVERY sidecar spawn goes through this builder,
     // a sidecar restarted after adoption still comes up linked even though the token is no longer
     // in credits.json — the file keeps the non-secret fields and this supplies the secret.
     if let Some(token) = read_credits_token() {
@@ -1846,15 +1846,15 @@ fn show_startup_failure_dialog(startup_log: &Option<PathBuf>) -> bool {
         None => "No startup log path was available.".to_string(),
     };
     let body = format!(
-        "StarNet could not start its local engine.\n\n\
+        "SpaceStation could not start its local engine.\n\n\
          This usually means the bundled Node runtime was blocked by antivirus or a Windows \
          Application Control policy, or the port could not be opened.\n\n\
          {log_line}\n\n\
-         Click Retry to try starting the engine again, or Cancel to close StarNet."
+         Click Retry to try starting the engine again, or Cancel to close SpaceStation."
     );
     let to_wide = |s: &str| -> Vec<u16> { s.encode_utf16().chain(std::iter::once(0)).collect() };
     let text = to_wide(&body);
-    let caption = to_wide("StarNet — startup failed");
+    let caption = to_wide("SpaceStation — startup failed");
     // SYSTEMMODAL + SETFOREGROUND so the box is seen even though the main window isn't up yet.
     let result = unsafe {
         MessageBoxW(
@@ -2418,26 +2418,26 @@ fn spawn_tray_updater(app: AppHandle) {
                         l.reasons.join(", ")
                     };
                     (
-                        format!("StarNet — {summary}"),
+                        format!("SpaceStation — {summary}"),
                         format!("Background: {summary}"),
                     )
                 }
                 LifecycleProbe::Armed(_) if close_to_tray => (
-                    "StarNet — idle in tray".to_string(),
-                    "Background: idle — close keeps StarNet running".to_string(),
+                    "SpaceStation — idle in tray".to_string(),
+                    "Background: idle — close keeps SpaceStation running".to_string(),
                 ),
                 LifecycleProbe::NotRunning if close_to_tray => (
-                    "StarNet — engine offline (kept in tray)".to_string(),
-                    "Background: engine offline — close keeps StarNet running".to_string(),
+                    "SpaceStation — engine offline (kept in tray)".to_string(),
+                    "Background: engine offline — close keeps SpaceStation running".to_string(),
                 ),
                 LifecycleProbe::Armed(_) | LifecycleProbe::NotRunning => (
                     // Nothing armed (or no engine at all): closing quits — the same rule the close path applies.
-                    "StarNet — idle (closing quits)".to_string(),
+                    "SpaceStation — idle (closing quits)".to_string(),
                     "Background: idle — closing quits".to_string(),
                 ),
                 LifecycleProbe::Ambiguous => (
                     // Alive but the poll failed — honest "unknown", mirroring the close path's fail-open.
-                    "StarNet — status unavailable (close keeps it running)".to_string(),
+                    "SpaceStation — status unavailable (close keeps it running)".to_string(),
                     "Background: status unavailable — close keeps it running".to_string(),
                 ),
             };
@@ -2898,7 +2898,7 @@ async fn starnet_open_artifact(
         "Open this file with its system default app?\n\n{}",
         artifact.display()
     );
-    if !confirm_host_launch(&app, "StarNet — open file", &body, "Open") {
+    if !confirm_host_launch(&app, "SpaceStation — open file", &body, "Open") {
         return Err(format!("open {HOST_GESTURE_DECLINED}"));
     }
 
@@ -2946,7 +2946,7 @@ async fn starnet_reveal_path(
         },
         artifact.display()
     );
-    if !confirm_host_launch(&app, "StarNet — reveal in folder", &body, "Reveal") {
+    if !confirm_host_launch(&app, "SpaceStation — reveal in folder", &body, "Reveal") {
         return Err(format!("reveal {HOST_GESTURE_DECLINED}"));
     }
 
@@ -3089,7 +3089,7 @@ fn open_external_url(url: String) -> Result<(), String> {
 /// exit restores it.
 static FS_RESTORE_MAXIMIZE: AtomicBool = AtomicBool::new(false);
 
-/// Toggle the main StarNet desktop window between windowed and fullscreen mode.
+/// Toggle the main SpaceStation desktop window between windowed and fullscreen mode.
 #[tauri::command]
 fn starnet_toggle_fullscreen(app: AppHandle) -> Result<bool, String> {
     let win = app
@@ -3110,7 +3110,7 @@ fn starnet_toggle_fullscreen(app: AppHandle) -> Result<bool, String> {
     Ok(next)
 }
 
-/// Prevent idle system sleep while StarNet is open. This does not force the
+/// Prevent idle system sleep while SpaceStation is open. This does not force the
 /// display to stay on; it only keeps scheduled tasks from being paused by OS sleep.
 #[tauri::command]
 fn starnet_set_keep_awake(
@@ -3413,7 +3413,7 @@ struct LifecycleView {
 fn starnet_restart_sidecar(state: State<AppState>) -> Result<bool, String> {
     let st: &AppState = state.inner();
     if st.shutting_down.load(Ordering::SeqCst) {
-        return Err("StarNet is shutting down".to_string());
+        return Err("SpaceStation is shutting down".to_string());
     }
     let _recovery = begin_recovery(st)?;
     log_startup(
@@ -3455,7 +3455,7 @@ fn starnet_start_fresh(
 ) -> Result<FreshStartView, String> {
     let st: &AppState = state.inner();
     if st.shutting_down.load(Ordering::SeqCst) {
-        return Err("StarNet is shutting down".to_string());
+        return Err("SpaceStation is shutting down".to_string());
     }
     let _recovery = begin_recovery(st)?;
     log_startup(
@@ -3488,10 +3488,10 @@ fn starnet_start_fresh(
         }
     };
 
-    // The reset deliberately preserves only the protected StarNet credit-account link record.
+    // The reset deliberately preserves only the protected SpaceStation credit-account link record.
     // Adopt a transient plaintext token into the OS keychain before the new sidecar starts, matching boot.
     migrate_credits_token_from_plaintext(&st.workspaces);
-    // The packaged origin belongs only to StarNet. Clearing it natively removes localStorage,
+    // The packaged origin belongs only to SpaceStation. Clearing it natively removes localStorage,
     // IndexedDB, cookies, service workers and caches on both WebView2 and WKWebView. JS repeats the
     // namespaced localStorage clear as a fallback, and will refuse to reload if neither layer proves it.
     let browser_data_cleared = match window.clear_all_browsing_data() {
@@ -3703,7 +3703,7 @@ fn main() {
             // the E-STOP (reaches background work even with the window closed); Quit drains + kills the sidecar
             // and exits. Built here so it exists before the window, so a close-to-tray has somewhere to live.
             {
-                let open_item = MenuItem::with_id(app, "lifecycle_open", "Open StarNet", true, None::<&str>)?;
+                let open_item = MenuItem::with_id(app, "lifecycle_open", "Open SpaceStation", true, None::<&str>)?;
                 let status_item = MenuItem::with_id(
                     app,
                     "lifecycle_status",
@@ -3714,11 +3714,11 @@ fn main() {
                     None::<&str>,
                 )?;
                 let pause_item = MenuItem::with_id(app, "lifecycle_pause", "Pause Automation (E-STOP)", true, None::<&str>)?;
-                let quit_item = MenuItem::with_id(app, "lifecycle_quit", "Quit StarNet", true, None::<&str>)?;
+                let quit_item = MenuItem::with_id(app, "lifecycle_quit", "Quit SpaceStation", true, None::<&str>)?;
                 let sep = PredefinedMenuItem::separator(app)?;
                 let menu = Menu::with_items(app, &[&open_item, &status_item, &sep, &pause_item, &quit_item])?;
                 let mut tray_builder = TrayIconBuilder::with_id("starnet-tray")
-                    .tooltip("StarNet")
+                    .tooltip("SpaceStation")
                     .menu(&menu)
                     .show_menu_on_left_click(false)
                     .on_menu_event(|app, event| on_tray_menu(app, event.id.as_ref()))
@@ -3771,7 +3771,7 @@ fn main() {
             }
 
             let main_window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                .title("StarNet")
+                .title("SpaceStation")
                 .inner_size(1280.0, 832.0)
                 .min_inner_size(960.0, 600.0)
                 .initialization_script(&init)
@@ -3887,7 +3887,7 @@ fn main() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("failed to build the StarNet desktop shell")
+        .expect("failed to build the SpaceStation desktop shell")
         .run(|app, event| {
             if let RunEvent::ExitRequested { api, code, .. } = event {
                 // Window close and event-loop exit are separate decisions in Tauri. Hold only the exit paired
@@ -3963,7 +3963,7 @@ mod sidecar_reap_tests {
     #[test]
     fn bundled_absolute_path_is_reapable() {
         assert!(is_reapable_node_path(Path::new(
-            r"C:\Program Files\StarNet\node.exe"
+            r"C:\Program Files\SpaceStation\node.exe"
         )));
     }
 
@@ -4035,12 +4035,12 @@ mod sidecar_reap_tests {
         // QueryFullProcessImageNameW may report different casing than our resolved path;
         // same_path must still match — while a DIFFERENT node install must not.
         assert!(same_path(
-            Path::new(r"C:\PROGRAM FILES\StarNet\NODE.EXE"),
-            Path::new(r"C:\Program Files\StarNet\node.exe"),
+            Path::new(r"C:\PROGRAM FILES\SpaceStation\NODE.EXE"),
+            Path::new(r"C:\Program Files\SpaceStation\node.exe"),
         ));
         assert!(!same_path(
             Path::new(r"C:\Program Files\nodejs\node.exe"),
-            Path::new(r"C:\Program Files\StarNet\node.exe"),
+            Path::new(r"C:\Program Files\SpaceStation\node.exe"),
         ));
     }
 }

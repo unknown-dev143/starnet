@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src=".github/media/starnet-logo-glow.png" alt="StarNet" width="560">
+<img src=".github/media/spacestation-wordmark.svg" alt="SpaceStation" width="560">
 
 **A living pixel-art station where real AI agents do real work.**
 
@@ -15,11 +15,14 @@
 [Docs](docs/INDEX.md) ·
 [Contributing](CONTRIBUTING.md)
 
-<img src=".github/media/station-iso.png" alt="The StarNet station — rooms, crew, and workstations rendered from live harness state" width="540">
+<img src=".github/media/station-iso.png" alt="The SpaceStation station — rooms, crew, and workstations rendered from live harness state" width="540">
 
 </div>
 
-StarNet is a local-first desktop harness where you create AI agents, organize them into a
+> **SpaceStation** is a fork of [StarNet](https://github.com/androoAGI/starnet) (MIT), renamed and
+> rebranded. The upstream StarNet name, logo, and artwork remain Andrew Sims' — see [License](#license).
+
+SpaceStation is a local-first desktop harness where you create AI agents, organize them into a
 pixel-art space station, and watch them perform real work with real models and tools. The
 station is not decoration — it is a projection of live runtime state, and the product contract
 is literal: **A room is a capability-scoped team**, **a hallway is** an authorized handoff
@@ -54,19 +57,19 @@ simulation.
 - Multiple agents run concurrently with separate workspaces and bounded permissions.
 - The visual station projects the same runtime state the harness can prove.
 
-StarNet does not simulate revenue, completed work, model activity, or spend. Its core product
+SpaceStation does not simulate revenue, completed work, model activity, or spend. Its core product
 law is that **the interface must never assert state the harness cannot prove.**
 
 ## Download
 
 Desktop builds are published on the
-[StarNet releases page](https://github.com/androoAGI/starnet-releases/releases/latest).
+[releases page](https://github.com/androoAGI/starnet-releases/releases/latest).
 
 | Platform | Asset |
 | --- | --- |
-| **Windows** (10/11, 64-bit) | `StarNet_<version>_x64-setup.exe` |
-| **macOS — Apple Silicon** (M1–M4) | `StarNet_<version>_aarch64.dmg` |
-| **macOS — Intel** | `StarNet_<version>_x64.dmg` |
+| **Windows** (10/11, 64-bit) | `SpaceStation_<version>_x64-setup.exe` |
+| **macOS — Apple Silicon** (M1–M4) | `SpaceStation_<version>_aarch64.dmg` |
+| **macOS — Intel** | `SpaceStation_<version>_x64.dmg` |
 
 > **Apple Silicon note:** use the native `aarch64` DMG. Avoid the `x64` DMG on Apple Silicon:
 > it runs under Rosetta 2 rather than using the native architecture.
@@ -97,7 +100,7 @@ node sidecar/index.js
 
 Open <http://localhost:8787>, then connect a provider —
 **bring your own OpenRouter API key (BYOK)** or use a supported OAuth sign-in. Provider requests leave your machine when you run an agent;
-station state, transcripts, memory, and ledgers stay in the local StarNet workspace unless you
+station state, transcripts, memory, and ledgers stay in the local SpaceStation workspace unless you
 explicitly use a network tool or connector. See [PRIVACY.md](PRIVACY.md) for the full data map.
 
 For desktop development:
@@ -110,8 +113,8 @@ npm run desktop:build   # build installers locally
 
 ## Coming from OpenClaw or Hermes?
 
-StarNet can import an existing agent: point it at your on-disk OpenClaw or Hermes home and it
-mints a StarNet agent from the persona, instructions, memory, and model it finds. API keys
+SpaceStation can import an existing agent: point it at your on-disk OpenClaw or Hermes home and it
+mints a SpaceStation agent from the persona, instructions, memory, and model it finds. API keys
 never transfer — you re-enter those in the KEYS tab.
 
 ## Architecture
@@ -154,14 +157,15 @@ reporting instructions.
 
 ## License
 
-StarNet is open source under the [MIT License](LICENSE). Third-party components remain
+SpaceStation is open source under the [MIT License](LICENSE). Third-party components remain
 under their original licenses — see [NOTICE.md](NOTICE.md).
 
 **The MIT License covers the code only.** The **StarNet** name, the logo, the station artwork
-and sprites, and the rest of the project's brand identity are owned by Andrew Sims and are
+and sprites, and the rest of the upstream project's brand identity are owned by Andrew Sims and are
 **not** licensed with it — no trademark or other brand rights are granted, expressly or by
 implication.
 
 MIT means you may fork, modify, and redistribute the code, including commercially. What you
 may not do is ship it as StarNet: forks and derivatives must use their own name, logo, and
-artwork, and must not present themselves as this project or as endorsed by it.
+artwork, and must not present themselves as this project or as endorsed by it. **This fork does
+exactly that — it ships as SpaceStation, under its own name and wordmark.**

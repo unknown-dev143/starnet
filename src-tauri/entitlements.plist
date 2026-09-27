@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
   macOS hardened-runtime entitlements. Notarization REQUIRES hardened runtime, and hardened
-  runtime kills JIT-compiling processes unless they are entitled for it. StarNet ships two:
+  runtime kills JIT-compiling processes unless they are entitled for it. SpaceStation ships two:
   the Tauri shell (WKWebView) and the bundled Node sidecar (V8). Without these the app
   codesigns and notarizes fine and then dies on launch — the failure lands at runtime, not
   at build time, so it is easy to ship broken.

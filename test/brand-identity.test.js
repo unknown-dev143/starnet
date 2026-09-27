@@ -143,4 +143,61 @@ const LEGACY = /StarNet|STARNET/;
   A.ok(/spacestation-wordmark\.svg/.test(html), 'the splash points at the SpaceStation wordmark');
 }
 
+/* ---------- 6. the PACKAGED app ships under the SpaceStation name ---------- */
+{
+  const conf = JSON.parse(read('src-tauri/tauri.conf.json'));
+  A.eq(conf.productName, 'SpaceStation',
+    'the packaged app is named SpaceStation (installer, Start menu, taskbar, window title)');
+  // IDENTIFIERS that must NOT move: the bundle id keys the app-data dir and the updater identity.
+  A.eq(conf.identifier, 'ai.skynet.harness',
+    'the bundle identifier is unchanged — it keys the app data directory and the updater');
+  A.eq(conf.bundle.publisher, 'Andrew Sims', 'the publisher is still the original author');
+
+  // The NSIS hooks read the uninstall registry key BY PRODUCT NAME. They must stay in lockstep
+  // with tauri.conf.json or a manual upgrade stops finding the installed copy.
+  const hooks = read('src-tauri/installer/hooks.nsh');
+  A.ok(hooks.includes('Uninstall\\' + conf.productName + '"'),
+    'the installer hooks read the uninstall key named by productName (lockstep with tauri.conf.json)');
+  // The shell binary name is an IDENTIFIER (the Rust crate name) — renaming it breaks the build.
+  A.ok(hooks.includes('skynet-desktop'), 'the installer still targets the real shell binary name');
+  A.ok(/name\s*=\s*"skynet-desktop"/.test(read('src-tauri/Cargo.toml')),
+    'the Rust crate name is unchanged — it is the binary name, not a brand');
+
+  A.ok(/SpaceStation uses the microphone/.test(read('src-tauri/Info.plist')),
+    'the macOS microphone permission prompt names SpaceStation');
+}
+
+/* ---------- 7. README: the legacy brand survives only in URLs and the attribution clause ---------- */
+{
+  const md = read('README.md');
+  const bad = md.split('\n')
+    .filter((l) => LEGACY.test(l))
+    .filter((l) => !/https?:\/\//.test(l)
+      && !/upstream StarNet|fork of|ship it as StarNet|\*\*StarNet\*\* name/.test(l));
+  A.eq(bad.length, 0,
+    'README prose carries the legacy brand only inside URLs and the upstream attribution clause');
+  if (bad.length) console.log('  offenders:\n   ' + bad.join('\n   '));
+  A.ok(/spacestation-wordmark\.svg/.test(md), 'the README logo is the SpaceStation wordmark');
+  A.ok(/alt="SpaceStation"/.test(md), 'the README logo is labelled SpaceStation');
+  A.ok(/fork of \[StarNet\]/.test(md), 'the README still credits the upstream project honestly');
+}
+
+/* ---------- 8. the public website carries no legacy brand (outside the mirrored app) ---------- */
+{
+  const web = path.join(ROOT, 'website');
+  const files = [];
+  (function walk(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'app') continue;   // website/app is the frontend mirror, covered by §1/§2 rules
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(html|js|css)$/.test(e.name)) files.push(p);
+    }
+  })(web);
+  const offenders = files.filter((p) => LEGACY.test(fs.readFileSync(p, 'utf8').replace(/<!--[\s\S]*?-->/g, '')));
+  A.eq(offenders.length, 0, 'no public website page renders the legacy brand');
+  if (offenders.length) console.log('  offenders:\n   ' + offenders.map((p) => path.relative(ROOT, p)).join('\n   '));
+  A.ok(files.length > 10, 'the website scan actually found the public pages');
+}
+
 A.report('brand-identity');

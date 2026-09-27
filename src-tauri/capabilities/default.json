@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Core permissions for the StarNet app window plus the app's own keychain/update commands. The packaged UI loads from the bundled app origin; the loopback sidecar bridge is plain fetch/CORS and does not need native permissions on remote localhost pages.",
+  "description": "Core permissions for the SpaceStation app window plus the app's own keychain/update commands. The packaged UI loads from the bundled app origin; the loopback sidecar bridge is plain fetch/CORS and does not need native permissions on remote localhost pages.",
   "windows": ["*"],
   "permissions": [
     "core:default",

@@ -1,4 +1,4 @@
-; StarNet NSIS installer hooks.
+; SpaceStation NSIS installer hooks.
 ;
 ; ── WHY THIS EXISTS ────────────────────────────────────────────────────────────────────────────
 ; The manual-installer path could not overwrite its own node.exe.
@@ -61,7 +61,7 @@
 ; .onGUIInit runs after Tauri's .onInit has selected the registry context but before any page is
 ; shown. For a strict upgrade (or an installed record whose version is unreadable), append the
 ; same /UPDATE /P /R flags and re-run .onInit so the stock template skips the uninstall page,
-; installs passively in place, and relaunches StarNet. The uninstall registry's InstallLocation is
+; installs passively in place, and relaunches SpaceStation. The uninstall registry's InstallLocation is
 ; authoritative here: pre-0.10 releases could leave Tauri's separate manufacturer key pointing at
 ; the default directory after a custom /D install. Without restoring the uninstall location, the
 ; upgrade installs a second copy at that stale default and leaves the old sidecar running. Same-
@@ -76,13 +76,13 @@ Function StarNetManualUpgradeInit
     Goto starnet_manual_upgrade_done
   ${EndIf}
 
-  ReadRegStr $R8 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\StarNet" "UninstallString"
-  ReadRegStr $R9 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\StarNet" "DisplayVersion"
-  ReadRegStr $R1 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\StarNet" "InstallLocation"
+  ReadRegStr $R8 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SpaceStation" "UninstallString"
+  ReadRegStr $R9 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SpaceStation" "DisplayVersion"
+  ReadRegStr $R1 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SpaceStation" "InstallLocation"
   ${If} $R8 == ""
-    ReadRegStr $R8 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\StarNet" "UninstallString"
-    ReadRegStr $R9 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\StarNet" "DisplayVersion"
-    ReadRegStr $R1 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\StarNet" "InstallLocation"
+    ReadRegStr $R8 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SpaceStation" "UninstallString"
+    ReadRegStr $R9 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SpaceStation" "DisplayVersion"
+    ReadRegStr $R1 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SpaceStation" "InstallLocation"
   ${EndIf}
   ${If} $R8 == ""
     Goto starnet_manual_upgrade_done
@@ -139,7 +139,7 @@ FunctionEnd
   IfFileExists "$R9" +2 0
     StrCpy $R9 "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe"
 
-  DetailPrint "Stopping any StarNet processes running from $INSTDIR..."
+  DetailPrint "Stopping any SpaceStation processes running from $INSTDIR..."
 
   ; 1. The shell first — it owns the guardian that would respawn the sidecar.
   nsExec::ExecToLog '"$R9" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Get-Process -Name skynet-desktop -ErrorAction SilentlyContinue | Where-Object Path -eq $\'$INSTDIR\skynet-desktop.exe$\' | Stop-Process -Force -ErrorAction SilentlyContinue"'

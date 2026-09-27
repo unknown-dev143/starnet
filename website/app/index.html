@@ -449,10 +449,10 @@
      beam is meant to run across the wordmark, not stop at its edges; see the z-index note in
      style.css. #logo-anchor below reserves its seat in the topbar; positionLogo() keeps them
      aligned, and app/logoclip.js clips the mark under any window it would otherwise cover. -->
-<!-- The mark is a <span> MASKED by starnet-wordmark.svg, not an <img> — that is what lets it take
-     var(--ph) per theme and stay crisp at any DPR / TEXT SIZE. The SVG is the master art's OWN
-     letterforms traced out of its perceived-density field (dev/trace-logo.mjs), NOT a redraw; the
-     title screen keeps the full-size master PNG, where the ASCII-digit texture actually reads. -->
+<!-- The mark is a <span> MASKED by spacestation-wordmark.svg, not an <img> — that is what lets it
+     take var(--ph) per theme and stay crisp at any DPR / TEXT SIZE. The SVG is a 5x7 terminal
+     matrix emitted as one <path> (dev/make-spacestation-wordmark.mjs), so it is font-free and
+     mask-safe; the title screen shows the same asset at full size. -->
 <div id="logo"><span class="logo-img" role="img" aria-label="SPACESTATION"></span><span class="logo-sub">AI COMMAND CENTER</span></div>
 
 <section id="screen-game" class="screen">

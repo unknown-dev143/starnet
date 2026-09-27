@@ -194,7 +194,7 @@ pub(crate) fn read_telegram_bot_tokens(workspaces: &Path) -> BTreeMap<String, St
         .collect()
 }
 
-// ---- StarNet Cloud device token (keychain account "credits:device") ----
+// ---- SpaceStation Cloud device token (keychain account "credits:device") ----
 //
 // The device token is a BEARER CREDENTIAL THAT SPENDS MONEY: anyone holding it can bill the
 // linked account until the balance runs out. It is minted by the sidecar (which polls the cloud),
@@ -208,7 +208,7 @@ pub(crate) fn credits_keychain_entry() -> keyring::Result<keyring::Entry> {
     keyring::Entry::new(KEYCHAIN_SERVICE, "credits:device")
 }
 
-/// The stored StarNet Cloud device token, or `None` if unset/empty.
+/// The stored SpaceStation Cloud device token, or `None` if unset/empty.
 pub(crate) fn read_credits_token() -> Option<String> {
     credits_keychain_entry()
         .ok()

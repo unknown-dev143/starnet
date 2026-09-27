@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Connect a platform — StarNet Docs</title>
+<title>Connect a platform — SpaceStation Docs</title>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="stylesheet" href="docs.css?v=20260725">
 </head>
@@ -13,7 +13,7 @@
 <div class="crt-vignette" aria-hidden="true"></div>
 
 <header class="topbar">
-  <a class="brand" href="../index.html">STARNET TERMLINK</a>
+  <a class="brand" href="../index.html">SPACESTATION TERMLINK</a>
   <nav class="topnav">
     <a href="../index.html#features">FEATURES</a>
     <a href="../pricing.html">PRICING</a>
@@ -52,7 +52,7 @@
     You get ready-made tools, and it is the least work. Notion, Linear, Stripe, GitHub and Sentry are here.</li>
   <li><b>Does it publish only a local stdio MCP server?</b> Put an agent on the <b>SAFE CELL</b> execution
     profile, choose <b>STDIO (Safe Cell)</b> in MCP CONNECTORS, and enter the command and exact arguments.
-    StarNet runs it inside that agent's persistent Docker environment, never as an interactive host child.</li>
+    SpaceStation runs it inside that agent's persistent Docker environment, never as an interactive host child.</li>
   <li><b>Otherwise it has a plain REST API.</b> Paste its key in <b>KEYS</b> and your agent calls the API
     directly with <code>web_request</code>. This is the route for most of the long tail — including every
     print-on-demand and marketplace service we checked.</li>
@@ -60,7 +60,7 @@
 
 <div class="callout">Print-on-demand and marketplace platforms are route 2 today. As of July 2026 there is no
 remote MCP server for Printify, Printful, Etsy or WooCommerce — the only Printify MCP that exists is a
-<i>local</i> <code>npx</code> server. StarNet can run that server in a Safe Cell; the REST-key route remains
+<i>local</i> <code>npx</code> server. SpaceStation can run that server in a Safe Cell; the REST-key route remains
 the lighter option when you do not want to maintain a container command.</div>
 
 <h2>Route 1 — a remote MCP server</h2>
@@ -73,14 +73,14 @@ the lighter option when you do not want to maintain a container command.</div>
 </ul>
 <p>A local <code>stdio</code> command (<code>npx …</code>, <code>uvx …</code>) requires a named agent on the
 <b>SAFE CELL</b> profile and a working Docker runtime. Its command uses exact argv with no shell. If Docker is
-unavailable, the connector stays honestly disconnected; StarNet never falls back to spawning it on the
+unavailable, the connector stays honestly disconnected; SpaceStation never falls back to spawning it on the
 interactive host.</p>
 
 <h2>Route 2 — an API key + <code>web_request</code></h2>
 
 <h3>1. Paste the key</h3>
 <p><b>TOOLSETS &amp; CONNECTORS &rarr; KEYS &rarr; PICK A PLATFORM</b>. Choose your platform (or type any name),
-paste your key, and save. StarNet stores it locally and shows only the last four characters, ever.</p>
+paste your key, and save. SpaceStation stores it locally and shows only the last four characters, ever.</p>
 <p>Each key becomes a named environment variable — <code>Printify</code> becomes
 <code>PRINTIFY_API_KEY</code>. Adding the platform's <b>API docs URL</b> is worth the ten seconds: it rides
 into the agent's prompt, so it can look up the right endpoint instead of guessing.</p>
@@ -97,17 +97,17 @@ you approve the call, and it reports back.</p>
 
 <h2>Your key is never shown to the model</h2>
 <p>This is the part worth understanding, because it is unusual. The agent never receives your key. It writes
-a <b>placeholder</b> naming the key, and StarNet substitutes the real value at the moment the request leaves
+a <b>placeholder</b> naming the key, and SpaceStation substitutes the real value at the moment the request leaves
 your machine:</p>
 <pre><code>web_request
   url:     https://api.printify.com/v1/shops.json
   headers: { "Authorization": "Bearer ${PRINTIFY_API_KEY}" }</code></pre>
 <p>The model sees only the name. A leaked transcript, a log, or a model provider never sees the value, and
-the response comes back with any echoed secret scrubbed. Placeholders work in <b>headers only</b> — StarNet
+the response comes back with any echoed secret scrubbed. Placeholders work in <b>headers only</b> — SpaceStation
 refuses to send a URL the model wrote containing a secret, because URLs leak into browser history, proxy logs
 and <code>Referer</code> headers.</p>
 <p>Some APIs will not take a header and want the key as a query parameter instead. That still works, and the
-rule is unchanged: the agent names the key and the slot, and <b>StarNet attaches the value itself</b>, after
+rule is unchanged: the agent names the key and the slot, and <b>SpaceStation attaches the value itself</b>, after
 the agent has finished composing the request.</p>
 <pre><code>web_request
   url:  https://api.example.com/v1/items
@@ -117,7 +117,7 @@ redirects somewhere else, the credential is not carried along.</p>
 
 <h2>Uploading files — mockups, images, print files</h2>
 <p>Upload endpoints take file <b>bytes</b>, and the same substitution idea covers them. The agent never
-pastes file contents into a request; it writes a <b>reference</b> to a file in its workspace, and StarNet
+pastes file contents into a request; it writes a <b>reference</b> to a file in its workspace, and SpaceStation
 reads and encodes the bytes at the moment the request is sent. Printify's image upload, for example:</p>
 <pre><code>web_request
   url:    https://api.printify.com/v1/uploads/images.json
@@ -153,7 +153,7 @@ cannot spend any key you have not ticked.</p>
           header name. Check the platform's docs for the header it expects.</td></tr>
   <tr><td>A connector sits red on &ldquo;stdio&rdquo;</td>
       <td>The selected owner is no longer on <b>SAFE CELL</b>, Docker is unavailable, or the command failed
-          inside the container. Restore that profile/runtime and reload; StarNet will not run it on the host.</td></tr>
+          inside the container. Restore that profile/runtime and reload; SpaceStation will not run it on the host.</td></tr>
   <tr><td>&ldquo;refusing private/loopback/intranet host&rdquo;</td>
       <td>Working as intended: agents cannot reach your local network or cloud metadata endpoints.</td></tr>
   <tr><td>&ldquo;the page did not finish loading within 30s&rdquo; (browser)</td>
@@ -162,11 +162,11 @@ cannot spend any key you have not ticked.</p>
           platform you have a key for, its API via <code>web_request</code> is the more reliable route than
           reading its web pages.</td></tr>
   <tr><td>A public page returns 403 to the agent</td>
-      <td>Some sites (Etsy among them) refuse automated browsers and direct fetches outright. StarNet does not
+      <td>Some sites (Etsy among them) refuse automated browsers and direct fetches outright. SpaceStation does not
           disguise its requests to get around that. Use the platform's API instead.</td></tr>
 </table>
 
-<h2>What StarNet will not do</h2>
+<h2>What SpaceStation will not do</h2>
 <ul>
   <li>Show your key to the model, write it to a file, or send it anywhere except the platform you named.</li>
   <li>Forward your credential across a redirect to a different host.</li>
@@ -185,7 +185,7 @@ cannot spend any key you have not ticked.</p>
     <a href="https://github.com/androoAGI/starnet-releases/releases/latest" target="_blank" rel="noopener">RELEASES</a>
     <a href="mailto:androo.agi@gmail.com">CONTACT</a>
   </div>
-  <div class="footer-fine">MIT license &middot; StarNet</div>
+  <div class="footer-fine">MIT license &middot; SpaceStation</div>
 </footer>
 
 </body>

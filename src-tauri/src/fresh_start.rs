@@ -97,7 +97,7 @@ fn process_is_alive(pid: u32) -> bool {
     if unsafe { kill(pid, 0) } == 0 {
         return true;
     }
-    // ESRCH is 3 on the Unix platforms StarNet ships (macOS and Linux). Every other result,
+    // ESRCH is 3 on the Unix platforms SpaceStation ships (macOS and Linux). Every other result,
     // especially EPERM, means the process exists or liveness could not be proven.
     std::io::Error::last_os_error().raw_os_error() != Some(3)
 }
@@ -162,7 +162,7 @@ fn quarantine_and_prepare_with(
     if let Some(owner_pid) = valid_owner_pid(workspaces) {
         if Some(owner_pid) != stopped_child_pid && owner_pid_alive(owner_pid) {
             return Err(format!(
-                "another StarNet process still owns this station (PID {owner_pid}); quit it before starting fresh"
+                "another SpaceStation process still owns this station (PID {owner_pid}); quit it before starting fresh"
             ));
         }
     }
@@ -306,7 +306,7 @@ mod tests {
         let error =
             quarantine_and_prepare_with(&workspaces, &[], Some(9002), 12345, &|pid| pid == 9001)
                 .unwrap_err();
-        assert!(error.contains("another StarNet process"));
+        assert!(error.contains("another SpaceStation process"));
         assert!(workspaces.exists());
         let _ = fs::remove_dir_all(root);
     }
