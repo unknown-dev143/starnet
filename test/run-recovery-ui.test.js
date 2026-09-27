@@ -14,7 +14,9 @@ A.eq(chat, mirrorChat, 'website chat mirror carries the same recovery behavior')
 A.ok(/mode: 'automatic'/.test(harness) && /continuationToken/.test(harness), 'browser prepares the typed one-shot automatic continuation');
 A.ok(/r\.canAutoContinue/.test(chat), 'chat only auto-starts a server-proven safe recovery');
 A.ok(/operationalState === 'needs_review'/.test(chat), 'review-required recovery has a distinct UI path');
-A.ok(/StarNet will not repeat it/.test(chat), 'uncertain mutation copy states the no-duplicate guarantee');
+/* brand NOT pinned — the §3 rebrand renamed the product inside this copy ("SpaceStation will not
+   repeat it"). The claim under test is the NO-DUPLICATE GUARANTEE, not the product name. */
+A.ok(/\w+ will not repeat it/.test(chat), 'uncertain mutation copy states the no-duplicate guarantee');
 A.ok(/It happened/.test(chat) && /It did not happen/.test(chat) && /I am not sure/.test(chat), 'uncertain mutation presents explicit outcome choices');
 A.ok(/resolveRunRecovery/.test(harness) && /prepareReviewedRecovery/.test(harness), 'review decisions persist before reviewed continuation starts');
 A.ok(/recovery: recoveryResume \? opts\.recovery : undefined/.test(chat), 'recovery re-enters the ordinary Harness.chat execution path');

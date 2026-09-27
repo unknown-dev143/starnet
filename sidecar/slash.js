@@ -307,7 +307,7 @@ const BUILTIN_COMMANDS = Object.freeze([
     name: 'version',
     aliases: ['v'],
     category: 'Info',
-    desc: 'show StarNet version information',
+    desc: 'show SpaceStation version information',
     action: 'version'
   })
 ]);

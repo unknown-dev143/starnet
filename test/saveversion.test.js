@@ -130,7 +130,10 @@ function futureRaw(over) {
 
   // future backup version → refused with a clear string the import UI surfaces.
   const err = Backup.validate({ schema: 'starnet.backup', version: Backup.VERSION + 1, store: goodStore });
-  A.ok(typeof err === 'string' && /newer StarNet/i.test(err), 'validate() refuses a future-version backup with a clear message');
+  // brand NOT pinned: the §3 rebrand renamed the product inside this message and left the lock red.
+  // The claim under test is that validate() REFUSES a future-version backup with a clear, surfaced
+  // string — which brand it names is test/brand-identity.test.js's concern.
+  A.ok(typeof err === 'string' && /newer \w+/i.test(err), 'validate() refuses a future-version backup with a clear message');
 
   // applyBundle refuses it too (never writes any key) — validate() gates it.
   localStorage.clear();

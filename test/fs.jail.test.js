@@ -34,6 +34,17 @@ async function rejects(promise, msg) { try { await promise; A.ok(false, msg + ' 
       await fsp.mkdir(outside, { recursive: true });
       await fsp.writeFile(path.join(outside, 'pwn.txt'), 'nope');
       await fsp.symlink(outside, path.join(ROOT, 'ag', 'link'), 'dir');
+      /* ⚠️ symlink() CAN LIE. On some filesystems/sandboxes it reports success while creating
+         something that is NOT a link: lstat().isSymbolicLink() is false, readlink() throws EINVAL,
+         and realpath() resolves the path to ITSELF. Measured on Windows under the WorkBuddy
+         sandbox: all three. In that state there is no link to escape THROUGH, so the containment
+         proof below would fail RED and read as "the jail let an escape through" when no escape
+         existed. The old guard only caught a THROW, which never happens here — so verify the link
+         is real and skip explicitly instead of reporting a false breach.
+         NOTE this does not weaken the assertion: on any filesystem where a real link is created,
+         the escape is proven exactly as before. */
+      const lst = await fsp.lstat(path.join(ROOT, 'ag', 'link'));
+      if (!lst.isSymbolicLink()) throw new Error('SKIP: symlink() did not create a real link here');
       await rejects(_internals.resolveInside('ag', 'link/pwn.txt'), 'rejects symlink escape to an outside directory');
     } catch (e) {
       A.ok(true, 'symlink escape regression skipped because this filesystem disallows symlinks');
