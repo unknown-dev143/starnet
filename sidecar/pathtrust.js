@@ -20,7 +20,7 @@
    un-blessed outside path is a HARD DENY with NO prompt — silence is never consent, and a headless/cron
    run can never widen its own reach.
 
-   makePathTrust({ fsp, pathMod, roots, bless, touch, isGitRepoOf, workspaceRoot, now, maxWalk }) -> { guard, detectRoot, normalizeRoot }
+   makePathTrust({ fsp, pathMod, roots, bless, touch, isGitRepoOf, workspaceRoot, homeDir, now, maxWalk }) -> { guard, detectRoot, normalizeRoot }
      fsp        : node:fs/promises (injected) — realpath / stat only, never writes.
      pathMod    : node:path (injected).
      roots      : () => [normalizedRealRoot...]  — the LIVE blessed set (index.js derives it from the
@@ -31,6 +31,9 @@
      isGitRepoOf: async (rootReal) => bool  — light metadata for the store (has a .git entry).
      workspaceRoot: absolute parent of the private per-agent workspaces; standing grants and Full Access do
                   not override ownership beneath this root.
+     homeDir    : the user's home directory, or '' to leave the ceiling off. The ancestor walk that PROPOSES a
+                  project root stops here — see detectRoot below. Injected rather than read from `os` so this
+                  stays a pure core (no env, no platform globals).
      now        : injected clock.
      maxWalk    : ancestor-walk cap for git-root detection (default 40).
 
@@ -57,6 +60,7 @@
     const touch = typeof deps.touch === 'function' ? deps.touch : (() => {});
     const isGitRepoOf = typeof deps.isGitRepoOf === 'function' ? deps.isGitRepoOf : (async () => false);
     const workspaceRoot = deps.workspaceRoot ? P.resolve(String(deps.workspaceRoot)) : '';
+    const homeDir = deps.homeDir ? P.resolve(String(deps.homeDir)) : '';
     const now = typeof deps.now === 'function' ? deps.now : (() => null);
     const MAX_WALK = Number(deps.maxWalk) > 0 ? Number(deps.maxWalk) : 40;
 
@@ -67,6 +71,17 @@
       return a === b || a.indexOf(b + P.sep) === 0;
     }
     async function realpathOrSelf(p) { try { return await fsp.realpath(p); } catch (_) { return p; } }
+    // Is `p` the home directory, or an ANCESTOR of it? That is the region the project-root walk must never
+    // RETURN as a proposed root (detectRoot below). pathInside() cannot be reused for this: it appends the
+    // separator unconditionally, so it fails to match at a volume root (a='C:\' never matches 'C:\Users\me').
+    function atOrAboveHome(p) {
+      if (!homeDir) return false;
+      let a = P.resolve(p), h = homeDir;
+      if (winish) { a = a.toLowerCase(); h = h.toLowerCase(); }
+      if (a === h) return true;
+      const prefix = a.endsWith(P.sep) ? a : a + P.sep;
+      return h.indexOf(prefix) === 0;
+    }
     // realpath the DEEPEST existing ancestor of a (possibly not-yet-created) absolute path, so a symlink
     // anywhere along the real chain is resolved before the containment test (symlink-escape re-proof).
     async function realpathDeepest(abs) {
@@ -101,12 +116,24 @@
     // (natural project boundary), else the directory containing the file. Bounded ancestor walk. This walk
     // stats `.git` itself rather than going through the injected isGitRepoOf — that dep is scoped to the
     // store's light metadata, not to root detection, and the real caller injects the identical check anyway.
+    //
+    // AND IT STOPS AT THE HOME DIRECTORY. "Nearest enclosing repo" is right when the enclosing repo is a
+    // project; it is wrong when the only enclosing repo is HOME, which is a CONTAINER of unrelated things —
+    // dotfiles, Desktop, Downloads, Documents, every other project — and is routinely under version control
+    // itself (`yadm`, a bare `~/.git`). Without a ceiling, pointing at ~/Documents/notes on such a machine
+    // proposed ~ as the project root and recorded `path:<home>`: a folder-sized click silently granting the
+    // agent the user's entire personal tree, with no card at the ADD-project doorway (which commits on the
+    // click). The same over-grant reached the conversational card. So the walk may only return a root
+    // STRICTLY BELOW home; otherwise the folder the Commander actually pointed at is its own root — which is
+    // the plain-folder rule this module already documents. Picking the home directory ITSELF still proposes
+    // it, because then it IS the chosen folder and the proposal matches the click.
     async function detectRoot(absPath) {
       const abs = P.resolve(absPath);
       let dir = P.dirname(abs);
       try { const st = await fsp.stat(abs); if (st.isDirectory()) dir = abs; } catch (_) {}
       let cur = dir;
       for (let i = 0; i < MAX_WALK; i++) {
+        if (atOrAboveHome(cur)) break;
         try { await fsp.stat(P.join(cur, '.git')); return cur; } catch (_) {}
         const parent = P.dirname(cur);
         if (!parent || parent === cur) break;

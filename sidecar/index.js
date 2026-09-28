@@ -3864,10 +3864,13 @@ function blessProjectRoot(rootReal, meta) {
 }
 async function projectIsGitRepo(rootReal) { try { await fsp.stat(path.join(rootReal, '.git')); return true; } catch (_) { return false; } }
 // the pure guard core, built ONCE; runOnce binds the per-run surface + prompt when it wires makeFsTools.
+// homeDir caps the project-root walk (pathtrust.detectRoot): the home directory is a container, not a project
+// boundary, so a dotfiles repo rooted at ~ must never become the proposed/blessed root for a folder under it.
 const pathTrustCore = makePathTrust({
   fsp, pathMod: path,
   roots: blessedRoots,
   workspaceRoot: WORKSPACES,
+  homeDir: os.homedir(),
   bless: async (rootReal, m) => blessProjectRoot(rootReal, m),
   touch: (rootReal, abs) => { try { projectsStore.touch(rootReal, Date.now()); } catch (_) {} },
   isGitRepoOf: projectIsGitRepo,

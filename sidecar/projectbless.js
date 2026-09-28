@@ -12,6 +12,9 @@
      • the path must EXIST and be a DIRECTORY (a typed path to a file or a missing folder is an honest error).
      • the blessed root is the PROPOSED git-repo root (detectRoot) — the same natural project boundary the
        conversational prompt offers — so blessing C:\proj\src\main.js blesses C:\proj, matching pathtrust.
+       detectRoot STOPS AT THE HOME DIRECTORY (pathtrust's homeDir ceiling), so a dotfiles repo rooted at ~
+       can never be proposed as the root for a folder under it: this doorway commits on the click with no
+       card, so an overshoot here would grant the user's whole personal tree silently.
 
    makeProjectBless({ fsp, pathMod, detectRoot, normalizeRoot, hardlineReason, bless, isGitRepoOf, now })
      fsp         : node:fs/promises (injected) — stat + realpath only, never writes.

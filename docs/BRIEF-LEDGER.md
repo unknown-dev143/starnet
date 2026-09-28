@@ -685,4 +685,42 @@ bugs).**
   store, not root detection" — the walk owning its `fsp.stat` is intentional. Reverted to a comment-only diff;
   `pathtrust` (57), `projectbless` (42) and `failopen-ratchet` (157) all green.
 
+**§10i — the last `e2e.pathtrust` failure was NOT a sandbox artifact: `detectRoot` could bless the home
+directory.** It had been triaged as "environment" and left open. It is a real over-grant, and this host
+reproduces it.
+
+- **Symptom.** Section 1 read `proj/src/main.js` (an un-blessed temp path) and got **0** `path.trust` prompts
+  while the read **succeeded** (`sawMain=true`). Dumped live: `grants=["path:C:\\Users\\User"]` — the user's
+  **whole home directory**, standing, before section 1 even ran.
+- **Cause.** `POST /api/projects/bless` records `detectRoot(path)`, and `detectRoot` walks to the *nearest
+  `.git` ancestor* with no upper bound. `os.tmpdir()` is under the home dir, and this machine's home is itself
+  a repo (`C:\Users\User\.git`), so blessing the test's `ws/alpha` proposed **`C:\Users\User`**, not
+  `ws/alpha`. The test then revoked `path:<ws/alpha>` — a key that was never written — so the home grant
+  leaked into every later section. Each cascade failure (`no standing grant`, `no grantedAt`, `no project row`)
+  followed from that one leaked grant.
+- **This is the product's defect, not the test's.** The rule `projectbless.test.js:119` already pins is "a
+  plain (non-git) folder blesses ITSELF"; the walk defeats it for *every* plain folder under a repo-rooted
+  home. Home is a **container** of unrelated things (dotfiles, Desktop, Downloads, Documents, every other
+  project) and is routinely under version control itself (`yadm`, a bare `~/.git`). So a folder-sized click at
+  the ADD-project doorway — which **commits on the click, with no card** — silently granted the agent the
+  user's entire personal tree; only a transient toast named the root. The conversational card had the same
+  overshoot. "Nearest enclosing repo" is right when the enclosing repo is a project; it is wrong when it is home.
+- **Fix.** `pathtrust.js` gains a `homeDir` dep (injected, so the core stays env-free) and `detectRoot` now
+  stops at it: the walk may only return a root **strictly below** home, else the folder the Commander actually
+  pointed at is its own root. Picking home itself still proposes home — then it IS the chosen folder.
+  `index.js` injects `os.homedir()`; `projectbless` reuses `pathTrustCore.detectRoot`, so **one injection caps
+  both doorways**.
+- **Locks.** `pathtrust.test.js` §11 (new, 7 assertions) proves a real repo *below* home is still walked up to,
+  a plain folder proposes itself, home picked directly still proposes home, and the **persisted grant key** is
+  the pointed-at folder — not the container. Test 9 previously had to **skip** on this host; with a synthetic
+  home its premise now holds deterministically and it asserts for real. A **wiring** lock reads `index.js` and
+  fails if the injection or the shared `detectRoot` is dropped — and it is **comment-aware**, because a plain
+  text scan was fooled by `// homeDir: os.homedir(),` (proven: the first sabotage attempt stayed green).
+  Sabotage-proven: dropping the injection → red; `if (false && atOrAboveHome(cur))` → **5 red**.
+- **Result.** `e2e.pathtrust` **52 assertions, fully green, unmodified** (was 1 failure). `pathtrust` 57→67,
+  `projectbless` 42, `failopen-ratchet` 157, `project-root.e2e` 6, `execution-profiles` 34,
+  `route-table-collision` 5, and 26 further permission/project/trust/fs suites all green.
+  (`loops-git.e2e` / `loops-check.e2e` / `nightshift-focus.e2e` still die on `spawnSync git EBUSY` — the
+  sandbox wall, unrelated.)
+
 

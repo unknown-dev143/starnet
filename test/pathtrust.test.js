@@ -28,6 +28,10 @@ function harness(opts) {
     bless: async (rootReal, meta) => { if (!blessOk) return false; roots.add(rootReal); blessed.push({ rootReal, meta }); return true; },
     touch: (rootReal, abs) => touched.push({ rootReal, abs }),
     isGitRepoOf: async (r) => { try { await fsp.stat(path.join(r, '.git')); return true; } catch (_) { return false; } },
+    // opt-in home ceiling. Production ALWAYS injects os.homedir() (index.js); leaving it off here keeps the
+    // containment/symlink/floor sections byte-identical to before, and the ceiling sections pass a SYNTHETIC
+    // home so their premise holds on any machine instead of depending on where the temp dir happens to sit.
+    homeDir: opts.homeDir,
     now: () => 1700000000000
   });
   return { pt, roots, touched, blessed, setBlessOk(v) { blessOk = v; } };
@@ -244,29 +248,21 @@ function scriptPrompt(decision) {
 
   // ---- 9. non-git folder: proposed root falls back to the file's own directory ----
   {
-    const loose = path.join(ROOT, 'loose');
+    // The premise is "no .git anywhere up THAT MAY BE PROPOSED". Since detectRoot now stops at the home
+    // ceiling, an ancestor dotfiles repo (~/.git) can no longer be proposed at all — which is exactly what
+    // the ceiling is for. A SYNTHETIC home makes the premise hold deterministically on every machine
+    // (previously this section had to skip here, because this host's C:\Users\User is itself a git repo).
+    const home = path.join(ROOT, 'home9');
+    const loose = path.join(home, 'Documents', 'loose');
     await fsp.mkdir(loose, { recursive: true });
     await fsp.writeFile(path.join(loose, 'note.txt'), 'x');
-    // The premise is "NO .git anywhere up". If an ancestor of the temp dir is itself a git repo — a dotfiles
-    // home directory, e.g. C:\Users\<me>\.git — the walk-up legitimately stops there and the fallback under
-    // test is never reached. That is a TRUE answer, just not this test's subject, so only assert when the
-    // premise actually holds (same honest-skip pattern as the symlink case above).
-    let ancestorRepo = null;
-    for (let d = loose; ; d = path.dirname(d)) {
-      if (await fsp.stat(path.join(d, '.git')).then(() => true, () => false)) { ancestorRepo = d; break; }
-      const up = path.dirname(d);
-      if (!up || up === d) break;
-    }
-    if (ancestorRepo) {
-      A.ok(true, 'non-git fallback regression skipped — a .git exists above the temp dir (' + ancestorRepo + ')');
-    } else {
-      const h = harness();
-      const p = scriptPrompt('always');
-      await h.pt.guard(path.join(loose, 'note.txt'), { scope: 'read', surface: 'interactive', prompt: p });
-      A.ok(path.resolve(p.calls[0].proposedRoot).toLowerCase() === path.resolve(loose).toLowerCase(),
-        'no .git anywhere up → proposed root is the file\'s own directory');
-      A.ok(h.blessed[0].meta.isGitRepo === false, 'a non-git root is stamped isGitRepo:false');
-    }
+    await fsp.mkdir(path.join(home, '.git'), { recursive: true });          // the home IS a repo (dotfiles)
+    const h = harness({ homeDir: home });
+    const p = scriptPrompt('always');
+    await h.pt.guard(path.join(loose, 'note.txt'), { scope: 'read', surface: 'interactive', prompt: p });
+    A.ok(path.resolve(p.calls[0].proposedRoot).toLowerCase() === path.resolve(loose).toLowerCase(),
+      'no .git below the home ceiling → proposed root is the file\'s own directory');
+    A.ok(h.blessed[0].meta.isGitRepo === false, 'a non-git root is stamped isGitRepo:false');
   }
 
   // ---- 10. bless persistence failure = deny (fail-closed) ----
@@ -325,6 +321,60 @@ function scriptPrompt(decision) {
     const second = await pt.guard(SYM + '/src/b.js', { scope: 'read', surface: 'interactive', prompt: async () => { asked++; return 'always'; } });
     A.eq(asked, 0, 'a second file under the same root does NOT re-prompt');
     A.ok(second.base.indexOf(REALROOT) === 0, 'and resolves against the blessed canonical root');
+  }
+
+  /* ---- 11. the project-root walk stops at the HOME DIRECTORY (homeDir) ----
+     "nearest enclosing repo" is right when the enclosing repo is a project. It is wrong when the only
+     enclosing repo is HOME — a container of unrelated things (dotfiles, Desktop, Downloads, Documents, every
+     other project) that is routinely under version control itself (yadm, a bare ~/.git). Without the ceiling,
+     pointing at ~/Documents/notes on such a machine proposed ~ and recorded `path:<home>`: a folder-sized
+     click silently handing the agent the user's whole personal tree, with no card at the ADD-project doorway
+     (which commits on the click) and only a transient toast naming the root. Caught live: the e2e path-trust
+     suite went from 6 failures to 0 once the walk stopped overshooting into the home dir. */
+  {
+    const home = path.join(ROOT, 'home11');
+    const proj = path.join(home, 'Documents', 'notes');
+    const src = path.join(proj, 'src');
+    const plain = path.join(home, 'notes-plain');
+    await fsp.mkdir(src, { recursive: true });
+    await fsp.mkdir(plain, { recursive: true });
+    await fsp.writeFile(path.join(src, 'a.md'), 'x');
+    await fsp.writeFile(path.join(plain, 'todo.md'), 'x');
+    await fsp.mkdir(path.join(home, '.git'), { recursive: true });          // ~ IS a repo
+    await fsp.mkdir(path.join(proj, '.git'), { recursive: true });          // ...and so is the project below it
+    const pt = makePathTrust({ fsp, pathMod: path, roots: () => [], homeDir: home });
+    A.ok(path.resolve(await pt.detectRoot(path.join(src, 'a.md'))).toLowerCase() === path.resolve(proj).toLowerCase(),
+      'a real repo BELOW home is still walked up to (the ceiling does not blunt ordinary detection)');
+    A.ok(path.resolve(await pt.detectRoot(plain)).toLowerCase() === path.resolve(plain).toLowerCase(),
+      'a plain folder under a repo-rooted home proposes ITSELF, never the home dir');
+    A.ok(path.resolve(await pt.detectRoot(home)).toLowerCase() === path.resolve(home).toLowerCase(),
+      'picking the home directory itself still proposes it — it IS the chosen folder');
+    // and the ceiling holds through the guard + bless path, so the RECORDED grant cannot be the whole home.
+    const h = harness({ homeDir: home });
+    const p = scriptPrompt('always');
+    await h.pt.guard(path.join(plain, 'todo.md'), { scope: 'read', surface: 'interactive', prompt: p });
+    A.ok(path.resolve(p.calls[0].proposedRoot).toLowerCase() === path.resolve(plain).toLowerCase(),
+      'the card proposes the pointed-at folder, not the container above it');
+    A.ok(h.blessed.length === 1 && path.resolve(h.blessed[0].rootReal).toLowerCase() === path.resolve(plain).toLowerCase(),
+      'the STANDING GRANT key is that folder too — a container is never persisted as project trust');
+    A.eq(h.roots.size, 1, 'exactly one root is trusted after the bless');
+  }
+
+  /* ---- WIRING: the ceiling above is worthless unless the sidecar actually injects it ----
+     §11 proves the CORE caps the walk, but it passes its own synthetic home, so it would stay green if
+     index.js dropped the injection and the shipped walk went unbounded again. This is the validator↔data
+     lesson: a lock on the core does not prove the wiring. Both doorways matter — the conversational card
+     goes through pathTrustCore.guard, and the ADD-project route reuses pathTrustCore.detectRoot. ---- */
+  {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'sidecar', 'index.js'), 'utf8');
+    const at = src.indexOf('const pathTrustCore = makePathTrust({');
+    A.ok(at > 0, 'the path-trust core is constructed in index.js (the lock below has something to read)');
+    // COMMENT-AWARE: a plain text scan is fooled by a commented-out line (`// homeDir: os.homedir(),`), which
+    // is exactly the shape a "temporarily disabled" regression takes. Drop whole-line comments first.
+    const code = (t) => t.split('\n').filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+    const block = code(src.slice(at, src.indexOf('const projectBless = makeProjectBless({', at)));
+    A.ok(/homeDir:\s*os\.homedir\(\)/.test(block), 'the sidecar injects os.homedir() as the path-trust home ceiling');
+    A.ok(/detectRoot:\s*pathTrustCore\.detectRoot/.test(code(src)), 'the ADD-project doorway reuses the capped walk, so one injection caps both doorways');
   }
 
   try { fs.rmSync(ROOT, { recursive: true, force: true }); } catch (e) {}
