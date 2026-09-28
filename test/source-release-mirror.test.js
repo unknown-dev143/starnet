@@ -26,17 +26,17 @@ function asset(name, n) {
 function distribution(overrides = {}) {
   return {
     tag_name: 'v1.2.3',
-    name: 'StarNet 1.2.3',
-    body: '# StarNet v1.2.3\n\nA truthful release.',
+    name: 'SpaceStation 1.2.3',
+    body: '# SpaceStation v1.2.3\n\nA truthful release.',
     draft: false,
     prerelease: false,
     assets: [
       asset('latest.json', 1),
-      asset('StarNet_1.2.3_x64-setup.exe', 2),
-      asset('StarNet_1.2.3_aarch64.dmg', 3),
-      asset('StarNet_1.2.3_x64.dmg', 4),
-      asset('StarNet_darwin-arm64.app.tar.gz', 5),
-      asset('StarNet_darwin-arm64.app.tar.gz.sig', 6)
+      asset('SpaceStation_1.2.3_x64-setup.exe', 2),
+      asset('SpaceStation_1.2.3_aarch64.dmg', 3),
+      asset('SpaceStation_1.2.3_x64.dmg', 4),
+      asset('SpaceStation_darwin-arm64.app.tar.gz', 5),
+      asset('SpaceStation_darwin-arm64.app.tar.gz.sig', 6)
     ],
     ...overrides
   };
@@ -48,9 +48,9 @@ function distribution(overrides = {}) {
 
   const plan = buildMirrorPlan(distribution());
   eq(plan.tag, 'v1.2.3', 'stable tag is preserved');
-  eq(plan.title, 'StarNet v1.2.3', 'source title uses the source-repo convention');
+  eq(plan.title, 'SpaceStation v1.2.3', 'source title uses the source-repo convention');
   eq(plan.assets.map(item => item.name).join(','),
-    'StarNet_1.2.3_x64-setup.exe,StarNet_1.2.3_aarch64.dmg,StarNet_1.2.3_x64.dmg',
+    'SpaceStation_1.2.3_x64-setup.exe,SpaceStation_1.2.3_aarch64.dmg,SpaceStation_1.2.3_x64.dmg',
     'only human installers are mirrored in platform order');
   ok(plan.body.includes('## Download'), 'download section is generated');
   ok(plan.body.includes('macOS (Apple Silicon)'), 'platform labels are human-readable');
@@ -76,7 +76,7 @@ function distribution(overrides = {}) {
   }
   {
     const bad = distribution();
-    bad.assets.push({ ...asset('StarNet_1.2.3_x64.dmg', 7) });
+    bad.assets.push({ ...asset('SpaceStation_1.2.3_x64.dmg', 7) });
     throws(() => buildMirrorPlan(bad), /duplicate distribution asset/, 'duplicate flat asset name rejected');
   }
   {
@@ -87,8 +87,8 @@ function distribution(overrides = {}) {
 
   const linuxPlan = buildMirrorPlan(distribution({
     assets: distribution().assets.concat([
-      asset('StarNet_1.2.3_amd64.AppImage', 7),
-      asset('StarNet_1.2.3_amd64.deb', 8)
+      asset('SpaceStation_1.2.3_amd64.AppImage', 7),
+      asset('SpaceStation_1.2.3_amd64.deb', 8)
     ])
   }));
   ok(linuxPlan.assets.some(item => item.name.endsWith('.AppImage')), 'future supported AppImage is mirrored');

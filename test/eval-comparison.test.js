@@ -77,7 +77,7 @@ const { tmpdir } = require('node:os');
     'a harness-provided pass cannot override a failed host observation');
   const parity = cmp.compareHarnesses({ tasks: parityTasks, starnetRows: parityRows, referenceRows: parityRows, contract });
   A.ok(parity.pass, 'a fully evidenced equal comparison passes all parity gates');
-  A.eq(parity.summary.starnetPassRatePct, 100, 'StarNet pass rate is calculated from active scenarios');
+  A.eq(parity.summary.starnetPassRatePct, 100, 'SpaceStation pass rate is calculated from active scenarios');
   A.eq(parity.summary.violations, { falseDone: 0, wrongDestination: 0, duplicateMutation: 0, authorityEscape: 0 }, 'zero-tolerance events are counted explicitly');
 
   const unsafe = JSON.parse(JSON.stringify(parityRows));
@@ -104,12 +104,12 @@ const { tmpdir } = require('node:os');
   A.ok(!sourceReceipt.candidateBound && sourceReceipt.limitations.some(x => /not installed-candidate proof/.test(x)),
     'a source-only receipt names its limitation instead of impersonating installed proof');
   const installedReceipt = cmp.makeReceipt({ kind: 'parity', contract, subject: {
-    commit: 'b'.repeat(40), sourceTree: { algorithm: 'git-tree', value: 'tree' }, executable: { path: 'StarNet.exe', sha256: hash },
+    commit: 'b'.repeat(40), sourceTree: { algorithm: 'git-tree', value: 'tree' }, executable: { path: 'SpaceStation.exe', sha256: hash },
     provenance: { verified: true }, dirty: false
   }, result: parity });
   A.ok(installedReceipt.candidateBound, 'verified clean provenance + commit + source tree + executable hash bind a receipt to a candidate');
   const unverifiedReceipt = cmp.makeReceipt({ kind: 'parity', contract, subject: {
-    commit: 'b'.repeat(40), sourceTree: { algorithm: 'git-tree', value: 'tree' }, executable: { path: 'StarNet.exe', sha256: hash }, dirty: false
+    commit: 'b'.repeat(40), sourceTree: { algorithm: 'git-tree', value: 'tree' }, executable: { path: 'SpaceStation.exe', sha256: hash }, dirty: false
   }, result: parity });
   A.ok(!unverifiedReceipt.candidateBound, 'an executable hash cannot bind itself to an unrelated source commit without verified provenance');
 
@@ -131,7 +131,7 @@ const { tmpdir } = require('node:os');
     const parityReceipt = join(temp, 'parity.json');
     const compareCli = spawnSync(process.execPath, ['scripts/eval/runner.mjs', 'compare', '--starnet', starnetFile, '--reference', referenceFile, '--receipt', parityReceipt, '--signing-key', privateKey], { cwd: root, encoding: 'utf8' });
     A.eq(compareCli.status, 0, 'parity CLI exits zero for passing evidence');
-    A.ok(/PARITY PASS StarNet=100.0%/.test(compareCli.stdout), 'parity CLI prints the scored comparison');
+    A.ok(/PARITY PASS SpaceStation=100.0%/.test(compareCli.stdout), 'parity CLI prints the scored comparison');
     const verifyCli = spawnSync(process.execPath, ['scripts/eval/runner.mjs', 'verify-receipt', '--receipt', parityReceipt], { cwd: root, encoding: 'utf8' });
     A.eq(verifyCli.status, 0, 'a signed receipt verifies through the CLI');
     A.ok(/SIGNATURE PASS/.test(verifyCli.stdout), 'signature verification prints the key identity');

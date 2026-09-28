@@ -38,11 +38,11 @@ async function terminateChild(child, opts = {}) {
 
 async function waitHealth(base, child) {
   for (let attempt = 0; attempt < 180; attempt++) {
-    if (child.exitCode != null) throw new Error(`StarNet process exited ${child.exitCode} before health`);
+    if (child.exitCode != null) throw new Error(`SpaceStation process exited ${child.exitCode} before health`);
     try { const response = await fetch(base + '/health', { signal: AbortSignal.timeout(1000) }); if (response.ok) return response.json(); } catch (_) {}
     await sleep(100);
   }
-  throw new Error('StarNet sidecar health timeout');
+  throw new Error('SpaceStation sidecar health timeout');
 }
 
 export function installedDesktopStartupLog(workspaces) {
@@ -71,14 +71,14 @@ export async function waitInstalledDesktopPort({ startupLog, afterBytes = 0, chi
 async function discoverToken(base) {
   const response = await fetch(base + '/', { signal: AbortSignal.timeout(5000) });
   const html = await response.text(), match = html.match(/window\.__STARNET_API_TOKEN__=("(?:\\.|[^"])*")/);
-  if (!match) throw new Error('installed StarNet API token could not be discovered');
+  if (!match) throw new Error('installed SpaceStation API token could not be discovered');
   return JSON.parse(match[1]);
 }
 
 async function api(base, token, path, body) {
   const response = await fetch(base + path, {
     method: body === undefined ? 'GET' : 'POST',
-    headers: { 'X-StarNet-Token': token, Origin: base, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    headers: { 'X-SpaceStation-Token': token, Origin: base, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(120000)
   });
   const text = await response.text(); let value = null; try { value = JSON.parse(text); } catch (_) { value = { text }; }
@@ -87,7 +87,7 @@ async function api(base, token, path, body) {
 }
 
 async function readStarNetRun(response, base, token) {
-  if (!response.ok) throw new Error(`StarNet run HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`);
+  if (!response.ok) throw new Error(`SpaceStation run HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`);
   const reader = response.body.getReader(), decoder = new TextDecoder();
   let buffer = '', finalText = '', firstOutputMs = null, runId = '', end = null;
   const events = [], started = performance.now();
@@ -140,7 +140,7 @@ export async function startStarNetDriver(opts) {
   const health = await waitHealth(base, child), token = await discoverToken(base);
   try { await api(base, token, '/api/connectors/remove', { id: CONNECTOR_ID }); } catch (_) {}
   const configured = await api(base, token, '/api/connectors', { id: CONNECTOR_ID, label: 'Parity fixture host', transport: 'http', url: fixtureUrl, enabled: true, timeoutMs: 120000 });
-  if (!configured.connected) throw new Error('StarNet fixture connector did not connect: ' + JSON.stringify(configured).slice(0, 500));
+  if (!configured.connected) throw new Error('SpaceStation fixture connector did not connect: ' + JSON.stringify(configured).slice(0, 500));
 
   return {
     process: child, base,
@@ -148,7 +148,7 @@ export async function startStarNetDriver(opts) {
     async run({ fixture, state, root: fixtureRoot, attempt }) {
       const startedAt = new Date().toISOString(), prompt = submittedPrompt(fixture.prompt);
       const response = await fetch(base + '/api/run', {
-        method: 'POST', headers: { 'X-StarNet-Token': token, Origin: base, 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'X-SpaceStation-Token': token, Origin: base, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: MODEL, provider: PROVIDER, agentId: 'agent', isTask: true, projectRoot: resolve(fixtureRoot),
           system: 'Execute the parity fixture through its authoritative parity_fixture_eval tools. Inspect before acting, use host results as truth, verify mutations, and never claim success after a tool failure.',

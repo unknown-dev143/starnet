@@ -450,4 +450,39 @@ Two coupled items are deferred to their own deliberate pass because each touches
 test). The **installer-art wordmark** (`gen-installer-art.ps1` draws `STARNET`) is a genuine user-facing asset
 that needs its images regenerated, not a string swap.
 
+### 10d. …and then the remainder was finished too
+
+Everything §10c listed as deferred is now done, in the same commit series:
+
+- **`scripts/` identity sweep** — 73 more brand words across 34 files: evidence-doc headers
+  (`# StarNet … Evidence` → `# SpaceStation …`), the eval driver labels (`name: 'StarNet'`,
+  `StarNet=${…}`, `StarNetBoot=`), operator messages, the QA campaign names, the eval **schema titles**,
+  `lib/states.mjs`'s rendered notification fixture, and the release-notes pipeline.
+- **The release-notes header, as one coupled change** — `release-bump.mjs` writes it, `release-ritual.mjs`
+  validates it, `release-preflight.mjs` parses it with a regex, and `RELEASE_NOTES.md` carries it; all four
+  moved together, and the three test fixtures that pin `# StarNet v…` moved with them.
+- **The public mirror page** (`source-release-mirror.mjs`) — title and body now name the product; the
+  `distributionRepo` value (`androoAGI/starnet-releases`) is an IDENTIFIER and was left alone.
+- **The installer art** — `gen-installer-art.ps1` now draws `SPACESTATION`. Because the 12-letter word does
+  not fit the original 7-letter stacked layout, the sidebar's row pitch and the header/DMG sizes were
+  retuned (sidebar 26pt/30px → 18pt/19px; header 15pt → 13pt; DMG title re-centred). System.Drawing is
+  **blocked in this sandbox** (`Add-Type` is refused by the security guard), so the three committed assets
+  were regenerated with an equivalent Pillow renderer using the script's own palette and passes, then
+  **viewed to confirm** the layout fits (header text 108px in 150; DMG title 264px in 660; sidebar's last
+  row at y=255 against the rail at 278). The `.ps1` was parser-checked (0 errors) but could not be
+  *executed* here — **regenerate on Windows before the next cut** to make the committed art byte-identical
+  to the canonical generator.
+
+**Permanent gate.** `brand-identity.test.js` **§10** applies §2's rule to `scripts/**` with a documented
+identifier allowlist (registry keys, the historical asset glob, the replay proof's messages, the scheduled-task
+names, the legacy path component, the pre-rebrand macOS data dir). Sabotage-proven: injecting
+`'Welcome back to StarNet, commander.'` turns it red. The gate is now **44 assertions**.
+
+**Still the legacy word, on purpose (all IDENTIFIERS, 18 strings):**
+`ci/windows-published-upgrade-proof.ps1` (8 — the registry keys, the historical asset glob and the messages of
+a proof that deliberately replays a PRE-REBRAND install), `qa/register-watch.ps1` (8 — `StarNet-QA-*` Windows
+scheduled-task names and their labels; a task name is a registry identity, and renaming it orphans the
+operator's existing registration), and `purge-leaked-codex-tokens.mjs`'s legacy install-root path component
+(1) plus `verify-macos-intel-installed.sh`'s legacy data dir (1).
+
 

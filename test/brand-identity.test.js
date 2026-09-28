@@ -253,4 +253,64 @@ const LEGACY = /StarNet|STARNET/;
   A.ok(files.length > 200, 'the sidecar scan actually found the modules');
 }
 
+/* ---------- 10. scripts/**: the only legacy brand left is IDENTIFIERS ----------
+   scripts/ is the release/QA toolchain. Its user-visible prose was rebranded, but a handful of
+   strings MUST keep the legacy word because they name things that live OUTSIDE this repo or were
+   created by an older release — renaming them would break a lookup or orphan an OS-registered
+   object. Each permitted shape:
+     · HKCU:\…\Uninstall\StarNet / HKCU:\Software\Andrew Sims\StarNet
+         the uninstall registry keys a PRE-REBRAND release wrote; ci/windows-published-upgrade-proof.ps1
+         replays that historical field failure, so it must read the OLD keys.
+     · StarNet_*_x64-setup.exe   the historical published installer asset name (same replay).
+     · non-proof StarNet state / owned StarNet process / StarNet registry record
+         that proof's messages, which describe the historical StarNet install it is removing.
+     · StarNet-QA-*  and  StarNet QA …
+         Windows scheduled-task names + their labels (scripts/qa/register-watch.ps1). A task NAME is a
+         registry identity: renaming it orphans the operator's existing registration.
+     · 'StarNet'   a legacy app-data / install-root path component (purge-leaked-codex-tokens.mjs).
+     · .local/share/StarNet/workspaces   the pre-rebrand macOS app-data dir, read in place.
+   Any OTHER string in scripts/ carrying the brand — a label, a header, a sentence — is an offender. */
+{
+  const dir = path.join(ROOT, 'scripts');
+  const files = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p); }
+      else if (/\.(js|mjs|cjs|ps1|sh)$/.test(e.name)) files.push(p);
+    }
+  })(dir);
+  const IDENT = [
+    /^HKCU:.*\\StarNet$/,              // historical install registry keys
+    /^StarNet_\*_x64-setup\.exe$/,     // historical published installer asset
+    /non-proof StarNet state/,         // the replay proof's own messages
+    /owned StarNet process/,
+    /StarNet registry record/,
+    /^StarNet-QA-/,                    // OS-registered scheduled-task names
+    /^StarNet QA/,
+    /pointing at the StarNet repo/,
+    /^StarNet$/,                       // legacy install-root path component
+    /\.local\/share\/StarNet\//,       // pre-rebrand macOS app-data dir
+  ];
+  const offenders = [];
+  for (const p of files) {
+    const code = stripComments(fs.readFileSync(p, 'utf8'));
+    const strings = code.match(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g) || [];
+    for (const s of strings) {
+      if (!LEGACY.test(s)) continue;
+      if (/built on the earlier|back-compat|previously called|renamed/.test(s)) continue;
+      if (/not a StarNet agent|earlier StarNet harness|Skynet/.test(s)) continue;
+      if (/__STARNET|STARNET_|SKYNET_|starnet[._-]/.test(s)) continue;
+      if (/StarNet-Token|Skynet-Token|starnet-token|skynet-token/.test(s)) continue;
+      if (/^X-|^x-/.test(s)) continue;
+      const lit = s.slice(1, -1);
+      if (IDENT.some((re) => re.test(lit))) continue;
+      offenders.push(path.relative(ROOT, p) + ': ' + s.slice(0, 80));
+    }
+  }
+  A.eq(offenders.length, 0, 'no scripts/ module renders the legacy brand as visible text');
+  if (offenders.length) console.log('  offenders:\n   ' + offenders.join('\n   '));
+  A.ok(files.length > 100, 'the scripts scan actually found the toolchain');
+}
+
 A.report('brand-identity');

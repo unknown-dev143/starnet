@@ -33,7 +33,7 @@ function makeFixture(dir, version, opts) {
     packages: { '': { name: 'starnet-harness', version } }
   }, null, 2) + '\n');
   const conf = {
-    $schema: 'x', productName: 'StarNet', version, identifier: 'ai.skynet.harness',
+    $schema: 'x', productName: 'SpaceStation', version, identifier: 'ai.skynet.harness',
     // The published-floor check reads the releases repo slug from the updater endpoint.
     plugins: { updater: { endpoints: [
       'https://github.com/acme/starnet-releases/releases/latest/download/latest.json'
@@ -132,7 +132,7 @@ try {
   // ---- 4. Real bump inside a throwaway git repo: files edited, committed, tagged, no push ----
   {
     const dir = path.join(tmp, 'realgit');
-    makeFixture(dir, '0.1.9', { notes: '# StarNet v0.1.9\n\n- old notes\n', bom: true });
+    makeFixture(dir, '0.1.9', { notes: '# SpaceStation v0.1.9\n\n- old notes\n', bom: true });
     // init a self-contained repo (no remote -> a push would fail loudly if attempted)
     const gitEnv = {
       GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 't@t'
@@ -168,7 +168,7 @@ try {
     check(/name = "skynet-desktop"\nversion = "0\.2\.0"/.test(lock), 'Cargo.lock app pin bumped');
     check(/name = "serde"\nversion = "1\.0\.0"/.test(lock), 'Cargo.lock other pins untouched');
     const notes = fs.readFileSync(path.join(dir, 'RELEASE_NOTES.md'), 'utf8');
-    check(/^# StarNet v0\.2\.0/.test(notes), 'RELEASE_NOTES.md overwritten with new header');
+    check(/^# SpaceStation v0\.2\.0/.test(notes), 'RELEASE_NOTES.md overwritten with new header');
     check(/TODO/.test(notes), 'RELEASE_NOTES.md has TODO bullet');
 
     // Commit exists with the right message.

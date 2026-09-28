@@ -48,7 +48,7 @@ async function waitExpr(cdp, expr, tries = 40, delay = 250) {
   return false;
 }
 async function api(cdp, path, init = {}) {
-  const expr = `(() => fetch(${J(path)}, Object.assign({ headers: Object.assign({ 'X-StarNet-Token': window.__STARNET_API_TOKEN__ || '' }, ${(J(init.headers || {}))}) }, ${J(init)})).then(async r => {
+  const expr = `(() => fetch(${J(path)}, Object.assign({ headers: Object.assign({ 'X-SpaceStation-Token': window.__STARNET_API_TOKEN__ || '' }, ${(J(init.headers || {}))}) }, ${J(init)})).then(async r => {
     const text = await r.text();
     let json = null; try { json = JSON.parse(text); } catch (_) {}
     return { status: r.status, ok: r.ok, json, text };
@@ -169,7 +169,7 @@ async function main() {
       'The file must contain these exact lines:',
       '# Phase 4 Proof',
       'verdict: live UI file-write proof',
-      'evidence: StarNet created this through the gamified UI with a live model.',
+      'evidence: SpaceStation created this through the gamified UI with a live model.',
       'Then use notebook.write to remember this exact durable note: phase4-ui-proof-memory.',
       'Finish with one short sentence naming the saved file.'
     ].join('\n');

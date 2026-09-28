@@ -84,10 +84,12 @@ $pgb.SurroundColors = @([System.Drawing.Color]::FromArgb(0, 2, 6, 4))
 $g.FillPath($pgb, $path); $pgb.Dispose(); $path.Dispose()
 
 # stacked wordmark, one letter per row — reads like a boot column
-$fBig = New-Object System.Drawing.Font('Consolas', 26, [System.Drawing.FontStyle]::Bold)
-$word = 'STARNET'
+# 12 letters must fit between the top margin and the gold rail at y=278, so the row pitch is tighter
+# than the 7-letter original (font 26 / pitch 30).
+$fBig = New-Object System.Drawing.Font('Consolas', 18, [System.Drawing.FontStyle]::Bold)
+$word = 'SPACESTATION'
 for ($i = 0; $i -lt $word.Length; $i++) {
-  Add-GlowText $g $word[$i] $fBig 62 (52 + $i * 30) $C_PHOS $C_PHOSD
+  Add-GlowText $g $word[$i] $fBig 66 (46 + $i * 19) $C_PHOS $C_PHOSD
 }
 $fBig.Dispose()
 
@@ -119,7 +121,7 @@ $pgb.SurroundColors = @([System.Drawing.Color]::FromArgb(0, 2, 6, 4))
 $g.FillPath($pgb, $path); $pgb.Dispose(); $path.Dispose()
 
 $fTitle = New-Object System.Drawing.Font('Consolas', 30, [System.Drawing.FontStyle]::Bold)
-Add-GlowText $g 'STARNET' $fTitle 246 28 $C_PHOS $C_PHOSD
+Add-GlowText $g 'SPACESTATION' $fTitle 198 28 $C_PHOS $C_PHOSD
 $fTitle.Dispose()
 
 # phosphor arrow between the two icon wells (app at x=180, folder at x=480, both y=170)
@@ -155,8 +157,8 @@ $bmp.Dispose()
 $bmp, $g = New-Canvas 150 57
 Add-Starfield $g 150 57 26 4242
 
-$fHdr = New-Object System.Drawing.Font('Consolas', 15, [System.Drawing.FontStyle]::Bold)
-Add-GlowText $g 'STARNET' $fHdr 10 14 $C_PHOS $C_PHOSD
+$fHdr = New-Object System.Drawing.Font('Consolas', 13, [System.Drawing.FontStyle]::Bold)
+Add-GlowText $g 'SPACESTATION' $fHdr 10 16 $C_PHOS $C_PHOSD
 $fHdr.Dispose()
 $penG = New-Object System.Drawing.Pen($C_GOLD, 1)
 $g.DrawLine($penG, 12, 42, 108, 42); $penG.Dispose()

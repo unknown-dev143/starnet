@@ -69,7 +69,7 @@ async function waitExpr(cdp, expr, tries = 40, delay = 250) {
   return false;
 }
 async function api(cdp, path, init = {}) {
-  const expr = `(() => fetch(${J(path)}, Object.assign({ headers: Object.assign({ 'X-StarNet-Token': window.__STARNET_API_TOKEN__ || '' }, ${(J(init.headers || {}))}) }, ${J(init)})).then(async r => {
+  const expr = `(() => fetch(${J(path)}, Object.assign({ headers: Object.assign({ 'X-SpaceStation-Token': window.__STARNET_API_TOKEN__ || '' }, ${(J(init.headers || {}))}) }, ${J(init)})).then(async r => {
     const text = await r.text();
     let json = null; try { json = JSON.parse(text); } catch (_) {}
     return { status: r.status, ok: r.ok, json, text };
@@ -207,7 +207,7 @@ async function main() {
       'Do not use web_search or web_fetch as a substitute for browser.navigate and browser.get_text.',
       'The Markdown file must include these exact lines:',
       '# Phase 5 the reference harness Workload',
-      'verdict: live StarNet workload proof',
+      'verdict: live SpaceStation workload proof',
       'browser: example.com text captured',
       'input: synthetic-only (physical driver disabled)',
       'shell: live command attempted',
