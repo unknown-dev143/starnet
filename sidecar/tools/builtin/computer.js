@@ -83,7 +83,7 @@
     const fg = (await driver.foreground()) || {};
     const title = String(fg.title || ''), proc = String(fg.process || '');
     if (SELF_WINDOW_RE.test(title) || SELF_WINDOW_RE.test(proc)) {
-      throw new Error('refused: the foreground window is StarNet itself ("' + (title || proc) + '") — the target app lost focus, so input was NOT sent; re-focus the target app (click it) before typing');
+      throw new Error('refused: the foreground window is SpaceStation itself ("' + (title || proc) + '") — the target app lost focus, so input was NOT sent; re-focus the target app (click it) before typing');
     }
     if (action.expectApp) {
       const want = action.expectApp.toLowerCase();

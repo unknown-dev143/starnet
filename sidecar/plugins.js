@@ -97,7 +97,7 @@
       const id = String((spec && spec.id) || '').trim();
       if (!idOk(id)) return { ok: false, error: 'use letters, numbers, dot, dash or underscore (max 64)' };
       const name = String((spec && spec.name) || '').trim() || id;
-      const description = String((spec && spec.description) || '').trim() || 'A StarNet plugin.';
+      const description = String((spec && spec.description) || '').trim() || 'A SpaceStation plugin.';
       const base = P.join(dir, id);
       try { await fsp.stat(base); return { ok: false, error: 'a plugin folder named "' + id + '" already exists' }; }
       catch (_) { /* good — it does not exist yet */ }

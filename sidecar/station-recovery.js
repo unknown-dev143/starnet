@@ -275,8 +275,8 @@ function capture(opts) {
 
 function validate(bundle) {
   const errors = [];
-  if (!bundle || bundle.schema !== SCHEMA) errors.push('not a StarNet station recovery bundle');
-  if (bundle && Number(bundle.version) > VERSION) errors.push('bundle was created by a newer StarNet recovery format');
+  if (!bundle || bundle.schema !== SCHEMA) errors.push('not a SpaceStation station recovery bundle');
+  if (bundle && Number(bundle.version) > VERSION) errors.push('bundle was created by a newer SpaceStation recovery format');
   const files = bundle && Array.isArray(bundle.files) ? bundle.files : [];
   const browser = bundle && Array.isArray(bundle.browser) ? bundle.browser : [];
   const seen = new Set();

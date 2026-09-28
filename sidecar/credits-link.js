@@ -95,7 +95,7 @@
     // Ask the cloud for a fresh pairing code. Stashes the pollSecret in memory; returns only the public bits.
     async function start(deviceName) {
       if (!configured()) return { ok: false, error: 'not_configured' };
-      const j = await postJson('/v1/link/start', { deviceName: str(deviceName) || 'StarNet Station' });
+      const j = await postJson('/v1/link/start', { deviceName: str(deviceName) || 'SpaceStation' });
       const code = str(j.code);
       if (!code) return { ok: false, error: 'no_code' };
       pending.set(code, { pollSecret: str(j.pollSecret), at: now() });

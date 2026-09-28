@@ -70,7 +70,7 @@
     const jail = fsMod.makeFsTools({ fsp, pathMod: P, root: ROOT })._internals;
 
     function authHeaders(extra) {
-      return Object.assign({ 'Authorization': 'Bearer ' + apiKey, 'HTTP-Referer': 'https://starnet.local', 'X-Title': 'STARNET' }, extra || {});
+      return Object.assign({ 'Authorization': 'Bearer ' + apiKey, 'HTTP-Referer': 'https://starnet.local', 'X-Title': 'SPACESTATION' }, extra || {});
     }
 
     function emitDeliverable(ctx, aid, rel) {

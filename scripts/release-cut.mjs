@@ -44,7 +44,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runBoundedCommand } from './lib/run-command.mjs';
-import { findVersionedNsisInstaller } from './lib/release-installer.mjs';
+import { findVersionedNsisInstaller, nsisInstallerName } from './lib/release-installer.mjs';
 import { resolvePubkeyText, verifySignature } from './minisign-verify.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -176,10 +176,10 @@ async function main() {
   // Locate the produced artifacts.
   const nsisDir = join(ROOT, 'src-tauri', 'target', 'release', 'bundle', 'nsis');
   const installer = DRY_RUN
-    ? join(nsisDir, 'StarNet_' + version + '_x64-setup.exe')
+    ? join(nsisDir, nsisInstallerName(version))
     : findVersionedNsisInstaller(nsisDir, version);
   if (!DRY_RUN && !installer) {
-    fail('expected installer not found: ' + join(nsisDir, 'StarNet_' + version + '_x64-setup.exe')
+    fail('expected installer not found: ' + join(nsisDir, nsisInstallerName(version))
       + ' (refusing to select a stale installer for another version)');
   }
 
@@ -234,7 +234,7 @@ async function main() {
   // Stage into release/ and build latest.json pointing at the GitHub Releases asset.
   const releaseDir = join(ROOT, 'release');
   mkdirSync(releaseDir, { recursive: true });
-  const installerName = DRY_RUN ? ('StarNet_' + version + '_x64-setup.exe') : installer.split(/[\\/]/).pop();
+  const installerName = DRY_RUN ? nsisInstallerName(version) : installer.split(/[\\/]/).pop();
   const assetBase = 'https://github.com/' + RELEASES_REPO + '/releases/download/v' + version + '/';
   const installerUrl = assetBase + installerName;
 

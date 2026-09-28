@@ -192,7 +192,7 @@
     /* path.trust is not a tool the model calls — it is the station's FOLDER-TRUST ask, and because an ACP
        session sends its cwd as the project root it is very often the FIRST card a user ever sees here. Titling
        it "path.trust" made the most important first impression unreadable. */
-    if (n === 'path.trust' && path) return 'Allow StarNet to work in ' + short(path);
+    if (n === 'path.trust' && path) return 'Allow SpaceStation to work in ' + short(path);
     if (n === 'shell.exec' && args && args.cmd) return 'Run ' + short(args.cmd);
     if (n === 'shell.exec' && args && args.command) return 'Run ' + short(args.command);
     if (n === 'verify.run' && args && args.cmd) return 'Verify ' + short(args.cmd);
@@ -236,9 +236,9 @@
      Returned as a plain sentence appended as a final agent message chunk. */
   function endNote(reason) {
     const r = str(reason);
-    if (r === 'budget') return '\n\n(stopped: this run hit a spend cap — raise or clear it in StarNet under MISSION CONTROL → BUDGET.)';
+    if (r === 'budget') return '\n\n(stopped: this run hit a spend cap — raise or clear it in SpaceStation under MISSION CONTROL → BUDGET.)';
     if (r === 'max_iters') return '\n\n(stopped: reached the step limit for one turn — send "continue" to keep going.)';
-    if (r === 'error') return '\n\n(stopped: the run failed inside StarNet — check the station log for the error.)';
+    if (r === 'error') return '\n\n(stopped: the run failed inside SpaceStation — check the station log for the error.)';
     return '';
   }
 
@@ -300,7 +300,7 @@
       log('initialize from ' + clientName + ' (protocol v' + str(p.protocolVersion) + ')');
       return {
         protocolVersion: PROTOCOL_VERSION,
-        agentInfo: { name: AGENT_NAME, title: 'StarNet', version: version() },
+        agentInfo: { name: AGENT_NAME, title: 'SpaceStation', version: version() },
         agentCapabilities: {
           // loadSession: this process can replay a session it is still holding (see session/load — it is
           // honest about a sessionId from a PREVIOUS bridge process, which it cannot know about).
@@ -333,7 +333,7 @@
       // account-level and configured in the station, so we do not silently adopt them — and we say so once
       // rather than letting the user wonder why their editor's MCP tools are absent.
       if (Array.isArray(p.mcpServers) && p.mcpServers.length) {
-        log('ignoring ' + p.mcpServers.length + ' client-supplied MCP server(s): StarNet connectors are configured in the station');
+        log('ignoring ' + p.mcpServers.length + ' client-supplied MCP server(s): SpaceStation connectors are configured in the station');
       }
       return { sessionId: sessionId };
     }
@@ -382,7 +382,7 @@
       let text = turn.text;
       if (turn.images) {
         text += (text ? '\n\n' : '') + '[' + turn.images + ' image(s) were attached in the editor but could not be '
-          + 'forwarded: StarNet\'s ACP bridge does not carry image attachments yet. Say so if the answer depends on them.]';
+          + 'forwarded: SpaceStation\'s ACP bridge does not carry image attachments yet. Say so if the answer depends on them.]';
       }
       if (turn.unsupported.length) log('prompt contained unsupported block type(s): ' + turn.unsupported.join(', '));
 
@@ -441,7 +441,7 @@
 
         if (name === 'agent.run.error') {
           const msg = str(q.message);
-          if (msg) messageChunk(sessionId, '\n\n(StarNet run error: ' + msg + ')');
+          if (msg) messageChunk(sessionId, '\n\n(SpaceStation run error: ' + msg + ')');
           return;
         }
       };
@@ -501,7 +501,7 @@
         // A transport failure is not a protocol failure: the turn ends, and the user is told plainly.
         const msg = (e && e.message) || String(e);
         log('run failed: ' + msg);
-        messageChunk(sessionId, (answer ? '\n\n' : '') + '(StarNet could not complete this turn: ' + msg + ')');
+        messageChunk(sessionId, (answer ? '\n\n' : '') + '(SpaceStation could not complete this turn: ' + msg + ')');
         reason = 'error';
       } finally {
         s.run = null;

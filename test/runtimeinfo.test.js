@@ -19,8 +19,8 @@ const block = runtimeIdentityBlock({
 });
 
 A.ok(block.indexOf('[RUNTIME]') >= 0, 'block is clearly fenced');
-A.ok(block.indexOf('StarNet app version at run start: 0.9.0') >= 0, 'app version is exposed');
-A.ok(block.indexOf('StarNet harness build at run start: v0.9.0-4-gabc1234') >= 0, 'harness build is exposed');
+A.ok(block.indexOf('SpaceStation app version at run start: 0.9.0') >= 0, 'app version is exposed');
+A.ok(block.indexOf('SpaceStation harness build at run start: v0.9.0-4-gabc1234') >= 0, 'harness build is exposed');
 A.ok(block.indexOf('Provider: codex') >= 0, 'provider is exposed');
 A.ok(block.indexOf('Requested model at run start: gpt-5.3-codex') >= 0, 'requested model is exposed');
 A.ok(block.indexOf('Agent id: ultron') >= 0, 'agent id is exposed');

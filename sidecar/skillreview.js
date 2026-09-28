@@ -80,7 +80,7 @@
       ''
     ] : [];
     return [
-      'You are StarNet background skill review. Improve the agent skillbase after a completed run.',
+      'You are SpaceStation background skill review. Improve the agent skillbase after a completed run.',
       '',
       'Rules:',
       '- Be active: most substantial sessions should produce at least one skill update, but never invent a lesson.',

@@ -183,7 +183,7 @@
     { id: 'atlassian', name: 'Jira & Confluence', category: 'Productivity', authType: 'oauth', transport: 'http',
       url: '', official: true, homepage: 'https://atlassian.com', via: 'zapier',
       aliases: ['atlassian', 'jira', 'confluence'],
-      blurb: 'Atlassian Jira issues and Confluence pages. A newer direct OAuth endpoint is under verification; use the proven Zapier route until StarNet completes an authenticated tool call.' },
+      blurb: 'Atlassian Jira issues and Confluence pages. A newer direct OAuth endpoint is under verification; use the proven Zapier route until SpaceStation completes an authenticated tool call.' },
     /* apikey, NOT oauth: github.com/login/oauth exposes no RFC 7591 dynamic registration (live-probed
        2026-07-18 — discovery succeeds but registration_endpoint is absent), so our DCR sign-in flow can
        never complete against it. A PAT as `Authorization: Bearer` is the documented remote-server path. */

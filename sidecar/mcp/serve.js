@@ -202,6 +202,6 @@ process.stdin.on('data', chunk => {
 process.stdin.on('end', () => { process.exit(0); });
 process.stdin.on('close', () => { process.exit(0); });
 
-log('StarNet MCP bridge ready on stdio → proxying ' + BASE_LABEL + (cachedToken ? ' (token from env/flag)' : ' (token via page scrape)'));
+log('SpaceStation MCP bridge ready on stdio → proxying ' + BASE_LABEL + (cachedToken ? ' (token from env/flag)' : ' (token via page scrape)'));
 
 module.exports = { readConfig, _internals: { discoverToken, callSidecar, queue } };

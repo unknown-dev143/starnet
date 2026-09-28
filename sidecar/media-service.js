@@ -279,7 +279,7 @@ function makeMediaService(options) {
     try {
       response = await fetchFn('https://openrouter.ai/api/v1/audio/speech', voiceFetchOpts({
         method: 'POST',
-        headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://localhost', 'X-Title': 'STARNET' },
+        headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://localhost', 'X-Title': 'SPACESTATION' },
         body: JSON.stringify(payload)
       }, 60000));
     } catch (error) { return { ok: false, reason: 'network: ' + ((error && error.message) || error) }; }
@@ -536,7 +536,7 @@ function makeMediaService(options) {
         try {
           response = await fetchFn('https://openrouter.ai/api/v1/chat/completions', voiceFetchOpts({
             method: 'POST',
-            headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://localhost', 'X-Title': 'STARNET' },
+            headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://localhost', 'X-Title': 'SPACESTATION' },
             body: JSON.stringify({ model, messages: [{ role: 'user', content: [
               { type: 'input_audio', input_audio: { data: audio, format } }, { type: 'text', text: STT_PROMPT }
             ] }] })

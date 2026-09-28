@@ -200,4 +200,57 @@ const LEGACY = /StarNet|STARNET/;
   A.ok(files.length > 10, 'the website scan actually found the public pages');
 }
 
+/* ---------- 9. sidecar/*.js: no RENDERED legacy text (the SHIPPED backend) ----------
+   §2 only ever scanned frontend/app/. But the sidecar is the process that actually ships inside the
+   desktop bundle and serves the API, and it renders several user-visible strings of its own — the
+   ACP permission prompt a human approves, diagnostics/console copy, tool descriptions. Those were
+   left carrying the legacy brand by the Phase-2 rebrand (which never reached sidecar/ at all), so
+   the same rule must cover it. The only permitted uses are the 9 IDENTIFIERS below, none of which is
+   a product name:
+     · '----StarNetFormBoundary' / '----StarNetSTT' / '----StarNetPart'  multipart form boundaries
+                                                                         (wire constants)
+     · 'StarNet-Skill-Exchange/1'    the skill-exchange User-Agent
+     · 'StarNet skill package\0v1\0' the skill-package magic header (renaming it breaks packages)
+     · 'StarNet'                     legacy app-data / model-cache DIRECTORY names (read in place)
+   A bare 'StarNet' is permitted only because it is a directory name; any OTHER string carrying the
+   brand — a sentence, a label, a prompt — is an offender. */
+{
+  const dir = path.join(ROOT, 'sidecar');
+  const files = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p); }
+      else if (e.name.endsWith('.js')) files.push(p);
+    }
+  })(dir);
+  const IDENT = [
+    /^-{2,}StarNet/,              // multipart form boundaries
+    /^StarNet-Skill-Exchange\//,  // skill-exchange User-Agent
+    /^StarNet skill package/,     // skill-package magic header
+    /^StarNet$/,                  // legacy app-data / model-cache directory names
+  ];
+  const offenders = [];
+  for (const p of files) {
+    const code = stripComments(fs.readFileSync(p, 'utf8'));
+    const strings = code.match(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g) || [];
+    for (const s of strings) {
+      if (!LEGACY.test(s)) continue;
+      // identical allowlist to §2 so the two rules stay in lockstep (one lock, one concern)
+      if (/built on the earlier|back-compat|previously called|renamed/.test(s)) continue;
+      if (/not a StarNet agent|earlier StarNet harness|Skynet/.test(s)) continue;
+      if (/__STARNET|STARNET_|SKYNET_|starnet[._-]/.test(s)) continue;
+      if (/StarNet-Token|Skynet-Token|starnet-token|skynet-token/.test(s)) continue;
+      if (/^X-|^x-/.test(s)) continue;
+      // the matched literal carries its quotes; test the IDENT patterns against the CONTENT
+      const lit = s.slice(1, -1);
+      if (IDENT.some((re) => re.test(lit))) continue;
+      offenders.push(path.relative(ROOT, p) + ': ' + s.slice(0, 80));
+    }
+  }
+  A.eq(offenders.length, 0, 'no sidecar module renders the legacy brand as visible text');
+  if (offenders.length) console.log('  offenders:\n   ' + offenders.join('\n   '));
+  A.ok(files.length > 200, 'the sidecar scan actually found the modules');
+}
+
 A.report('brand-identity');

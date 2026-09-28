@@ -77,7 +77,7 @@ eq(bigChain.sections.fallback.models.length, 8, 'the fallback chain is capped at
 // ---- forward-tolerance: unknown sections dropped (noted), newer schema accepted with a note ----
 const fwd = C.parseImport({ starnetExport: 99, sections: { budget: { perRun: 1 }, futureThing: { x: 1 } } });
 ok(fwd.ok, 'a newer-schema file still imports what we understand');
-ok(fwd.notes.some(x => /newer StarNet/.test(x)), 'a newer schema is noted');
+ok(fwd.notes.some(x => /newer SpaceStation/.test(x)), 'a newer schema is noted');
 ok(fwd.notes.some(x => /futureThing/.test(x)), 'an unknown section is noted, not fatal');
 eq(fwd.sections.futureThing, undefined, 'the unknown section is not applied');
 eq(fwd.sections.budget.perRun, 1, 'the known section still applies alongside the unknown one');

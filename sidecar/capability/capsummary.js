@@ -77,7 +77,7 @@ function summarizeCapabilities(resolved, opts) {
 
   let note = '\n<capabilities_ground_truth>\n' +
     (unrestrictedHost
-      ? 'FULL POWER is active: the Commander authorized the whole local computer. StarNet policy must not refuse a host task; only report real unavailable OS, hardware, credential, account, or service prerequisites. '
+      ? 'FULL POWER is active: the Commander authorized the whole local computer. SpaceStation policy must not refuse a host task; only report real unavailable OS, hardware, credential, account, or service prerequisites. '
       : 'These are your REAL powers this run, decided by the objects placed on your station floor and host-granted station roles -- not aspirational. ') +
     'This block is AUTHORITATIVE: if anything earlier in your instructions implies you always have web or file access, ignore it -- what follows is what you ACTUALLY have right now:\n' +
     '- You CAN: ' + haveStr + '.\n';
@@ -95,7 +95,7 @@ function summarizeCapabilities(resolved, opts) {
         lackCore.map((c) => c.have + ' -> place ' + c.object).join('; ') + '. ' +
         'You can always think and reply; that needs nothing.\n';
     } else if (ownerTrusted) {
-      note += 'This is an authenticated owner Telegram session: it has the same non-physical authority as the StarNet desktop app. ' +
+      note += 'This is an authenticated owner Telegram session: it has the same non-physical authority as the SpaceStation desktop app. ' +
         'Do NOT claim, promise, or pretend to do what is genuinely absent; state the actual missing setup or tool plainly.\n';
     } else {
       // GRANT-AWARE (2026-07-25): a routine can now be granted the terminal and/or its Commander's MCP

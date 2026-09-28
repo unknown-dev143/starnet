@@ -351,7 +351,7 @@ function makeOpenAiCompat(deps) {
         health: '/health'
       },
       streaming: true,
-      session_continuity_header: 'X-StarNet-Session-Id',
+      session_continuity_header: 'X-SpaceStation-Session-Id',
       surface: 'autonomous',
       max_concurrent_runs: maxConcurrent(),
       // deliberate follow-ups NOT in this slice (see docs/OPENAI_COMPAT.md):
@@ -379,7 +379,7 @@ function makeOpenAiCompat(deps) {
     const provider = target.provider || 'openrouter';
     // conversation for runOnce = prior turns (history) + the new user directive last (system passed separately).
     const messages = parsed.history.map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: parsed.lastUser }]);
-    const system = parsed.system || 'You are the Commander\'s StarNet agent, reached over an OpenAI-compatible API. Use your REAL tools when given a task and report what you actually did.';
+    const system = parsed.system || 'You are the Commander\'s SpaceStation agent, reached over an OpenAI-compatible API. Use your REAL tools when given a task and report what you actually did.';
 
     const id = 'chatcmpl-' + String(newId()).replace(/-/g, '').slice(0, 24);
     const created = Math.floor(now() / 1000);
@@ -421,7 +421,7 @@ function makeOpenAiCompat(deps) {
     }
     const finishReason = finishReasonFor(acc.reason, !!acc.buf);
     const usage = { prompt_tokens: acc.tokensIn, completion_tokens: acc.tokensOut, total_tokens: acc.tokensIn + acc.tokensOut };
-    return json(res, 200, chatCompletionObject({ id, model: modelField, created, content: acc.buf, finishReason, usage }), { 'X-StarNet-Session-Id': sessionId });
+    return json(res, 200, chatCompletionObject({ id, model: modelField, created, content: acc.buf, finishReason, usage }), { 'X-SpaceStation-Session-Id': sessionId });
   }
 
   // ---- /v1/runs lifecycle store helpers ---------------------------------------------------------------------
@@ -480,7 +480,7 @@ function makeOpenAiCompat(deps) {
     const runModel = target.matched ? (target.model || defaultModel()) : defaultModel();
     const provider = target.provider || 'openrouter';
     const messages = history.map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: lastUser }]);
-    const sys = system || 'You are the Commander\'s StarNet agent, reached over an OpenAI-compatible API. Use your REAL tools when given a task and report what you actually did.';
+    const sys = system || 'You are the Commander\'s SpaceStation agent, reached over an OpenAI-compatible API. Use your REAL tools when given a task and report what you actually did.';
 
     const ac = new AbortController();
     sweepRuns();

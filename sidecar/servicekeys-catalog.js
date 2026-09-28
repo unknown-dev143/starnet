@@ -69,8 +69,8 @@
       docsUrl: 'https://developers.etsy.com/documentation/', apiBase: 'https://openapi.etsy.com/v3',
       blurb: 'Public/manual API work only — persistent shop automation is not connected.',
       unattendedSupported: false,
-      unattendedReason: 'StarNet does not yet manage Etsy OAuth consent or refresh its one-hour access tokens.',
-      note: 'MANUAL OAUTH ONLY: Etsy private/write endpoints need OAuth 2.0; access tokens expire after one hour. StarNet does not refresh them yet, so this key cannot be enabled for scheduled, messaged, or Night Shift runs.' },
+      unattendedReason: 'SpaceStation does not yet manage Etsy OAuth consent or refresh its one-hour access tokens.',
+      note: 'MANUAL OAUTH ONLY: Etsy private/write endpoints need OAuth 2.0; access tokens expire after one hour. SpaceStation does not refresh them yet, so this key cannot be enabled for scheduled, messaged, or Night Shift runs.' },
 
     // ── Payments ──
     { id: 'stripe', name: 'Stripe', category: 'Payments', envVar: 'STRIPE_API_KEY',
@@ -119,7 +119,7 @@
     { id: 'jina', name: 'Jina', category: 'Developer Tools', envVar: 'JINA_API_KEY',
       docsUrl: 'https://jina.ai/reader/', apiBase: 'https://r.jina.ai',
       blurb: 'Cleaner page-text extraction for web_fetch — pages come back as readable text instead of raw HTML.',
-      note: 'Optional. StarNet uses this automatically for web_fetch when connected; without it pages still load, just with cruder text extraction. Jina\'s keyless tier no longer works.' },
+      note: 'Optional. SpaceStation uses this automatically for web_fetch when connected; without it pages still load, just with cruder text extraction. Jina\'s keyless tier no longer works.' },
 
     { id: 'github', name: 'GitHub', category: 'Developer Tools', envVar: 'GITHUB_API_KEY',
       docsUrl: 'https://docs.github.com/rest', apiBase: 'https://api.github.com',

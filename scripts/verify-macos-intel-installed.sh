@@ -3,7 +3,7 @@
 # then prove a v0.9.0 manual-sidecar station is recovered into the desktop shelf and survives restart.
 set -euo pipefail
 
-dmg=${1:?usage: verify-macos-intel-installed.sh <StarNet_x64.dmg> [receipt.json]}
+dmg=${1:?usage: verify-macos-intel-installed.sh <SpaceStation_x64.dmg> [receipt.json]}
 receipt=${2:-intel-macos-installed-acceptance.json}
 require_notarized=${STARNET_REQUIRE_NOTARIZED:-true}
 fixture_root=${STARNET_V090_FIXTURE_ROOT:-test/fixtures/upgrade/v090-intel-mac}
@@ -22,7 +22,7 @@ legacy="$HOME/.local/share/StarNet/workspaces"
 desktop="$HOME/Library/Application Support/ai.skynet.harness/workspaces"
 app_data="$HOME/Library/Application Support/ai.skynet.harness"
 startup_log="$app_data/startup.log"
-installed="/Applications/StarNet.app"
+installed="/Applications/SpaceStation.app"
 mount_point="$RUNNER_TEMP/starnet-intel-dmg"
 trust_log="$RUNNER_TEMP/starnet-intel-spctl.txt"
 source_hash_before=""
@@ -41,7 +41,7 @@ source_hash_before=$(shasum -a 256 "$legacy/agent.save.json" | awk '{print $1}')
 mounted=false
 cleanup() {
   if pgrep -f "$installed/Contents/MacOS/skynet-desktop" >/dev/null 2>&1; then
-    osascript -e 'tell application "StarNet" to quit' >/dev/null 2>&1 || true
+    osascript -e 'tell application "SpaceStation" to quit' >/dev/null 2>&1 || true
     sleep 2
   fi
   if [ "$mounted" = true ]; then hdiutil detach "$mount_point" >/dev/null 2>&1 || true; fi
@@ -50,12 +50,12 @@ trap cleanup EXIT
 
 hdiutil attach "$dmg" -mountpoint "$mount_point" -nobrowse -readonly >/dev/null
 mounted=true
-source_app=$(find "$mount_point" -maxdepth 2 -type d -name 'StarNet.app' -print -quit)
-[ -n "${source_app:-}" ] || fail "Intel DMG contains no StarNet.app"
+source_app=$(find "$mount_point" -maxdepth 2 -type d -name 'SpaceStation.app' -print -quit)
+[ -n "${source_app:-}" ] || fail "Intel DMG contains no SpaceStation.app"
 
 sudo ditto "$source_app" "$installed"
 exe="$installed/Contents/MacOS/skynet-desktop"
-[ -x "$exe" ] || fail "installed StarNet executable is missing"
+[ -x "$exe" ] || fail "installed SpaceStation executable is missing"
 file "$exe" | grep -q 'x86_64' || fail "installed executable is not x86_64"
 codesign --verify --deep --strict --verbose=2 "$installed"
 
@@ -96,12 +96,12 @@ APPLESCRIPT
 }
 
 quit_cleanly() {
-  osascript -e 'tell application "StarNet" to quit'
+  osascript -e 'tell application "SpaceStation" to quit'
   for _ in $(seq 1 80); do
     if ! pgrep -f "$exe" >/dev/null 2>&1; then return 0; fi
     sleep 0.25
   done
-  fail "StarNet did not exit after the normal application Quit event"
+  fail "SpaceStation did not exit after the normal application Quit event"
 }
 
 launch_with_finder

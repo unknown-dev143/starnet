@@ -41,7 +41,7 @@
     "$owner.TopMost = $true; $owner.ShowInTaskbar = $false;",
     "$owner.StartPosition = 'CenterScreen'; $owner.Size = New-Object System.Drawing.Size(0,0);",
     "$dlg = New-Object System.Windows.Forms.FolderBrowserDialog;",
-    "$dlg.Description = 'Choose a project folder for StarNet';",
+    "$dlg.Description = 'Choose a project folder for SpaceStation';",
     "$dlg.ShowNewFolderButton = $true;",
     "if ($dlg.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Out.Write($dlg.SelectedPath) }"
   ].join(' ');
@@ -57,7 +57,7 @@
     "$owner.TopMost = $true; $owner.ShowInTaskbar = $false;",
     "$owner.StartPosition = 'CenterScreen'; $owner.Size = New-Object System.Drawing.Size(0,0);",
     "$dlg = New-Object System.Windows.Forms.OpenFileDialog;",
-    "$dlg.Title = 'Choose a file for StarNet';",
+    "$dlg.Title = 'Choose a file for SpaceStation';",
     "$dlg.Multiselect = $false; $dlg.CheckFileExists = $true;",
     "if ($dlg.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Out.Write($dlg.FileName) }"
   ].join(' ');
@@ -72,14 +72,14 @@
     if (platform === 'darwin') {
       // `choose folder` / `choose file` return the POSIX path on stdout; user cancel exits non-zero with -128 on stderr.
       return { cmd: 'osascript', args: ['-e', file
-        ? 'POSIX path of (choose file with prompt "Choose a file for StarNet")'
-        : 'POSIX path of (choose folder with prompt "Choose a project folder for StarNet")'] };
+        ? 'POSIX path of (choose file with prompt "Choose a file for SpaceStation")'
+        : 'POSIX path of (choose folder with prompt "Choose a project folder for SpaceStation")'] };
     }
     if (platform === 'linux') {
       // zenity is the least-bad common denominator; cancel exits 1 with empty stdout.
       return file
-        ? { cmd: 'zenity', args: ['--file-selection', '--title=Choose a file for StarNet'] }
-        : { cmd: 'zenity', args: ['--file-selection', '--directory', '--title=Choose a project folder for StarNet'] };
+        ? { cmd: 'zenity', args: ['--file-selection', '--title=Choose a file for SpaceStation'] }
+        : { cmd: 'zenity', args: ['--file-selection', '--directory', '--title=Choose a project folder for SpaceStation'] };
     }
     return null;
   }

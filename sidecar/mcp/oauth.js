@@ -200,7 +200,7 @@
     const requestedAuthMethod = ['none', 'client_secret_post', 'client_secret_basic'].indexOf(String(opts.tokenEndpointAuthMethod || '')) >= 0
       ? String(opts.tokenEndpointAuthMethod) : 'none';
     const body = {
-      client_name: opts.clientName || 'StarNet',
+      client_name: opts.clientName || 'SpaceStation',
       redirect_uris: [opts.redirectUri],
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],

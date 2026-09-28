@@ -437,7 +437,7 @@ async function waitUntil(fn, ms, label) {
     await waitUntil(() => tg.sends.some(s => String(s.chat_id) === '7778'), 8000, '/start reply');
     const startReply = rendered((tg.sends.find(s => String(s.chat_id) === '7778') || {}).text);
     A.eq(llm.requests.length, llmBeforeStart, '/start is answered by the hub without spending a model turn');
-    A.ok(/STARNET online/.test(startReply), '/start greets the newcomer instead of answering "/start" as a question');
+    A.ok(/SPACESTATION online/.test(startReply), '/start greets the newcomer instead of answering "/start" as a question');
     A.ok(/\/help/.test(startReply), '/start tells a first-time member what they can actually say');
 
     /* ---- /approvals ON must not COST the agent its office --------------------------------------------------

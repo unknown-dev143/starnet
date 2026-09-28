@@ -233,7 +233,7 @@
 
     const listTool = {
       name: 'routine.list', capability: 'orchestrator', scope: 'read', requiresConsent: false,
-      description: 'List StarNet ROUTINES scheduled jobs. Use this to check existing routines before creating another one.',
+      description: 'List SpaceStation ROUTINES scheduled jobs. Use this to check existing routines before creating another one.',
       schema: { type: 'object', properties: { agentId: { type: 'string' } } },
       run: async (args) => {
         const agentId = clean(args && args.agentId, 80);
@@ -251,7 +251,7 @@
          to a shell, and the check-first rule. Dropped: the agentId auto-routing and `arm` default, both of
          which the schema below already states at the point of use, and the explanation that the server
          rejects a duplicate name — it says so itself, at call time, more precisely than a remembered note. */
-      description: 'Create a StarNet ROUTINES scheduled job in the built-in harness scheduler. Use this whenever the Commander asks for a cron, routine, recurring task, reminder, standing job, or scheduled research — never shell.exec, crontab, Windows Task Scheduler, or any OS scheduler. Check routine.list first and do not re-create a routine that already exists.',
+      description: 'Create a SpaceStation ROUTINES scheduled job in the built-in harness scheduler. Use this whenever the Commander asks for a cron, routine, recurring task, reminder, standing job, or scheduled research — never shell.exec, crontab, Windows Task Scheduler, or any OS scheduler. Check routine.list first and do not re-create a routine that already exists.',
       schema: {
         type: 'object',
         required: ['prompt', 'schedule'],
@@ -372,7 +372,7 @@
        reference harness's trigger_job does. It reports the armed time, never "it ran". */
     const manageTool = {
       name: 'routine.manage', capability: 'orchestrator', scope: 'write', requiresConsent: true, timeoutMs: 15000,
-      description: 'Edit, pause, resume, delete, or queue an immediate fire of an existing StarNet ROUTINES job. Call routine.list first to see what exists; reference a routine by its exact id, or by name when that name is unambiguous.',
+      description: 'Edit, pause, resume, delete, or queue an immediate fire of an existing SpaceStation ROUTINES job. Call routine.list first to see what exists; reference a routine by its exact id, or by name when that name is unambiguous.',
       schema: {
         type: 'object',
         required: ['action'],

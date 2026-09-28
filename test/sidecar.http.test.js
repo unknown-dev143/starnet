@@ -218,7 +218,7 @@ function boot(port, workspaces, attemptsLeft, extraEnv) {
     const desktopDiagResponse = await fetch(B + '/api/diagnostics', { headers: Object.assign({ Origin: tauriOrigin }, tok) });
     const desktopDiag = await desktopDiagResponse.json();
     A.eq(desktopDiag.report.mode, 'desktop', 'http://tauri.localhost is classified as the packaged desktop origin');
-    A.ok(/StarNet diagnostics/.test(diag.body.text), 'the block is clearly fenced');
+    A.ok(/SpaceStation diagnostics/.test(diag.body.text), 'the block is clearly fenced');
     A.ok(/no keys, tokens, or message content/.test(diag.body.text), 'the block states it carries no secrets');
     A.eq(typeof diag.body.report.keyPresent, 'boolean', 'keyPresent is a boolean, never the key itself');
     // the pre-seeded discord channel carries a fake OpenRouter key (sk-or-v1-fake-discord) + a bot token — NEITHER

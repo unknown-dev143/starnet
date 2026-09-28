@@ -180,7 +180,7 @@
       if (!apiKey) throw new Error('STUDIO image generation is unavailable: no OpenRouter API key is connected. Open SETTINGS > PROVIDERS and connect OpenRouter, then retry; no image was produced.');
       const res = await withTimeout(signal => doFetch(orUrl, {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://starnet.local', 'X-Title': 'STARNET' },
+        headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://starnet.local', 'X-Title': 'SPACESTATION' },
         body: JSON.stringify(body),
         signal
       }).then(async r => ({ status: r.status, json: await r.json().catch(() => null), text: null })), timeoutMs);

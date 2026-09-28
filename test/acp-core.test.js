@@ -248,12 +248,12 @@ function harness(opts) {
 
   /* ---- 9. a broken run still ENDS the turn ----------------------------------------------------- */
   {
-    const h = harness({ runThrows: 'StarNet is not running' });
+    const h = harness({ runThrows: 'SpaceStation is not running' });
     const sid = await h.open();
     const r = await h.core.handleRpc(rpc(3, 'session/prompt', { sessionId: sid, prompt: [{ type: 'text', text: 'go' }] }));
     A.eq(r.result.stopReason, 'end_turn', 'a transport failure still resolves the prompt (a never-resolving turn hangs the editor)');
     A.ok(/could not complete this turn/.test(h.text()), 'and the user is told, in the transcript');
-    A.ok(/StarNet is not running/.test(h.text()), 'with the real reason');
+    A.ok(/SpaceStation is not running/.test(h.text()), 'with the real reason');
   }
 
   /* ---- 10. one turn at a time; cancel reaches the run ----------------------------------------- */
@@ -425,7 +425,7 @@ function harness(opts) {
     /* The FOLDER-TRUST ask is not a model tool call — it is the station's "work in <root>?" gate, and because an
        ACP session sends its cwd as the project root it is very often the FIRST card a user ever sees. It read
        "path.trust" before this. */
-    A.eq(I.titleOf('path.trust', I.permArgs('C:/proj/thing')), 'Allow StarNet to work in C:/proj/thing',
+    A.eq(I.titleOf('path.trust', I.permArgs('C:/proj/thing')), 'Allow SpaceStation to work in C:/proj/thing',
       'the folder-trust card reads as a sentence, not as a tool id');
     A.eq(I.locationsOf(I.permArgs('C:/proj/thing'))[0].path, 'C:/proj/thing', 'and a Windows path still resolves as a location');
   }

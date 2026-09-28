@@ -123,7 +123,7 @@
     return {
       starnetExport: SCHEMA,
       exportedAt: (typeof o.now === 'number') ? o.now : null,
-      app: clampStr(o.app || 'StarNet', 40),
+      app: clampStr(o.app || 'SpaceStation', 40),
       sections
     };
   }
@@ -137,7 +137,7 @@
     const schema = env.starnetExport;
     if (typeof schema !== 'number' || schema < 1) return { ok: false, error: 'missing or invalid "starnetExport" version marker' };
     const notes = [];
-    if (schema > SCHEMA) notes.push('file is from a newer StarNet (schema ' + schema + '); importing what this build understands');
+    if (schema > SCHEMA) notes.push('file is from a newer SpaceStation (schema ' + schema + '); importing what this build understands');
     const inSec = isObj(env.sections) ? env.sections : {};
     const out = {};
     const secretsNeeded = [];

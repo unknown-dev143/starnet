@@ -286,7 +286,7 @@ function makeLspManager(deps) {
         });
         const init = await this.request('initialize', {
           processId: process.pid,
-          clientInfo: { name: 'StarNet', version: '1' },
+          clientInfo: { name: 'SpaceStation', version: '1' },
           rootUri: pathToFileURL(this.projectRoot).href,
           capabilities: {
             workspace: { workspaceFolders: true, configuration: true },

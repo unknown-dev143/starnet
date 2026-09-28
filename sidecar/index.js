@@ -463,7 +463,7 @@ function defaultWorkspaces() {
   // still pointed at an earlier name keeps sharing the same data (no split-brain). Fresh installs land
   // under \SpaceStation\.
   const spacestationDir = path.join(base, 'SpaceStation', 'workspaces');
-  const starnetDir = path.join(base, 'StarNet', 'workspaces');   // mid-generation location — read in place, never renamed
+  const starnetDir = path.join(base, 'SpaceStation', 'workspaces');   // mid-generation location — read in place, never renamed
   const skynetDir = path.join(base, 'Skynet', 'workspaces');     // original legacy location — read in place, never renamed
   try {
     if (!fs.existsSync(spacestationDir)) {
@@ -763,7 +763,7 @@ const NIGHTSHIFT_AGENT = String(ENV('NIGHTSHIFT_AGENT') || 'agent').trim() || 'a
 // ≈8-min single-run worst-case bound; env-tunable. Per-worker spend is still capped by ORCH_PER_WORKER.
 const ORCH_DISPATCH_TIMEOUT_MS = num(ENV('DISPATCH_TIMEOUT_MS'), CRON_MAX_RUN_MS);
 const CRON_DEFAULT_MODEL = String(ENV('DEFAULT_MODEL') || '').trim();
-const CRON_PERSONA = 'You are an autonomous STARNET station agent running a SCHEDULED routine — no human is watching. '
+const CRON_PERSONA = 'You are an autonomous SPACESTATION station agent running a SCHEDULED routine — no human is watching. '
   + 'Carry out the task with your REAL tools (web search/read, files, memory); ground every factual claim in what the '
   + 'tools actually return and cite sources; save any durable deliverable to your workspace with fs_write. Be concise. '
   + 'If there is genuinely nothing new or noteworthy to report this run, reply with EXACTLY "[SILENT]" and nothing else.';
@@ -1562,9 +1562,9 @@ function initWorkspaceSchemaStamp() {
     if (Number.isFinite(stamped) && stamped > WORKSPACE_SCHEMA_VERSION) {
       // A NEWER StarNet wrote this workspace. Refuse to clobber versioned stores; log LOUDLY so this is never silent.
       workspaceDegraded = true;
-      console.error('[schema] WORKSPACE WRITTEN BY A NEWER STARNET: on-disk schemaVersion=' + stamped +
+      console.error('[schema] WORKSPACE WRITTEN BY A NEWER SPACESTATION: on-disk schemaVersion=' + stamped +
         ' > this sidecar understands ' + WORKSPACE_SCHEMA_VERSION + '. Entering DEGRADED mode — reads/runs continue, ' +
-        'but roster/save WRITES are refused to avoid corrupting newer data. Update this StarNet to the latest build.');
+        'but roster/save WRITES are refused to avoid corrupting newer data. Update this SpaceStation to the latest build.');
       return;
     }
     // Same or older stamp: safe to keep using. (A future migration would re-stamp UP here after upgrading stores.)
@@ -2783,7 +2783,7 @@ async function runBackgroundSkillReview(o) {
     });
     result = await runAgentLoop({
       messages: [
-        { role: 'system', content: 'You are a quiet StarNet skillbase maintenance worker. Use only skill tools, then stop.' },
+        { role: 'system', content: 'You are a quiet SpaceStation skillbase maintenance worker. Use only skill tools, then stop.' },
         { role: 'user', content: prompt }
       ],
       provider, emit: () => {}, cost, tools: toolDefs, dispatch, capCtx,
@@ -2839,7 +2839,7 @@ async function runSkillCurator(o) {
     const dispatch = async (c, ctx) => { if (fromWire.has(c.name)) c = Object.assign({}, c, { name: fromWire.get(c.name) }); return registry.dispatch(c, ctx); };
     result = await runAgentLoop({
       messages: [
-        { role: 'system', content: 'You are a quiet StarNet skill curator. Use only skill tools, then stop.' },
+        { role: 'system', content: 'You are a quiet SpaceStation skill curator. Use only skill tools, then stop.' },
         { role: 'user', content: skillCurator.buildPrompt({ skills: all }) }
       ],
       provider, emit: () => {}, cost, tools: toolDefs, dispatch, capCtx,
@@ -4006,7 +4006,7 @@ function hardlineFloor(call) {
    which flips THAT chat to surface:'interactive' and answers the prompt over an inline keyboard (C6; the
    pause/resolve stays here in channelAskConsent/channelResolveConsent, the hub only renders and routes the
    tap). Opt-in: nothing starts unless the Commander connects (or env is set). */
-const TELEGRAM_PERSONA = 'You are the Commander\'s AI agent aboard the STARNET station, reachable over Telegram. '
+const TELEGRAM_PERSONA = 'You are the Commander\'s AI agent aboard the SPACESTATION station, reachable over Telegram. '
   + 'Address the user as "Commander", keep a spark of personality, and keep replies concise and chat-friendly. '
   + 'When the Commander gives you a task you have REAL tools (web search/read, files, memory) — use them and '
   + 'report what you actually found; never claim you cannot act.';
@@ -7271,7 +7271,7 @@ async function runLoopCheck(loop, before) {
    The identity is passed with -c so a machine with no global git identity can still run a loop. Nothing here
    ever pushes. ====================================================================================== */
 
-const LOOP_GIT_ID = ['-c', 'user.name=StarNet Loop', '-c', 'user.email=loop@starnet.local'];
+const LOOP_GIT_ID = ['-c', 'user.name=SpaceStation Loop', '-c', 'user.email=loop@starnet.local'];
 
 async function loopIsRepo(root) {
   const r = await runGit(root, ['rev-parse', '--is-inside-work-tree'], 15000);
@@ -8785,7 +8785,7 @@ function stopAllTelegramBots() { for (const id of [...telegramBots.keys()]) stop
 // H6.2: Discord — the adapter shipped fully-tested but the host never started it. Wire it the SAME way as
 // Telegram, but through the generic channelRegistry/wireChannel so there is one inbound->runOnce path. The live
 // gateway connects over a real WebSocket from the bot token (transport default); everything else is the shared hub.
-const DISCORD_PERSONA = 'You are the Commander\'s AI agent aboard the StarNet station, reachable over Discord. '
+const DISCORD_PERSONA = 'You are the Commander\'s AI agent aboard the SpaceStation station, reachable over Discord. '
   + 'Address the user as "Commander", keep a spark of personality, and keep replies concise and chat-friendly. '
   + 'When the Commander gives you a task you have REAL tools (web search/read, files, memory) — use them and '
   + 'report what you actually found; never claim you cannot act.';
@@ -9023,7 +9023,7 @@ async function handleDevInbound(req, res) {
    ids, signal gets the signal-cli REST endpoint+account. Adding channel N+1 stays a registry row, not a fork. ---- */
 const GENERIC_CHANNEL_IDS = ['slack', 'matrix', 'signal'];
 function channelPersona(label) {
-  return 'You are the Commander\'s AI agent aboard the STARNET station, reachable over ' + label + '. '
+  return 'You are the Commander\'s AI agent aboard the SPACESTATION station, reachable over ' + label + '. '
     + 'Address the user as "Commander", keep a spark of personality, and keep replies concise and chat-friendly. '
     + 'When the Commander gives you a task you have REAL tools (web search/read, files, memory) — use them and '
     + 'report what you actually found; never claim you cannot act.';
@@ -9131,7 +9131,7 @@ const openaiCompat = makeOpenAiCompat({
     const ticket = updatePreparation
       ? updatePreparation.beginRequest('POST', '/v1/chat/completions')
       : { ok: true, release: function () {} };
-    if (!ticket.ok) throw Object.assign(new Error('StarNet is frozen at a verified pre-update recovery point.'), { code: ticket.code });
+    if (!ticket.ok) throw Object.assign(new Error('SpaceStation is frozen at a verified pre-update recovery point.'), { code: ticket.code });
     try { return await runOnce(opts); } finally { ticket.release(); }
   },
   apiKey: () => String(ENV('API_KEY') || ENV('V1_KEY') || '').trim(),   // env STARNET_API_KEY / STARNET_V1_KEY (SKYNET_* alias too)
@@ -9182,7 +9182,7 @@ const server = http.createServer((req, res) => {
   if (!mutationTicket.ok) {
     res.writeHead(423, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     return res.end(JSON.stringify({ ok: false, frozen: true, code: mutationTicket.code,
-      error: 'StarNet is frozen at a verified pre-update recovery point.' }));
+      error: 'SpaceStation is frozen at a verified pre-update recovery point.' }));
   }
   // Central async-route guard: EVERY handler below is dispatched through Promise.resolve(...).catch so a throw
   // AFTER the body is parsed (a store error, a bad-await) can never leave the socket hanging forever. A sync
@@ -10110,7 +10110,7 @@ function handleRoutingSampleStatus(_req, res) {
    additionalProperties:false — re-proven by validate() in test/routing.sample.e2e.test.js). ---- */
 const SAMPLE_CHAT = 'sample';
 const SAMPLE_TEXT = 'SAMPLE JOB: summarize what this work line does, in three sentences.';
-const SAMPLE_PERSONA = 'You are an agent aboard the STARNET station. This is a clearly-labeled SAMPLE JOB — a small test '
+const SAMPLE_PERSONA = 'You are an agent aboard the SPACESTATION station. This is a clearly-labeled SAMPLE JOB — a small test '
   + 'crate the Commander sent through the work line to prove it runs end to end. Do the small task directly and '
   + 'report the result clearly, in a few sentences.';
 let sampleHub = null;        // lazy singleton, one per station — mirrors getDevHub
@@ -10606,7 +10606,7 @@ async function handleConfigExport(req, res) {
   const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
   let body; try { body = JSON.parse(await readBody(req, 1 << 20)) || {}; } catch (e) { return json(400, { error: 'bad json' }); }
   const snap = collectExportSnapshot(body.sections);
-  const env = configExport.buildExport(snap, { now: Date.now(), app: 'StarNet', only: Array.isArray(body.only) ? body.only : null });
+  const env = configExport.buildExport(snap, { now: Date.now(), app: 'SpaceStation', only: Array.isArray(body.only) ? body.only : null });
   return json(200, env);
 }
 
@@ -11248,7 +11248,7 @@ async function handleConnectorOauthStart(req, res) {
     let www = '';
     try {
       const pr = await mcpOauth.withDeadline(net, signal => globalThis.fetch(entry.url, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'StarNet', version: '1' } } }) }), 'connector authorization probe');
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'SpaceStation', version: '1' } } }) }), 'connector authorization probe');
       www = (pr.headers && pr.headers.get && pr.headers.get('www-authenticate')) || '';
     } catch (_) {}
     const disc = await mcpOauth.discover({ fetchImpl: globalThis.fetch, serverUrl: entry.url, wwwAuthenticate: www, signal: controller.signal, timeoutMs: CONNECTOR_OAUTH_LEG_MS, deadlineAt, now: net.now });
@@ -11263,7 +11263,7 @@ async function handleConnectorOauthStart(req, res) {
     if (!clientId || tokenEndpointAuthMethod !== requiredAuthMethod || (requiredAuthMethod !== 'none' && !clientSecret)) {
       if (!disc.registrationEndpoint) return json(502, { error: 'this server needs a pre-registered OAuth client (no dynamic registration)' });
       const reg = await mcpOauth.registerClient({ fetchImpl: globalThis.fetch, registrationEndpoint: disc.registrationEndpoint,
-        redirectUri: CONNECTOR_OAUTH_REDIRECT, clientName: 'StarNet', tokenEndpointAuthMethod: requiredAuthMethod,
+        redirectUri: CONNECTOR_OAUTH_REDIRECT, clientName: 'SpaceStation', tokenEndpointAuthMethod: requiredAuthMethod,
         signal: controller.signal, timeoutMs: CONNECTOR_OAUTH_LEG_MS, deadlineAt, now: net.now });
       clientId = reg.clientId;
       clientSecret = reg.clientSecret;
@@ -11387,7 +11387,7 @@ function spotifyHtml(res, code, title, body) {
   res.end('<!doctype html><meta charset=utf-8><title>' + spotifyEsc(title) + '</title>' +
     '<body style="font:16px/1.5 system-ui,sans-serif;background:#0b0f14;color:#bfe8d4;display:grid;place-items:center;height:90vh;text-align:center">' +
     '<div><h2 style="margin:.2em 0">' + spotifyEsc(title) + '</h2><p>' + spotifyEsc(body) + '</p>' +
-    '<p style="opacity:.55;font-size:.9em">You can close this window and return to StarNet.</p></div>');
+    '<p style="opacity:.55;font-size:.9em">You can close this window and return to SpaceStation.</p></div>');
 }
 
 async function handleSpotifyStart(req, res) {
@@ -11418,7 +11418,7 @@ async function handleSpotifyCallback(req, res) {
   const state = u.searchParams.get('state') || '';
   const pending = spotifyPending.get(state);
   spotifyPending.delete(state);
-  if (!code || !pending) return spotifyHtml(res, 400, 'Link expired', 'That sign-in link is no longer valid — start again from StarNet Settings.');
+  if (!code || !pending) return spotifyHtml(res, 400, 'Link expired', 'That sign-in link is no longer valid — start again from SpaceStation Settings.');
   try {
     const r = await globalThis.fetch(spotifyPkce.TOKEN_URL, {
       method: 'POST',
@@ -13202,7 +13202,7 @@ async function applyNightPatch(agentId, runId, relDir, target, title) {
     return { ok: false, error: 'the patch failed to apply after branching (rolled back, no change kept):\n' + String(ap.stderr).slice(0, 400), branch };
   }
   await runGit(root, ['add', '-A']);
-  const commit = await runGit(root, ['-c', 'user.name=StarNet Night Shift', '-c', 'user.email=nightshift@starnet.local', 'commit', '-m', 'night-shift: ' + String(title || 'patch').slice(0, 80)]);
+  const commit = await runGit(root, ['-c', 'user.name=SpaceStation Night Shift', '-c', 'user.email=nightshift@starnet.local', 'commit', '-m', 'night-shift: ' + String(title || 'patch').slice(0, 80)]);
   if (!commit.ok) return { ok: false, error: 'applied the patch but could not commit it:\n' + String(commit.stderr).slice(0, 300), branch };
   const head = await runGit(root, ['rev-parse', '--short', 'HEAD']);
   return { ok: true, branch, commit: head.stdout.trim(), root, prevBranch: curBranch };
@@ -13218,7 +13218,7 @@ function workshopDefaultDest(man, runId) {
   try { if (!fs.existsSync(base)) base = home; } catch (_) { base = home; }
   const slug = String((man && man.title) || 'deliverable').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'deliverable';
   const runTag = String(runId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 8) || 'run';
-  return path.join(base, 'StarNet deliverables', slug + '-' + runTag);
+  return path.join(base, 'SpaceStation deliverables', slug + '-' + runTag);
 }
 
 // what Implement (decide keep) WILL actually do for this manifest, resolved against the CURRENT blessed
@@ -13478,7 +13478,7 @@ async function serveWorkshopRun(req, res) {
 // not proof of a fresh human gesture and can never launch a desktop application.
 async function handleWorkshopOpen(req, res) {
   const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
-  return json(403, { error: 'Open this file manually; StarNet cannot launch desktop applications from a run.' });
+  return json(403, { error: 'Open this file manually; SpaceStation cannot launch desktop applications from a run.' });
 }
 
 // POST /api/workshop/shift { agentId } — force-fire ONE workshop shift NOW (attended test of the unattended path).
@@ -13814,7 +13814,7 @@ async function handleRoster(req, res) {
   }
   // P2.1: DEGRADED — this workspace was stamped by a NEWER StarNet. Refuse a destructive roster overwrite (the
   // route replaces the whole store) rather than corrupt data this code doesn't understand. Reads/runs are untouched.
-  if (workspaceDegraded) return json(200, { ok: false, error: 'workspace written by newer StarNet', degraded: true });
+  if (workspaceDegraded) return json(200, { ok: false, error: 'workspace written by newer SpaceStation', degraded: true });
   replaceAgentRoster(body.agents);
   saveAgentRoster(hasStamp ? incomingUpdatedAt : undefined);
   json(200, { ok: true, count: agentRoster.size, updatedAt: agentRosterUpdatedAt });
@@ -14201,12 +14201,12 @@ async function runSlashForChannel(input, ctx) {
   // caller, but an authenticated owner Telegram DM is the Commander's remote control surface and executes the
   // exact same snippet path as the desktop palette.
   if (out.directive.type === 'exec') {
-    if (!ctx.ownerTrusted) return { ok: false, text: 'That is one of your shell commands — for safety those only run in the StarNet desktop app, not over messaging.' };
+    if (!ctx.ownerTrusted) return { ok: false, text: 'That is one of your shell commands — for safety those only run in the SpaceStation desktop app, not over messaging.' };
     return runUserExec(out.directive);
   }
   // Only dispatch:'server' commands can answer off-browser. A client command would need the DOM, so say that
   // plainly rather than returning an empty reply that reads like a failure.
-  if (out.directive.type !== 'server') return { ok: false, text: 'That command only works in the StarNet desktop app.' };
+  if (out.directive.type !== 'server') return { ok: false, text: 'That command only works in the SpaceStation desktop app.' };
   let r;
   try { r = await slashActions.run(out.directive.action, out.directive.args, { agentId: agentId, placed: placed }); }
   catch (e) { return { ok: false, text: 'That command failed: ' + ((e && e.message) || e) }; }
@@ -14805,7 +14805,7 @@ function recentUserText(list) {
    `prompt` for the watched browser; 'autonomous' (default-deny on ungranted mutation) for a headless chat. */
 async function runOnce(o) {
   if (updatePreparation.isFrozen()) {
-    throw Object.assign(new Error('StarNet is frozen at a verified pre-update recovery point.'), { code: 'UPDATE_MUTATIONS_FROZEN' });
+    throw Object.assign(new Error('SpaceStation is frozen at a verified pre-update recovery point.'), { code: 'UPDATE_MUTATIONS_FROZEN' });
   }
   const { key, system: rawSystem, messages = [], agentId = 'agent', signal, runId } = o;
   const runStartedAt = Date.now();
@@ -16120,7 +16120,7 @@ async function runOnce(o) {
       const t = registry.get(realName);
       const impact = impactOfTool(t);
       const why = (impact === 'physical-input' || impact === 'visible-desktop')
-        ? 'real desktop/physical control carries no grant on ANY StarNet agent run — no attended-control lease exists'
+        ? 'real desktop/physical control carries no grant on ANY SpaceStation agent run — no attended-control lease exists'
         : (impact === 'external-unknown')
           ? (/^mcp:/.test(String((t && t.capability) || ''))
               // a real connector tool: the honest remedy on an unattended run is the per-routine grant, not "wait
@@ -16495,7 +16495,7 @@ async function runOnce(o) {
         : '')
       + taskDoctrineNote
       + (wireNames.indexOf('routine_create') >= 0
-        ? 'When the Commander asks for a cron, routine, scheduled/recurring task, reminder, or standing job, use routine_create/routine_list in StarNet ROUTINES; do not use shell_exec, crontab, Windows Task Scheduler, Python scripts, or OS schedulers. '
+        ? 'When the Commander asks for a cron, routine, scheduled/recurring task, reminder, or standing job, use routine_create/routine_list in SpaceStation ROUTINES; do not use shell_exec, crontab, Windows Task Scheduler, Python scripts, or OS schedulers. '
         : '')
       + (hasWebTools ? 'Ground every current factual claim in what web_search / web_fetch actually return, and cite the source URLs; ' : '')
       + 'do not invent facts, figures, or links. '
@@ -16544,7 +16544,7 @@ async function runOnce(o) {
       + 'or a custom name + purpose. It returns the new '
       + 'agentId, which you can immediately hand work to with team.dispatch. When the Commander asks you to create or '
       + 'summon an agent, actually DO it with team.summon — don\'t just describe it or claim you cannot. '
-      + 'For scheduled work, create StarNet routines with routine_create; if the work clearly belongs to a specialist '
+      + 'For scheduled work, create SpaceStation routines with routine_create; if the work clearly belongs to a specialist '
       + '(research/news/latest => researcher/scout/analyst), target that agentId, or summon the specialist first.';
     /* SESSIONS (2026-07-30): the lead can also RUN the station's sessions — and the peek rule exists because
        of a live failure: asked "what did the researcher do?", a lead with no way to read the other session
@@ -19443,7 +19443,7 @@ async function handleSaveWrite(req, res) {
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(agentId)) return json(400, { error: 'agentId must be 1-40 chars of [A-Za-z0-9_-]' });
   // P2.1: DEGRADED — refuse a save write when this workspace was stamped by a NEWER StarNet (writing a newer save
   // envelope shape through older code risks silent field loss). Reads (GET /api/save) still serve; runs continue.
-  if (workspaceDegraded) return json(200, { ok: false, error: 'workspace written by newer StarNet', degraded: true });
+  if (workspaceDegraded) return json(200, { ok: false, error: 'workspace written by newer SpaceStation', degraded: true });
   // Once a rating is acknowledged, a stale tab without that ledger watermark may not replace the durable
   // projection and temporarily erase XP. It can reload/replay the ledger, then save normally.
   const ratingSyncAt = Math.max(0, Number(body.stationStats && body.stationStats.ratingSyncAt) || 0);

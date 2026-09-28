@@ -371,4 +371,83 @@ from it. The one honest limitation in the new code: the `no such task` 404 is th
 exit, because the activity store is business-scoped and a task id that resolves to nothing names no business
 to log against — the gate pins that as an explicit count so it cannot drift silently.
 
+## 10. Postscript — the rebrand's unfinished business: `sidecar/` (the shipped backend), and the consumers Phase 2 silently invalidated
+
+**The request** was simply *"is there a round 3, do it then."* There is **no explicit round numbering** in this
+project, so rather than invent a scope the remaining open items were verified against the source. TODO/FIXME
+debt was checked first and is **empty** (all 13 hits are the app's own TODO-scanning feature). The `.term`
+forced-colors note turned out to be **stale** (`a11y.css` already gives it a real `border`). The one genuinely
+open item is the rebrand's: **Phase 2 (`7b1d2f154`) covered the frontend, the packaging, the public website and
+the README — but never reached `sidecar/`**, the process that actually ships inside the desktop bundle and
+serves the API. `docs/PHASE0-AUDIT-v3.md` had recorded exactly this as STILL OPEN.
+
+### 10a. `sidecar/` — the shipped backend
+
+The sidecar renders user-visible strings of its own (the **ACP permission prompt a human approves**, diagnostics
+copy, tool descriptions). 43 files were swept, **127 brand words** removed. Every changed file passed
+`node --check`, and the transformer carried a **round-trip self-check** (re-run with a no-op transform and
+compared byte-for-byte) → **0 failures** across 300 files. Re-applying the brand gate's §2 rule to `sidecar/`
+now flags **only the 9 deliberate identifiers** (multipart form boundaries `----StarNet{FormBoundary,STT,Part}`,
+the skill-exchange User-Agent, the skill-package **magic header**, and the legacy app-data / model-cache
+directory names).
+
+**A silent coverage loss was caught by reading, not by a red test.** `test/acp.e2e.test.js:335` asserted
+`!/the run failed inside StarNet/` — a **negative** assertion that became **vacuous** the moment the producer's
+string changed. It was re-pointed at the new claim. This is the same failure mode as the seven stale brand
+locks found earlier: *a green test is not evidence the claim still holds.*
+
+### 10b. A real defect the sweep uncovered — the rebrand renamed the product, and left its consumers stale
+
+Phase 2's own commit message says it changed `productName "StarNet" -> "SpaceStation"` (**"installer name"**),
+and it updated `update-canary.mjs` accordingly — but **three productName-derived consumers were left stale**,
+each a functional break rather than a cosmetic string:
+
+| Consumer | It looks for | The product actually produces | Impact |
+|---|---|---|---|
+| `scripts/lib/release-installer.mjs` + `release-cut.mjs` | `StarNet_<v>_x64-setup.exe` | `SpaceStation_<v>_x64-setup.exe` | the one-command release cutter and the **t0/t1/t3/t4/t5** gates cannot discover the artifact the build writes |
+| `scripts/qa/packaged-lifecycle.mjs` | window titled exactly `StarNet` | `main.rs:3774` titles it `"SpaceStation"` | the **G1** packaged-lifecycle gate can never find the window |
+| `scripts/verify-macos-intel-installed.sh` | `/Applications/StarNet.app`, `tell application "StarNet"` | the bundle is `<productName>.app` → `SpaceStation.app` | the macOS Intel acceptance never finds the installed app |
+
+The installer-name rule was proven from three independent in-repo sources, not guessed: the README's own release
+table documents `SpaceStation_<version>_x64-setup.exe`; `update-canary.mjs` sets `productName: 'SpaceStation
+Canary'` and then stages `SpaceStation Canary_<v>_*-setup.exe`; and the rebrand commit message names productName
+as the installer name. `test/release-installer-selection.test.mjs` had stayed **green throughout** because its
+fixtures were named `StarNet_…` too — self-consistent, and therefore blind.
+
+**Fixed with one source of truth, plus a drift lock.** The prefix now lives once, as
+`NSIS_PRODUCT_NAME`/`nsisInstallerName()` in `lib/release-installer.mjs` (imported by `release-cut.mjs`, no
+duplicate literal), and the guard test **derives** the expected filename from `tauri.conf.json`'s `productName`
+and asserts the constant still equals it — so a future rename forces the lock to be revisited rather than
+silently drifting again. The macOS script's legacy data dir (`~/.local/share/StarNet/workspaces`) was
+**deliberately kept** — it is an identifier pinned by `desktop-build-macos-notarization.test.js`, read in place
+by the Skynet→StarNet→SpaceStation fallback chain.
+
+### 10c. A permanent gate, proven to bite
+
+`brand-identity.test.js` **§9** applies §2's exact rule to `sidecar/**/*.js` (327 modules), reusing §2's
+allowlist so the two rules stay in lockstep, plus a documented 9-identifier allowlist. It was **proven to
+bite**: injecting `'Allow StarNet to work in this folder?'` into `sidecar/` turned it red naming that exact
+string — the same class as the ACP prompt that motivated the sweep — and removing the file returned it green.
+
+**Gates after:** `brand-identity` **42**, `packaged-lifecycle` 70, `release-installer-selection` 7,
+`desktop-build-macos-notarization` 26, `release-train-macos-trust` 56, `acp-core` 128, `acp.e2e` 48,
+`channels.telegram.e2e` 60, `sidecar.http` 497, `runtimeinfo` 15, `schema-stamp` 15, `cloudsave-refusal` 14,
+`configexport` 41, `source-release-mirror` 35, `release-preflight` 92, `release-ritual` 64,
+`failopen-ratchet` 157, `lint-determinism` scanned 336 files OK. Website mirror `--check` **OK**
+(3925 files + 2 embed-only). Sandbox artifacts, not defects: `source-text-integrity` (`spawnSync git EBUSY`),
+`release-cut` / `release-bump` (`actual: null` — a spawned child under EBUSY).
+
+**Deliberately left, and why (not an oversight):** the rest of `scripts/` is release/QA engineering whose
+remaining brand strings are either **identifiers** — env prefixes `STARNET_*`/`SKYNET_*`, `window.__STARNET_*`
+globals, `X-StarNet-Token`, the `ai.skynet.harness` bundle id, the `skynet-desktop` binary/crate name, the
+`androoAGI/starnet(-releases)` URLs, historical install registry keys (`Uninstall\StarNet`,
+`HKCU:\Software\Andrew Sims\StarNet`), the `StarNet_*_x64-setup.exe` glob in the historical-replay proof, and
+the `StarNet-QA-*` scheduled-task names — or **eval-internal labels/keys** (`bind.mjs` `name: 'StarNet'`,
+`runner.mjs` `StarNet=${…}` / `StarNetBoot=`), or **internal evidence-doc headers** (`# StarNet … Evidence`).
+Two coupled items are deferred to their own deliberate pass because each touches a pinned pair: the
+**release-notes header** (`# StarNet v` in `RELEASE_NOTES.md` + `release-preflight.mjs` regex + `release-bump`/
+`release-ritual` + their tests) and the **public mirror page text** (`source-release-mirror.mjs`, pinned by its
+test). The **installer-art wordmark** (`gen-installer-art.ps1` draws `STARNET`) is a genuine user-facing asset
+that needs its images regenerated, not a string swap.
+
 

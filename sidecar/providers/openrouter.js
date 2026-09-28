@@ -346,7 +346,7 @@
         try {
           res = await doFetch(baseUrl + '/chat/completions', {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + (key || ''), 'Content-Type': 'application/json', 'HTTP-Referer': referer, 'X-Title': 'STARNET' },
+            headers: { 'Authorization': 'Bearer ' + (key || ''), 'Content-Type': 'application/json', 'HTTP-Referer': referer, 'X-Title': 'SPACESTATION' },
             body: JSON.stringify(body),
             signal: guard.signal   // caller-cancel + a disarmable connect-timeout ceiling on the POST itself
           });

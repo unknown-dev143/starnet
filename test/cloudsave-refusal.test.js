@@ -27,7 +27,7 @@ const doc = (updatedAt) => ({ schema: 'starnet.save', version: 3, updatedAt, age
 
 (async () => {
   // ---- 1. degraded refusal: HTTP 200 { ok:false, degraded:true } must NOT stamp health OK ----
-  responses.push({ status: 200, body: { ok: false, error: 'workspace written by newer StarNet', degraded: true } });
+  responses.push({ status: 200, body: { ok: false, error: 'workspace written by newer SpaceStation', degraded: true } });
   CloudSave.push(doc(10));
   const landed1 = await CloudSave.flush({ force: true });
   A.eq(landed1, false, 'a 200 { ok:false, degraded:true } body is a FAILED push, not a success');

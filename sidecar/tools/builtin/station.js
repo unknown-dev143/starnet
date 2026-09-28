@@ -28,7 +28,7 @@
 
     // one shape for every verb: bridge absent / page silent / page refused / page answered.
     async function ask(verb, args) {
-      if (!station) return { ok: false, error: 'this run has no station bridge — session actions need the live StarNet page' };
+      if (!station) return { ok: false, error: 'this run has no station bridge — session actions need the live SpaceStation page' };
       let out;
       try { out = await station.request(verb, args || {}); }
       catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
