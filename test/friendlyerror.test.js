@@ -316,7 +316,7 @@ for (const raw of [
     A.eq(v.kind, 'provider_server_error', raw + ' is the PROVIDER\'s server fault (delegate path)');
     A.eq(kindFromRaw(raw.toLowerCase(), null), 'provider_server_error', raw + ' — BROWSER ladder agrees');
     A.eq(v.retryable, true, raw + ' is retryable (load spikes pass)');
-    A.ok(!/local .*service|starnet service/i.test(v.userMessage) || /StarNet itself is fine/i.test(v.userMessage),
+    A.ok(!/local .*service/i.test(v.userMessage) || /itself is fine/i.test(v.userMessage),
       raw + ' must NEVER blame the local service');
     A.ok(/provider/i.test(v.userMessage), raw + ' names the provider\'s servers');
     A.ok(/fine/i.test(v.userMessage), raw + ' reassures the user their install is healthy');

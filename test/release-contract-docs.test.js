@@ -44,7 +44,9 @@ assert.doesNotMatch(runbook, /all five platform keys/i,
 assert.match(website, /public-train requirements are not installed proof/i,
   'website preserves the evidence boundary');
 
-const stale = /unsigned and un-notarized|isn't Apple-notarized|Until StarNet is Apple-notarized|None of the builds are code-signed|Linux builds come off[\s\S]{0,80}release train|fully supported from day one/i;
+// Brand-agnostic on purpose: pinning the product word here would let the rebranded copy ("Until
+// SpaceStation is Apple-notarized") slip through as if it were not stale pre-signing copy.
+const stale = /unsigned and un-notarized|isn't Apple-notarized|Until \S+ is Apple-notarized|None of the builds are code-signed|Linux builds come off[\s\S]{0,80}release train|fully supported from day one/i;
 for (const [name, source] of [
   ['README', readme],
   ['install guide', install],

@@ -46,7 +46,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     try {
       // boot log warned LOUDLY (never silent)
       await wait(150);
-      A.ok(/WORKSPACE WRITTEN BY A NEWER STARNET|DEGRADED/i.test(fixture.output()), 'boot logs a loud newer-StarNet / DEGRADED warning');
+      A.ok(/WORKSPACE WRITTEN BY A NEWER \w+|DEGRADED/i.test(fixture.output()), 'boot logs a loud newer-schema / DEGRADED warning');
 
       const token = fixture.token;
       A.ok(token.length >= 32, 'got a session API token');

@@ -567,4 +567,53 @@ and those historical assets really are named `StarNet_*`. §10 keeps an explicit
 (`/^StarNet_\*_x64-setup\.exe$/`, "historical published installer asset") for exactly this case. Likewise the
 `androoAGI/starnet` + `androoAGI/starnet-releases` repo URLs are identifiers, not rendered text.
 
+### 10g. …and the LOCKS were the last unscanned surface: `test/`
+
+Every gate §1–§11 guards the **source**. None guarded the tests that **pin the source's rendered strings** — the
+class §10e's lesson already named ("grep the TESTS for the old brand too") but never mechanised. So the rebrand
+left **six** stale locks, and they came in two flavours:
+
+**RED — failed outright (3):**
+- `test/mcp-serve.test.js:209` — `A.ok(… /StarNet/i.test(r.data.error), 'the error tells the operator to start
+  StarNet')`, while `sidecar/mcp/bridge-core.js:228` now renders `… is SpaceStation running? Start it with
+  \`npm start\`.`
+- `test/manual.test.js:45` — `/Never[\s\S]{0,160}invent a StarNet CLI command/`, while `sidecar/manual.js:25`
+  now says `invent a SpaceStation CLI command`.
+- `test/release-train-windows-trust.test.js:59-60` — `/installed StarNet uninstaller/` against
+  `release-train.yml:543`'s `Assert-Authenticode -Label 'installed SpaceStation uninstaller'` (rebranded in §10f
+  — i.e. the §10f fix **broke a lock that was pinning the old label**, which is exactly how this class surfaces).
+
+**DECAYED-but-GREEN (3) — worse, because they read as coverage:** the legacy alternative sat in an `||` or an
+alternation beside a live branch, so the lock passed for the wrong reason and could never catch a regression:
+- `test/friendlyerror.test.js:319` — `!/local .*service|starnet service/i.test(msg) || /StarNet itself is
+  fine/i.test(msg)`; the message now says "SpaceStation itself is fine", so the second disjunct is **dead** and
+  the lock passes only because the first negation is trivially true.
+- `test/schema-stamp.test.js:49` — `/WORKSPACE WRITTEN BY A NEWER STARNET|DEGRADED/i`; `sidecar/index.js:1565`
+  now logs `… NEWER SPACESTATION`, so it passes only via `|DEGRADED`.
+- `test/release-contract-docs.test.js:47` — the `stale` **`doesNotMatch`** list included `Until StarNet is
+  Apple-notarized`; a rebranded doc saying "Until SpaceStation is Apple-notarized" is *still* stale pre-signing
+  copy, but the regex would no longer catch it.
+
+**Fixed by re-pointing at the CLAIM, never at the brand** (the §10e lesson): `running\?` + `npm start`;
+`invent a \S+ CLI command`; `installed \S+ uninstaller`; `!…service || /itself is fine/`; `NEWER \w+|DEGRADED`;
+`Until \S+ is Apple-notarized`. All six now green.
+
+**New gate §12** (`test/brand-identity.test.js`): `extractStrings` grew a `regexes: true` option that also
+surfaces **regex-literal bodies** (the shape a stale lock takes), then §12 walks all of `test/` and flags every
+brand-bearing regex that is not an allowlisted exception. It reuses the **same** `allowedContent()` as §2/§9/§10
+(one definition — `STARNET_*` env names, `__STARNET_API_TOKEN__`, `X-StarNet-Token` are identifiers, not
+expectations), and its 5 exceptions are matched on the **backslash-stripped** body so escapes need no
+re-escaping: two legacy paths read in place (`.local/share/StarNet/workspaces`, `base.join("StarNet")`), the
+multipart boundary `----StarNetSTT` (`sidecar/media-service.js:136` — a wire token, §10 already allowlists
+multipart boundaries), and two test-authored fixture strings asserted back verbatim. Gate **49 → 51 assertions**.
+
+**Sabotage-proven:** a probe file carrying `/StarNet/i` turned §12 red naming `test/zz-sabotage-probe.test.js:5`;
+removed. (Same probe technique proved §11's two classes in §10f.)
+
+**Not a defect — sandbox artifacts in the same sweep** (each re-run and read): `test/website-app-sync.test.js`
+and `test/release-assemble-manifest.test.js` both drive their subject through `spawnSync`, which returns
+`status: null` under this sandbox, so `A.eq(res.status, 0)` reads `expected 0, got null`;
+`test/source-text-integrity.test.js` dies the same way on `spawnSync git ls-files` (`EBUSY`). Three of the
+sweep's 42 flags, correctly reclassified as environment rather than defects — a tally is not a triage.
+
 

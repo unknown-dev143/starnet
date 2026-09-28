@@ -31,7 +31,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
        guard, which desynced the quote matcher so the `why:` sentence after it was never inspected.
    A single pass that tracks the previous significant token (to tell a regex from a division) cannot
    be fooled by either. */
-function extractStrings(src) {
+function extractStrings(src, { regexes = false } = {}) {
   const REGEX_PREV = new Set(['(', ',', '=', ':', '[', '!', '&', '|', '?', '{', '}', ';', '+', '-', '*', '%', '<', '>', '^', '~', '\n', '']);
   const KEYWORD = new Set(['return', 'typeof', 'instanceof', 'in', 'of', 'new', 'delete', 'void', 'do', 'else', 'case', 'yield', 'await', 'throw']);
   const out = [];
@@ -43,16 +43,20 @@ function extractStrings(src) {
     if (c === '/' && c2 === '/') { while (i < n && src[i] !== '\n') i++; continue; }
     if (c === '/' && c2 === '*') { i += 2; while (i < n && !(src[i] === '*' && src[i + 1] === '/')) { if (src[i] === '\n') line++; i++; } i += 2; continue; }
     if (c === '/' && (REGEX_PREV.has(prev) || KEYWORD.has(word))) {
-      i++; let cls = false;
+      const at = line; i++; let cls = false; let body = '';
       while (i < n) {
         const r = src[i];
-        if (r === '\\') { i += 2; continue; }
+        if (r === '\\') { body += r + (src[i + 1] || ''); i += 2; continue; }
         if (r === '[') cls = true; else if (r === ']') cls = false;
         else if (r === '/' && !cls) { i++; break; }
         else if (r === '\n') { line++; break; }
-        i++;
+        body += r; i++;
       }
-      while (i < n && /[a-z]/.test(src[i])) i++;
+      let flags = '';
+      while (i < n && /[a-z]/.test(src[i])) { flags += src[i]; i++; }
+      // `regexes: true` also surfaces the regex BODY — §12 needs it to scan test/ expectations, which are
+      // regex literals (the shape a stale brand lock takes). Default stays strings-only for the other locks.
+      if (regexes) out.push({ kind: 'regex', line: at, text: body, raw: '/' + body + '/' + flags });
       prev = '/'; word = ''; continue;
     }
     if (c === '"' || c === "'" || c === '`') {
@@ -434,6 +438,56 @@ const allowedContent = (lit) => HONEST.test(lit) || IDENTIFIER.test(lit);
   }
   A.eq(drift.length, 0, 'every installer filename in .github/ is prefixed with the product name');
   if (drift.length) console.log('  drift:\n   ' + drift.join('\n   '));
+}
+
+/* ---------- 12. test/**: the LOCKS must not expect the legacy brand ----------
+   Every earlier section guards the SOURCE. None guarded the tests that PIN the source's rendered strings,
+   so the rebrand shipped with stale locks — a test asserting `/StarNet/i` against a message the source now
+   renders as SpaceStation. Five were found, in two flavours:
+     · RED: mcp-serve (the sidecar-down error), manual (the "never invent a CLI command" rule),
+       release-train-windows-trust (the installed-uninstaller label). These failed outright.
+     · DECAYED-but-GREEN: friendlyerror and schema-stamp, where the legacy alternative sat in an `||`
+       beside a live branch — so the lock passed for the WRONG reason and would never catch a regression.
+       A green lock that cannot fail is worse than no lock, because it reads as coverage.
+   This scans every regex LITERAL in test/ (a stale lock is an EXPECTATION regex). String literals are not
+   flagged: fixture paths, the auth header and test-message labels are identifiers or self-authored prose,
+   not expectations on rendered output. Each remaining brand-bearing regex must be a reasoned exception. */
+{
+  const dir = path.join(ROOT, 'test');
+  const files = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(js|mjs|cjs)$/.test(e.name)) files.push(p);
+    }
+  })(dir);
+  const self = path.resolve(__filename);
+  // Exceptions, matched against the regex BODY with backslashes stripped (so `\/` and `\(` escapes do not
+  // have to be re-escaped here). The first three are legacy paths/identifiers read in place; the last two
+  // are test-authored fixture prose the test injects and then asserts back — self-consistent, so they
+  // cannot decay with a rebrand. (`X-StarNet-Token` needs no entry: `allowedContent` already covers it.)
+  const OK = [
+    ['.local/share/StarNet/workspaces', 'pre-rebrand macOS app-data dir, read in place'],
+    ['base.join("StarNet").join("workspaces")', 'the legacy install-root dir the migration must consider'],
+    ['multipart/form-data; boundary=----StarNetSTT', 'a multipart boundary — a wire token, never renamed'],
+    ['ship StarNet', 'test-authored fixture belief, asserted back verbatim'],
+    ['Ship the StarNet beta', 'test-authored fixture activity line, asserted back verbatim'],
+  ];
+  const flat = (t) => t.replace(/\\/g, '');
+  const offenders = [];
+  for (const p of files) {
+    if (path.resolve(p) === self) continue;   // the gate's own patterns are the scanner, not a lock
+    for (const s of extractStrings(fs.readFileSync(p, 'utf8'), { regexes: true })) {
+      if (s.kind !== 'regex' || !LEGACY.test(s.text)) continue;
+      if (allowedContent(s.text)) continue;   // the SAME identity allowlist §2/§9/§10 use — one definition
+      if (OK.some(([frag]) => flat(s.text).includes(frag))) continue;
+      offenders.push(path.relative(ROOT, p) + ':' + s.line + '  ' + s.raw.slice(0, 80));
+    }
+  }
+  A.eq(offenders.length, 0, 'no test/ expectation pins the legacy brand');
+  if (offenders.length) console.log('  offenders:\n   ' + offenders.join('\n   '));
+  A.ok(files.length > 200, 'the test scan actually found the suite');
 }
 
 A.report('brand-identity');

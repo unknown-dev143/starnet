@@ -206,7 +206,10 @@ function parseToolResult(result) {
     A.eq((stillList.tools || []).length, 10, 'tools/list still works with the sidecar down (server is independent)');
     r = parseToolResult(await rpc.request('tools/call', { name: 'conversations_list', arguments: {} }));
     A.ok(r.isError === true, 'a data tool marks isError when the sidecar is unreachable');
-    A.ok(r.data.sidecarReachable === false && /StarNet/i.test(r.data.error), 'the error tells the operator to start StarNet');
+    // Pin the CLAIM, not the brand: the error must say the station is down and hand the operator the
+    // remedy. Pinning the product word is what left this lock stale after the rebrand.
+    A.ok(r.data.sidecarReachable === false && /running\?/.test(r.data.error) && /npm start/.test(r.data.error),
+      'the error tells the operator the station is down and how to start it');
 
     // ⛔ STATION RESTART: THE SCRAPED TOKEN IS PER-LAUNCH AND GOES STALE. StarNet is a desktop app the
     // Commander closes and reopens; every launch mints a NEW api token. This bridge is spawned once by the MCP
