@@ -26,7 +26,7 @@
         verb: 'polling',
         steps: [
           'In Telegram open <b>@BotFather</b> → send <code>/newbot</code> → copy the token it gives you.',
-          'Paste it below and connect. StarNet will show a one-time owner pairing <code>/pair</code> command.',
+          'Paste it below and connect. SpaceStation will show a one-time owner pairing <code>/pair</code> command.',
           'Send that owner pairing command to your bot in Telegram. Only then can the bot accept your DMs.'
         ],
         note: 'The token is stored locally by the sidecar and never displayed.',
@@ -129,7 +129,7 @@
         tagline: 'Message your agent on Signal through a self-hosted signal-cli bridge.',
         verb: 'receiving',
         steps: [
-          'Run the <b>signal-cli REST API</b> next to StarNet (docker: <code>bbernhard/signal-cli-rest-api</code>).',
+          'Run the <b>signal-cli REST API</b> next to SpaceStation (docker: <code>bbernhard/signal-cli-rest-api</code>).',
           'Register or link a number for the agent (the bridge\'s <code>/v1/register</code> or QR link flow).',
           'Enter the bridge URL + that number below and connect, then message it from your own Signal.'
         ],

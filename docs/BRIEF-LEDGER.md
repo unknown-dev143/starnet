@@ -485,4 +485,40 @@ scheduled-task names and their labels; a task name is a registry identity, and r
 operator's existing registration), and `purge-leaked-codex-tokens.mjs`'s legacy install-root path component
 (1) plus `verify-macos-intel-installed.sh`'s legacy data dir (1).
 
+### 10e. …but §10d's "done" was itself incomplete — the gate had blind spots
+
+A re-audit with a proper JS tokenizer (not the gate's naive comment/quote regex) found **five real
+user-visible offenders the gate had been letting through green.** The gate was passing while the app still
+rendered the legacy word in five places, because the gate's own scanning was broken in two ways and its scope
+was too narrow:
+
+- **§2 read only the FLAT `frontend/app` listing** — `readdirSync` + `.endsWith('.js')`, no recursion. So
+  `frontend/app/windows/` (30 files) and `frontend/app/recipe-catalog/` (10 files) were **never scanned**.
+  Three rendered strings lived there: a Telegram connect step, a Signal connect step, and a routine
+  delivery-option label (`keep result in StarNet`).
+- **§9/§10 stripped comments with a regex, then matched quotes with a regex** — two constructs defeated it:
+  a `/*` **inside a string literal** (`sidecar/plugins.js` writes `'/* ' + name + ' — a … plugin.'`, so the
+  phantom block comment ate the rest of the file) and a **regex literal containing a quote**
+  (`sidecar/tools/builtin/shell.js` has `/[\s"'`=(]/` in its guard, which desynced the quote matcher so the
+  `why:` refusal sentence after it was never inspected).
+
+**Fixed:** the five strings (`frontend/app/windows/{messaging,routines}.js` ×3, `sidecar/plugins.js`,
+`sidecar/tools/builtin/shell.js`) + the website mirror re-synced.
+
+**The gate is now structural, not regex-based.** A single-pass `extractStrings()` tokenizer tracks the previous
+significant token (so a `/` is told from a division), skips comments, and handles template `${…}`; `§2` recurses
+the **whole** `frontend/` tree (also picking up `frontend/js/`); `§10` uses a `#`-comment-aware `extractQuoted()`
+for `.ps1`/`.sh`; the allowlist is ONE shared `allowedContent()` so the three locks cannot drift; and a
+**self-check** proves the extractor is not fooled by either construct (a `/*`-in-string and a quote-in-regex),
+so a future edit that regresses it fails loudly instead of silently. Gate **44 → 46 assertions**.
+Sabotage-proven on all three classes: re-introducing the subdir offender, the `/*`-in-string offender, and the
+quote-regex offender each turns it red naming the exact file and line.
+
+**Corrected:** `test/eval-comparison.test.js`'s 13 failures are **100% sandbox**, not defects. The
+`fault-compaction-rotation` adapter spawns a child (`fixtures/fault-compaction-child.mjs`); `spawnSync` is
+blocked here (EBUSY), so the child never writes its transcript and the adapter reports `rotation-adapter-error`
+(ENOENT). Run **directly**, the child works: exit **1** (the intended simulated crash) and **38** durable rows
+including the searchable `ROTATION-FACT-731`. So all ten boundaries pass in a real environment — an earlier
+note calling two of these "real" was wrong.
+
 

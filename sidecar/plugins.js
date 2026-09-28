@@ -103,7 +103,7 @@
       catch (_) { /* good — it does not exist yet */ }
 
       const source = [
-        '/* ' + name + ' — a StarNet plugin.',
+        '/* ' + name + ' — a SpaceStation plugin.',
         ' *',
         ' * register(api) runs once at station boot. api.on(event, handler) is the whole surface:',
         ' *   pre_tool_call    before a tool runs — return {decision:"block", reason:"…"} to stop it',

@@ -22,17 +22,106 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-/* Strip /* … *​/ block comments and // line comments. Same shape the hardening suite uses. */
-function stripComments(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+/* Extract every STRING LITERAL from source, skipping comments, regex literals and template
+   `${…}` interpolation. This replaces the first cut's "strip comments, then regex the quotes",
+   which had two blind spots that each hid a REAL user-visible offender and let it ship green:
+     · a `/*` INSIDE a string literal — sidecar/plugins.js writes `'/* ' + name + ' — a … plugin.'`,
+       so the phantom block comment swallowed the rest of the file;
+     · a regex literal containing a quote — sidecar/tools/builtin/shell.js has /[\s"'`=(]/ in its
+       guard, which desynced the quote matcher so the `why:` sentence after it was never inspected.
+   A single pass that tracks the previous significant token (to tell a regex from a division) cannot
+   be fooled by either. */
+function extractStrings(src) {
+  const REGEX_PREV = new Set(['(', ',', '=', ':', '[', '!', '&', '|', '?', '{', '}', ';', '+', '-', '*', '%', '<', '>', '^', '~', '\n', '']);
+  const KEYWORD = new Set(['return', 'typeof', 'instanceof', 'in', 'of', 'new', 'delete', 'void', 'do', 'else', 'case', 'yield', 'await', 'throw']);
+  const out = [];
+  let i = 0; const n = src.length; let line = 1; let prev = ''; let word = '';
+  while (i < n) {
+    const c = src[i]; const c2 = src[i + 1];
+    if (c === '\n') { line++; prev = '\n'; i++; continue; }
+    if (c === ' ' || c === '\t' || c === '\r') { i++; continue; }
+    if (c === '/' && c2 === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && c2 === '*') { i += 2; while (i < n && !(src[i] === '*' && src[i + 1] === '/')) { if (src[i] === '\n') line++; i++; } i += 2; continue; }
+    if (c === '/' && (REGEX_PREV.has(prev) || KEYWORD.has(word))) {
+      i++; let cls = false;
+      while (i < n) {
+        const r = src[i];
+        if (r === '\\') { i += 2; continue; }
+        if (r === '[') cls = true; else if (r === ']') cls = false;
+        else if (r === '/' && !cls) { i++; break; }
+        else if (r === '\n') { line++; break; }
+        i++;
+      }
+      while (i < n && /[a-z]/.test(src[i])) i++;
+      prev = '/'; word = ''; continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      const quote = c; const at = line; i++; let buf = ''; let depth = 0;
+      while (i < n) {
+        const r = src[i];
+        if (r === '\\') { buf += r + (src[i + 1] || ''); i += 2; continue; }
+        if (quote === '`' && r === '$' && src[i + 1] === '{') { depth++; buf += '${'; i += 2; continue; }
+        if (quote === '`' && depth > 0 && r === '}') { depth--; buf += '}'; i++; continue; }
+        if (r === quote && depth === 0) { i++; break; }
+        if (r === '\n') line++;
+        buf += r; i++;
+      }
+      out.push({ line: at, text: buf, raw: quote + buf + quote });
+      prev = quote; word = ''; continue;
+    }
+    if (/[A-Za-z_$]/.test(c)) { let w = ''; while (i < n && /[A-Za-z0-9_$]/.test(src[i])) { w += src[i]; i++; } word = w; prev = w[w.length - 1]; continue; }
+    prev = c; word = ''; i++;
+  }
+  return out;
 }
-/* Strip string literals too — the honesty notes legitimately NAME the legacy word while explaining
-   that it survives only as a back-compat alias. */
-function stripStrings(src) {
-  return src.replace(/'(?:[^'\\\n]|\\.)*'/g, "''").replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
+
+/* .ps1 / .sh: `#` line comments (plus PowerShell's <# #> blocks), '…' and "…" strings. The JS
+   tokenizer above does not know `#`, so these two languages get their own pass — §10 scans both. */
+function extractQuoted(src, { ps = false } = {}) {
+  const out = [];
+  let i = 0; const n = src.length; let line = 1;
+  while (i < n) {
+    const c = src[i]; const c2 = src[i + 1];
+    if (c === '\n') { line++; i++; continue; }
+    if (ps && c === '<' && c2 === '#') { i += 2; while (i < n && !(src[i] === '#' && src[i + 1] === '>')) { if (src[i] === '\n') line++; i++; } i += 2; continue; }
+    if (c === '#') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '"' || c === "'") {
+      const q = c; const at = line; i++; let buf = '';
+      while (i < n) {
+        const r = src[i];
+        if (r === '\n') { line++; buf += r; i++; continue; }
+        if (q === "'" && r === "'" && src[i + 1] === "'") { buf += "''"; i += 2; continue; }        // PS doubled-quote escape
+        if (q === '"' && ps && r === '`') { buf += r + (src[i + 1] || ''); i += 2; continue; }      // PS backtick escape
+        if (q === '"' && !ps && r === '\\') { buf += r + (src[i + 1] || ''); i += 2; continue; }    // sh backslash escape
+        if (r === q) { i++; break; }
+        buf += r; i++;
+      }
+      out.push({ line: at, text: buf, raw: q + buf + q });
+      continue;
+    }
+    i++;
+  }
+  return out;
+}
+
+/* The extractor is itself load-bearing — prove it is NOT fooled by the two constructs that hid real
+   offenders (a `/*` inside a string, a quote inside a regex). If a future edit regresses it to the
+   naive form, this fails loudly instead of silently letting a legacy string through. */
+{
+  const probe = "const a = 'x /* y'; const r = /[\"'`=(]/; const b = 'StarNet';";
+  const got = extractStrings(probe).map((s) => s.text);
+  A.eq(got.join('|'), 'x /* y|StarNet',
+    'the string extractor skips comments and regex literals and still finds every real literal');
 }
 
 const LEGACY = /StarNet|STARNET/;
+
+/* The identity allowlist shared by §2, §9 and §10 — ONE definition so the three locks cannot drift
+   (one lock, one concern). A use is allowed iff it is lineage-honest, an internal identifier, or the
+   auth header. `lit` is the literal CONTENT (quotes stripped), so `^`-anchored patterns work. */
+const HONEST = /built on the earlier|back-compat|previously called|renamed|not a StarNet agent|earlier StarNet harness|Skynet/;
+const IDENTIFIER = /__STARNET|STARNET_|SKYNET_|starnet[._-]|StarNet-Token|Skynet-Token|starnet-token|skynet-token|^X-|^x-/;
+const allowedContent = (lit) => HONEST.test(lit) || IDENTIFIER.test(lit);
 
 /* ---------- 1. index.html: the RENDERED chrome carries no legacy brand ---------- */
 {
@@ -64,36 +153,32 @@ const LEGACY = /StarNet|STARNET/;
   A.ok(/<title>SPACESTATION<\/title>/.test(rendered), 'the page title is SPACESTATION');
 }
 
-/* ---------- 2. frontend/app/*.js: no RENDERED legacy text ---------- */
+/* ---------- 2. every frontend JS module: no RENDERED legacy text ----------
+   Recurses the WHOLE frontend tree. The first cut read only the flat `frontend/app` listing, so
+   frontend/app/windows/ and frontend/app/recipe-catalog/ were never scanned — and that is exactly
+   where three user-visible strings (a Telegram step, a Signal step, a routine delivery label) kept
+   the legacy word. It now also covers frontend/js/ (shared modules the page loads). */
 {
-  const files = fs.readdirSync(path.join(ROOT, 'frontend', 'app')).filter((f) => f.endsWith('.js'));
+  const files = [];
+  (function walk(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules') continue;
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.js')) files.push(p);
+    }
+  })(path.join(ROOT, 'frontend'));
   const offenders = [];
-  for (const f of files) {
-    const raw = read(path.join('frontend', 'app', f));
-    // Walk the source and inspect only STRING LITERALS, skipping comments first.
-    const code = stripComments(raw);
-    const strings = code.match(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g) || [];
-    for (const s of strings) {
-      // An ALLOWED use is a string that explicitly names the lineage as a back-compat alias —
-      // those live in app.js's foundationClause, which is the product describing its own history.
-      if (!LEGACY.test(s)) continue;
-      if (/built on the earlier|back-compat|previously called|renamed/.test(s)) continue;
-      // app.js's foundationClause is a MULTI-LINE concatenation that honestly names the lineage; the
-      // allowlist above only sees one fragment at a time, so exempt the clause's own fragments by
-      // their distinctive wording. This is the product truthfully describing its own history.
-      if (/not a StarNet agent|earlier StarNet harness|Skynet/.test(s)) continue;
-      // internal identifier strings (window globals, env prefixes, store keys) are not user text
-      if (/__STARNET|STARNET_|SKYNET_|starnet[._-]/.test(s)) continue;
-      // the AUTH HEADER is a live protocol constant: sidecar/apiauth.js reads 'x-starnet-token'.
-      // Renaming it breaks every /api/* call. It is not a product name.
-      if (/StarNet-Token|Skynet-Token|starnet-token|skynet-token/.test(s)) continue;
-      // an HTTP header / store key written in the raw (not a message shown to a user)
-      if (/^X-|^x-/.test(s)) continue;
-      offenders.push(f + ': ' + s.slice(0, 80));
+  for (const p of files) {
+    for (const s of extractStrings(fs.readFileSync(p, 'utf8'))) {
+      if (!LEGACY.test(s.text)) continue;
+      if (allowedContent(s.text)) continue;
+      offenders.push(path.relative(ROOT, p) + ':' + s.line + '  ' + s.raw.slice(0, 80));
     }
   }
   A.eq(offenders.length, 0, 'no frontend module renders the legacy brand as visible text');
   if (offenders.length) console.log('  offenders:\n   ' + offenders.join('\n   '));
+  A.ok(files.length > 60, 'the frontend scan actually found the modules');
 }
 
 /* ---------- 3. IDENTIFIERS must NOT have been renamed (the over-correction guard) ---------- */
@@ -232,20 +317,11 @@ const LEGACY = /StarNet|STARNET/;
   ];
   const offenders = [];
   for (const p of files) {
-    const code = stripComments(fs.readFileSync(p, 'utf8'));
-    const strings = code.match(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g) || [];
-    for (const s of strings) {
-      if (!LEGACY.test(s)) continue;
-      // identical allowlist to §2 so the two rules stay in lockstep (one lock, one concern)
-      if (/built on the earlier|back-compat|previously called|renamed/.test(s)) continue;
-      if (/not a StarNet agent|earlier StarNet harness|Skynet/.test(s)) continue;
-      if (/__STARNET|STARNET_|SKYNET_|starnet[._-]/.test(s)) continue;
-      if (/StarNet-Token|Skynet-Token|starnet-token|skynet-token/.test(s)) continue;
-      if (/^X-|^x-/.test(s)) continue;
-      // the matched literal carries its quotes; test the IDENT patterns against the CONTENT
-      const lit = s.slice(1, -1);
-      if (IDENT.some((re) => re.test(lit))) continue;
-      offenders.push(path.relative(ROOT, p) + ': ' + s.slice(0, 80));
+    for (const s of extractStrings(fs.readFileSync(p, 'utf8'))) {
+      if (!LEGACY.test(s.text)) continue;
+      if (allowedContent(s.text)) continue;
+      if (IDENT.some((re) => re.test(s.text))) continue;
+      offenders.push(path.relative(ROOT, p) + ':' + s.line + '  ' + s.raw.slice(0, 80));
     }
   }
   A.eq(offenders.length, 0, 'no sidecar module renders the legacy brand as visible text');
@@ -294,18 +370,13 @@ const LEGACY = /StarNet|STARNET/;
   ];
   const offenders = [];
   for (const p of files) {
-    const code = stripComments(fs.readFileSync(p, 'utf8'));
-    const strings = code.match(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g) || [];
+    const src = fs.readFileSync(p, 'utf8');
+    const strings = /\.(js|mjs|cjs)$/.test(p) ? extractStrings(src) : extractQuoted(src, { ps: p.endsWith('.ps1') });
     for (const s of strings) {
-      if (!LEGACY.test(s)) continue;
-      if (/built on the earlier|back-compat|previously called|renamed/.test(s)) continue;
-      if (/not a StarNet agent|earlier StarNet harness|Skynet/.test(s)) continue;
-      if (/__STARNET|STARNET_|SKYNET_|starnet[._-]/.test(s)) continue;
-      if (/StarNet-Token|Skynet-Token|starnet-token|skynet-token/.test(s)) continue;
-      if (/^X-|^x-/.test(s)) continue;
-      const lit = s.slice(1, -1);
-      if (IDENT.some((re) => re.test(lit))) continue;
-      offenders.push(path.relative(ROOT, p) + ': ' + s.slice(0, 80));
+      if (!LEGACY.test(s.text)) continue;
+      if (allowedContent(s.text)) continue;
+      if (IDENT.some((re) => re.test(s.text))) continue;
+      offenders.push(path.relative(ROOT, p) + ':' + s.line + '  ' + s.raw.slice(0, 80));
     }
   }
   A.eq(offenders.length, 0, 'no scripts/ module renders the legacy brand as visible text');

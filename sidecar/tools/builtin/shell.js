@@ -494,7 +494,7 @@
   const MACHINE_GLOBAL_RULES = [
     { re: /\bHKEY_|(?:^|[\s"'`=(\\])HK(?:LM|CU|CR|U|CC)[:\\]/i, why: 'references a Windows registry hive' },
     { re: /\bdefaults\s+write\b/i, why: 'changes macOS system preferences' },
-    { re: /(?:^|[\s"'`=(])shell:startup\b|Start\s?Menu[\\/]+Programs[\\/]+Startup/i, why: 'writes to the Startup folder (machine persistence that outlives StarNet)' }
+    { re: /(?:^|[\s"'`=(])shell:startup\b|Start\s?Menu[\\/]+Programs[\\/]+Startup/i, why: 'writes to the Startup folder (machine persistence that outlives SpaceStation)' }
   ];
   function breaksMachineState(cmd, dialect) {
     const c = String(cmd == null ? '' : cmd);
