@@ -173,7 +173,8 @@ const { makeTaskRoutes } = require('./task-routes.js');                        /
 const { makeBusinessAgentsStore } = require('./business-agents-store.js');     // Business OS P3: the §7 AGENT REGISTRY — a role + a real class + §13 grants + a context scope (P7: a configuration, not a mind)
 const { makeBusinessMemory } = require('./business-memory.js');                // Business OS P3: the §9 FOUR-SCOPE MEMORY — user/business/project/agent, isolated by key, provenance required (P1/P6)
 const { makeAgentMessagesStore } = require('./agent-messages-store.js');       // Business OS P3: §7 team COMMUNICATION — addressed, typed, business-scoped, append-only
-const { makeAgentRoutes } = require('./agent-routes.js');                      // Business OS P3: the /api/roles + /api/permissions + /api/agents + memory + messages surface
+const { makeAgentRoutes } = require('./agent-routes.js');                      // Business OS P3: the /api/roles + /api/agents + memory + messages surface (its bare /api/permissions ROW was removed — it shadowed the grant list; the catalogue it served is now an additive field of that route, see handlePermissionsList)
+const BusinessPermissions = require('./business-permissions.js');               // the §13 business-action catalogue, served ADDITIVELY on GET /api/permissions so the AI Team panel keeps its tiers
 const { makeBusinessProjectsStore } = require('./business-projects-store.js'); // Business OS P4: §9 PROJECTS — the referent task.projectId never had (Phase 3 deferred this)
 const { makeBusinessFinance } = require('./business-finance.js');              // Business OS P4: §10 FINANCE CENTER — the four provenance classes kept structurally un-mixable (P2)
 const { makeBusinessMetrics } = require('./business-metrics.js');              // Business OS P4: §11 BUSINESS INTELLIGENCE — readings, never a fabricated 0 for an unrecorded metric
@@ -17358,7 +17359,15 @@ function handlePermissionsList(req, res) {
   res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   // additive: the master FULL BYPASS switch + whether the boot env forces it (so the panel can say WHY the
   // toggle is pinned on rather than rendering a switch that appears to do nothing).
-  res.end(JSON.stringify(Object.assign({}, snap, { masterBypass: masterBypassOn(), envFullAccess: FULL_ACCESS })));
+  // ALSO additive: the §13 business-action catalogue (tiers + defaultGrants). agent-routes.js used to answer
+  // this exact path with ONLY those two fields, and because dispatchRoute is first-match-wins and the module
+  // tables are spread ABOVE this row, that handler shadowed this one — so GET /api/permissions never carried
+  // `grants` or `masterBypass` and the Permissions panel had nothing to list. One path now serves both
+  // consumers: the panel reads grants/masterBypass, the AI Team panel reads tiers.
+  res.end(JSON.stringify(Object.assign({}, snap, {
+    masterBypass: masterBypassOn(), envFullAccess: FULL_ACCESS,
+    tiers: BusinessPermissions.catalog(), defaultGrants: BusinessPermissions.DEFAULT_GRANTS
+  })));
 }
 // POST /api/permissions/bypass { on } — flip the master FULL BYPASS switch. The click IS the consent: this
 // route is reachable only through the token-gated loopback API (a human in settings), never from a tool.

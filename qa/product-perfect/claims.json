@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "authority": "StarNet advertised claims",
+  "authority": "SpaceStation advertised claims",
   "auditBaseSha": "ef16fa087ad872f9d266ecde8b72ef813cb9ca82",
   "reviewedAt": "2026-08-01",
   "scope": "Finite normalized material claims across tracked frontend JS/HTML and marketed docs; literal duplicate strings are folded into one family.",

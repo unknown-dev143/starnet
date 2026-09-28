@@ -425,6 +425,7 @@ test/business-memory.test.js
 test/business-agents-store.test.js
 test/agent-messages-store.test.js
 test/agent-routes.test.js
+test/route-table-collision.test.js
 test/boss-decision-trace.test.js
 test/aiteam.test.js
 test/business-projects-store.test.js

@@ -616,4 +616,73 @@ and `test/release-assemble-manifest.test.js` both drive their subject through `s
 `test/source-text-integrity.test.js` dies the same way on `spawnSync git ls-files` (`EBUSY`). Three of the
 sweep's 42 flags, correctly reclassified as environment rather than defects — a tally is not a triage.
 
+### 10h. The two qa/ data files the rebrand's own validators reject — and a route that silently shadowed a whole panel
+
+Chasing the sweep's `test/qa-product-perfect.test.js` flag (which a `TypeError` made look like sandbox noise)
+turned up **three real defects**, all shipped, none caught by any gate.
+
+**1 + 2. `qa/` is scanned by NO section — and two of its files are VALIDATED by rebranded code.** §10d/§10e swept
+`scripts/` and rebranded the product-perfect validators; the **tracked data they validate was left behind**, so
+both validators rejected their own ledgers:
+
+- `scripts/qa/product-perfect.mjs:62` demands `manifest.campaign === 'SpaceStation product perfection'`, but
+  `qa/product-perfect/waves.json:3` still said `"StarNet product perfection"` → `validateManifest` failed →
+  `deriveStatus` returned `waves: []` and `currentWave: null` → the whole W0 controller read as BLOCKED.
+- `scripts/qa/product-perfect/claims.mjs:323` demands `ledger.authority === 'SpaceStation advertised claims'`,
+  but `qa/product-perfect/claims.json:3` still said `"StarNet advertised claims"`.
+
+**Fixed** both data values. Proof: `qa-product-perfect.test.js` went **red → green (50 assertions)**; and
+`validateClaimsLedger` — a pure, exported function, so it can be proven without git — returns
+`ok: true, errors: []`, while a clone with the legacy authority returns `ok: false` with exactly
+`authority must be SpaceStation advertised claims`. (The claims *test* itself stays sandbox-blocked: every
+function in `claims.mjs` is built on `spawnSync('git', …)` — `ls-files`, `rev-parse`, `ls-tree`, `cat-file`,
+`merge-base` — so it cannot run here by construction.)
+
+**3. `GET /api/permissions` had TWO handlers, and the wrong one won.** This is the serious one.
+`sidecar/agent-routes.js` registered `{ m: 'GET', exact: '/api/permissions', h: handlePermissions }` returning
+the §13 business-action **catalogue** (`{tiers, defaultGrants}`), while `sidecar/index.js:9417` registered the
+same `exact` path returning `grantManager.snapshot()` (the **grant list** + `masterBypass`). `dispatchRoute`
+is **first-match-wins** and `index.js` spreads the module tables at line 9330 — *above* its own row at 9417 —
+so the catalogue shadowed the grant list. `exact` compares the raw url, so the two rows are indistinguishable
+by construction. The module headers' claim that "every pattern is anchored, so table position is not
+load-bearing" holds for `rx`/`qrx` rows and is **false for two rows sharing one `exact`**.
+
+Consequences, all silent (HTTP 200, no error, no log): the Settings **Permissions panel** read `grants` and
+`masterBypass` off a payload that had neither — an empty panel with a dead FULL BYPASS switch — and two e2e
+suites (`e2e.pathtrust`, `e2e.mcp-connector`) that assert on that list could not pass.
+
+**Proven live, not inferred.** Booted the sidecar and read the endpoint: `top-level keys = ["tiers",
+"defaultGrants"]`, `has grants = false`, `has masterBypass = false`.
+
+**Fixed** by making one path serve both consumers additively: `handlePermissionsList` now also returns
+`tiers: BusinessPermissions.catalog()` and `defaultGrants: BusinessPermissions.DEFAULT_GRANTS`, and the
+colliding row was **deleted** from `agent-routes.js` (its `handlePermissions` stays exported as the catalogue's
+definition). Re-probed live: `grants ✓ masterBypass ✓ envFullAccess ✓ tiers ✓ (len 3) defaultGrants ✓`.
+`agent-routes.test.js` re-points its catalogue assertion at the exported handler and **locks the row's absence**;
+`e2e.mcp-connector` went fully green (121 assertions) and `e2e.pathtrust` dropped from 6 failures to 1.
+
+**New gate §13 — `test/route-table-collision.test.js`** (added to `test/fast.list`). `index.js` cannot be
+`require`d without booting the server, so it scans the nine mounted tables as SOURCE: comment-stripped
+(preserving line numbers) and string-literal-aware, it collects every `{ m, <key>, h }` row, normalises quoted
+paths, and fails on any `(method, path)` or `(method, RX_ constant)` claimed twice — plus a self-check that it
+really found the tables and a row we know exists. Sabotage-proven: re-adding the colliding row turns it red
+naming **both** rows (`index.js:9418, agent-routes.js:458`).
+
+**Also fixed in the same sweep — `test/pathtrust.test.js`, two environment-dependent premises (not product
+bugs).**
+- Test 9 asserts "no `.git` anywhere up → the proposed root is the file's own directory". It writes under
+  `os.tmpdir()`, which on Windows is *under the home directory* — and this machine's home is itself a git repo
+  (`C:\Users\User\.git`), so the walk-up legitimately stops at the home dir. The premise cannot hold here, so
+  the test now detects an ancestor repo and skips honestly (the same pattern the file already uses for symlinks).
+- Test 8's symlink-escape proof: this sandbox's `fsp.symlink(…, 'dir')` **accepts** the call but produces a
+  non-traversable link (`lstat` reports a directory, `readFileSync` through it is `ENOENT`, `realpath` does not
+  resolve) — so the guard had no escape to reject and the assertion read "did NOT reject". The test now gates
+  the proof on the link actually resolving; on a machine that can create links it still proves the escape is
+  denied.
+  ⚠️ A `detectRoot` change was tried and **reverted**: making the walk use the injected `isGitRepoOf` looked
+  tidier but broke `projectbless.test.js` (which injects `() => false` for store metadata only) and tripped
+  `failopen-ratchet`'s sync-call baseline. The module's own comment scopes that dep to "light metadata for the
+  store, not root detection" — the walk owning its `fsp.stat` is intentional. Reverted to a comment-only diff;
+  `pathtrust` (57), `projectbless` (42) and `failopen-ratchet` (157) all green.
+
 

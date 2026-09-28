@@ -98,7 +98,9 @@
     }
 
     // propose the project root to bless for a referenced path: the nearest ancestor that is a git repo
-    // (natural project boundary), else the directory containing the file. Bounded ancestor walk.
+    // (natural project boundary), else the directory containing the file. Bounded ancestor walk. This walk
+    // stats `.git` itself rather than going through the injected isGitRepoOf — that dep is scoped to the
+    // store's light metadata, not to root detection, and the real caller injects the identical check anyway.
     async function detectRoot(absPath) {
       const abs = P.resolve(absPath);
       let dir = P.dirname(abs);

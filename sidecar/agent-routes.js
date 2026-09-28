@@ -455,7 +455,13 @@ function makeAgentRoutes(deps) {
   // so the query is accepted; see the note above the RX_ definitions.
   const routes = [
     { m: 'GET', exact: '/api/roles', h: handleRoles },
-    { m: 'GET', exact: '/api/permissions', h: handlePermissions },
+    // ⛔ NO bare `GET /api/permissions` row here. It used to be, and it SILENTLY SHADOWED index.js's
+    // handlePermissionsList: dispatchRoute is first-match-wins over ROUTES, and index.js spreads this module's
+    // table ABOVE its own rows, so `exact` (which compares the raw url) matched here first. GET
+    // /api/permissions therefore answered {tiers, defaultGrants} and never {grants, masterBypass} — the
+    // Permissions panel lost its grant list. handlePermissions is still exported and still the catalog's
+    // definition; index.js now serves those two fields ADDITIVELY from its own row. The "anchored patterns
+    // mean order is not load-bearing" note above holds for rx/qrx, but NOT for two rows sharing one `exact`.
     { m: ['GET', 'POST'], rx: RX_BIZ_AGENTS, h: handleAgents },
     { m: ['GET', 'POST'], rx: RX_BIZ_MEMORY, h: handleMemory },
     { m: ['GET', 'POST'], rx: RX_BIZ_MESSAGES, h: handleMessages },

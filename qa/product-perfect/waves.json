@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "campaign": "StarNet product perfection",
+  "campaign": "SpaceStation product perfection",
   "terminalVerdict": "PRODUCT PERFECT",
   "policy": {
     "serialization": "first-non-pass",

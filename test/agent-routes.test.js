@@ -83,7 +83,7 @@ async function call(R, method, url, body) {
   /* ---------- the route rows index.js will mount are well-formed ---------- */
   {
     const { R } = harness();
-    A.eq(R.routes.length, 12, 'the module exposes 12 route rows');
+    A.eq(R.routes.length, 11, 'the module exposes 11 route rows');
     for (const row of R.routes) {
       A.ok(!!row.m && typeof row.h === 'function', 'each row has a method and a handler');
       const matchers = ['exact', 'qsplit', 'prefix', 'qprefix', 'rx', 'qrx'].filter(k => row[k] !== undefined);
@@ -132,10 +132,18 @@ async function call(R, method, url, body) {
     A.eq(roles.code, 200, 'GET /api/roles is 200');
     A.eq(roles.json.roles.length, 12, 'the catalog lists §7\'s twelve roles');
     A.eq(roles.json.unresolved, [], 'the role bridge is intact');
-    const perms = await call(R, 'GET', '/api/permissions');
-    A.eq(perms.code, 200, 'GET /api/permissions is 200');
+    // The bare GET /api/permissions ROW was REMOVED from this module: mounted above index.js's own row it
+    // silently shadowed the grant list (dispatchRoute is first-match-wins, and `exact` compares the raw url).
+    // The catalogue is still this module's definition, so call the exported handler directly — the SHAPE is
+    // what this block tests — and lock the row's absence so it cannot come back.
+    const pRes = fakeRes();
+    R.handlePermissions(fakeReq('GET', '/api/permissions'), pRes);
+    const perms = { code: pRes.code, json: JSON.parse(pRes.body) };
+    A.eq(perms.code, 200, 'the permission catalogue handler is 200');
     A.eq(perms.json.tiers.length, 3, 'the catalog lists §13\'s three tiers');
     A.eq(perms.json.defaultGrants, { safe: true, review: false, restricted: false }, 'it reports the default grants');
+    A.ok(!R.routes.some(r => r.exact === '/api/permissions'),
+      'the module mounts NO bare /api/permissions row (it would shadow index.js\'s grant list)');
   }
 
   /* ---------- hire ---------- */

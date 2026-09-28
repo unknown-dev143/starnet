@@ -226,9 +226,17 @@ function scriptPrompt(decision) {
       await fsp.mkdir(outside, { recursive: true });
       await fsp.writeFile(path.join(outside, 'loot.txt'), 'nope');
       await fsp.symlink(outside, path.join(proj, 'escape'), 'dir');
-      const h = harness({ roots: [path.resolve(proj)] });
-      await rejects(h.pt.guard(path.join(proj, 'escape', 'loot.txt'), { scope: 'read', surface: 'autonomous', prompt: null }),
-        'a symlink under a blessed root that escapes it is denied (realpath re-proof)');
+      // Some filesystems (and restricted sandboxes) ACCEPT symlink() yet create a link that does not
+      // actually resolve — asserting on that would prove nothing either way, so gate the real proof on the
+      // link being traversable. On a machine that can create links, this still proves the escape is denied.
+      const traversable = await fsp.realpath(path.join(proj, 'escape', 'loot.txt')).then(() => true, () => false);
+      if (!traversable) {
+        A.ok(true, 'symlink escape regression skipped — symlink() did not materialise a traversable link');
+      } else {
+        const h = harness({ roots: [path.resolve(proj)] });
+        await rejects(h.pt.guard(path.join(proj, 'escape', 'loot.txt'), { scope: 'read', surface: 'autonomous', prompt: null }),
+          'a symlink under a blessed root that escapes it is denied (realpath re-proof)');
+      }
     } catch (e) {
       A.ok(true, 'symlink escape regression skipped — this filesystem disallows symlinks');
     }
@@ -239,12 +247,26 @@ function scriptPrompt(decision) {
     const loose = path.join(ROOT, 'loose');
     await fsp.mkdir(loose, { recursive: true });
     await fsp.writeFile(path.join(loose, 'note.txt'), 'x');
-    const h = harness();
-    const p = scriptPrompt('always');
-    await h.pt.guard(path.join(loose, 'note.txt'), { scope: 'read', surface: 'interactive', prompt: p });
-    A.ok(path.resolve(p.calls[0].proposedRoot).toLowerCase() === path.resolve(loose).toLowerCase(),
-      'no .git anywhere up → proposed root is the file\'s own directory');
-    A.ok(h.blessed[0].meta.isGitRepo === false, 'a non-git root is stamped isGitRepo:false');
+    // The premise is "NO .git anywhere up". If an ancestor of the temp dir is itself a git repo — a dotfiles
+    // home directory, e.g. C:\Users\<me>\.git — the walk-up legitimately stops there and the fallback under
+    // test is never reached. That is a TRUE answer, just not this test's subject, so only assert when the
+    // premise actually holds (same honest-skip pattern as the symlink case above).
+    let ancestorRepo = null;
+    for (let d = loose; ; d = path.dirname(d)) {
+      if (await fsp.stat(path.join(d, '.git')).then(() => true, () => false)) { ancestorRepo = d; break; }
+      const up = path.dirname(d);
+      if (!up || up === d) break;
+    }
+    if (ancestorRepo) {
+      A.ok(true, 'non-git fallback regression skipped — a .git exists above the temp dir (' + ancestorRepo + ')');
+    } else {
+      const h = harness();
+      const p = scriptPrompt('always');
+      await h.pt.guard(path.join(loose, 'note.txt'), { scope: 'read', surface: 'interactive', prompt: p });
+      A.ok(path.resolve(p.calls[0].proposedRoot).toLowerCase() === path.resolve(loose).toLowerCase(),
+        'no .git anywhere up → proposed root is the file\'s own directory');
+      A.ok(h.blessed[0].meta.isGitRepo === false, 'a non-git root is stamped isGitRepo:false');
+    }
   }
 
   // ---- 10. bless persistence failure = deny (fail-closed) ----
