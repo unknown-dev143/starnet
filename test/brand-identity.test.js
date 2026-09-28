@@ -384,4 +384,56 @@ const allowedContent = (lit) => HONEST.test(lit) || IDENTIFIER.test(lit);
   A.ok(files.length > 100, 'the scripts scan actually found the toolchain');
 }
 
+/* ---------- 11. .github/**: the public project surface ----------
+   The issue templates, the release titles, the DMG install guide and the release workflows are all
+   user-visible, and NO other section scanned them — so the stale productName-derived references that
+   were fixed in scripts/ survived here, each a real break:
+     · release.yml still named the installer `StarNet_<v>_x64-setup.exe`, but the bundler emits
+       `SpaceStation_<v>_x64-setup.exe` and the upload step has if-no-files-found: error.
+     · two hosted proofs located the installed app with `-match 'StarNet'`, but the install dir is
+       <LOCALAPPDATA>\<productName> = SpaceStation.
+   The only permitted legacy brand is an IDENTIFIER: the androoAGI/starnet* repos/URLs, lowercase
+   starnet-prefixed filenames and starnet-dotted receipt schema ids (all lowercase — they do not
+   match the case-sensitive LEGACY regex anyway), and the STARNET_* env prefix. Anything mixed-case is
+   an offender. */
+{
+  const dir = path.join(ROOT, '.github');
+  const files = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.ya?ml$/.test(e.name)) files.push(p);
+    }
+  })(dir);
+  const ALLOW = [
+    /STARNET_|__STARNET|SKYNET_/,   // env prefixes (identifiers)
+    /StarNet-Token|starnet-token/,  // the auth header
+  ];
+  const offenders = [];
+  for (const p of files) {
+    fs.readFileSync(p, 'utf8').split(/\r?\n/).forEach((line, i) => {
+      if (!LEGACY.test(line)) return;
+      if (ALLOW.some((re) => re.test(line))) return;
+      offenders.push(path.relative(ROOT, p) + ':' + (i + 1) + '  ' + line.trim().slice(0, 80));
+    });
+  }
+  A.eq(offenders.length, 0, 'no .github surface renders the legacy brand');
+  if (offenders.length) console.log('  offenders:\n   ' + offenders.join('\n   '));
+  A.ok(files.length >= 10, 'the .github scan actually found the workflows + issue templates');
+
+  // Drift lock: the release workflows name the installer explicitly (YAML cannot call the JS helper
+  // that owns the name), so its product-name prefix must equal tauri.conf.json's productName — a
+  // future rename has to revisit it, exactly like release-installer-selection.test.mjs.
+  const productName = JSON.parse(read('src-tauri/tauri.conf.json')).productName;
+  const drift = [];
+  for (const p of files) {
+    for (const m of fs.readFileSync(p, 'utf8').matchAll(/["'\s/]([A-Za-z][A-Za-z0-9]*_[^\n]*?x64-setup\.exe)/g)) {
+      if (!m[1].startsWith(productName + '_')) drift.push(path.relative(ROOT, p) + ': ' + m[1].slice(0, 50));
+    }
+  }
+  A.eq(drift.length, 0, 'every installer filename in .github/ is prefixed with the product name');
+  if (drift.length) console.log('  drift:\n   ' + drift.join('\n   '));
+}
+
 A.report('brand-identity');

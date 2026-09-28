@@ -521,4 +521,50 @@ blocked here (EBUSY), so the child never writes its transcript and the adapter r
 including the searchable `ROTATION-FACT-731`. So all ten boundaries pass in a real environment — an earlier
 note calling two of these "real" was wrong.
 
+### 10f. …and a whole directory no gate had ever opened: `.github/`
+
+§10d/§10e swept `frontend/`, `sidecar/`, `scripts/`, `src-tauri/` and the root docs. **`.github/` was scanned
+by nothing.** It holds the public project surface — the two issue templates, the release titles, the DMG
+install guide, and the release workflows — and it still carried the legacy product name. Two of the offenders
+were not cosmetic, they were **breaks**:
+
+- **`.github/workflows/release.yml` named the installer `release/StarNet_<v>_x64-setup.exe`** in both the
+  `upload-artifact` path list and the `gh release create` asset list. The bundler emits
+  `SpaceStation_<v>_x64-setup.exe` — proven independently at `scripts/lib/release-installer.mjs:13`
+  (`export const NSIS_PRODUCT_NAME = 'SpaceStation'`) and line 16 (the `…_x64-setup.exe` template). The upload
+  step sets `if-no-files-found: error`, so a cut would have **failed at the upload step**.
+- **Two hosted proofs located the installed shell with `-match 'StarNet'`**
+  (`g1-packaged-lifecycle.yml:81`, `t0-clean-install-proof.yml:45`). They recurse `$env:LOCALAPPDATA` for
+  `skynet-desktop.exe` and filter by path. The install dir is `<LOCALAPPDATA>\<productName>` = `SpaceStation`,
+  so the filter would have found nothing and the proof would have thrown
+  `"installed skynet-desktop.exe not found under LOCALAPPDATA"`.
+
+The remaining edits are rendered text: both issue templates (`description`, the markdown `value`, the
+`SpaceStation version` field label), `desktop-build.yml` (a comment, the DMG "drag **SpaceStation** onto
+Applications" step, the test-build release title), `release-train.yml` (a comment, two `Assert-Authenticode`
+labels, the release title), `t0-clean-install-proof.yml` (a header comment and an evidence note), and the
+`release.yml` header comment.
+
+**Why no test caught the release.yml path:** `test/release-installer-selection.test.mjs` locks the **JS finder
+library** (`scripts/lib/release-installer.mjs`) and its fixtures — not the YAML's literal asset strings. The
+stale name was genuinely unguarded.
+
+**New gate §11** (`test/brand-identity.test.js`): walks every `.ya?ml` under `.github/` (recursively), flags any
+line matching `LEGACY` that is not a permitted identifier (`STARNET_`/`__STARNET`/`SKYNET_` env prefixes, the
+`StarNet-Token`/`starnet-token` auth header), asserts the scan actually found the surface (`files.length >= 10`),
+**and adds a drift lock**: it derives `productName` from `src-tauri/tauri.conf.json` and asserts every
+`…x64-setup.exe` filename appearing in `.github/` is prefixed with `<productName>_` — so the next rename has to
+revisit these workflows, exactly like `release-installer-selection.test.mjs`. Gate **46 → 49 assertions**.
+
+**Sabotage-proven on both classes, independently.** A probe file with a bare `StarNet` comment → red
+(`no .github surface renders the legacy brand`, naming file:line). A probe with a *non-legacy* wrong prefix
+(`SuperApp_9.9.9_x64-setup.exe`) → red on the drift lock alone (`every installer filename in .github/ is
+prefixed with the product name`). Both probe files removed; the tree is clean.
+
+**Left deliberately alone:** `scripts/ci/windows-published-upgrade-proof.ps1:179` still matches
+`StarNet_*_x64-setup.exe` — and must. It searches *already-published* older releases to prove an upgrade path,
+and those historical assets really are named `StarNet_*`. §10 keeps an explicit IDENT allowlist entry
+(`/^StarNet_\*_x64-setup\.exe$/`, "historical published installer asset") for exactly this case. Likewise the
+`androoAGI/starnet` + `androoAGI/starnet-releases` repo URLs are identifiers, not rendered text.
+
 

@@ -78,7 +78,7 @@ jobs:
           Start-Sleep -Seconds 5
           if (Get-Process skynet-desktop -ErrorAction SilentlyContinue) { taskkill /IM skynet-desktop.exe /T /F | Out-Null }
           $exe = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter 'skynet-desktop.exe' -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -match 'StarNet' } | Select-Object -First 1
+            Where-Object { $_.FullName -match 'SpaceStation' } | Select-Object -First 1
           if ($null -eq $exe) { throw "installed skynet-desktop.exe not found under LOCALAPPDATA" }
           "EXE=$($exe.FullName)" >> $env:GITHUB_ENV
           "INSTALL_DIR=$($exe.DirectoryName)" >> $env:GITHUB_ENV

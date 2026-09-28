@@ -1,15 +1,15 @@
 name: Bug report
-description: Report reproducible incorrect behavior in StarNet
+description: Report reproducible incorrect behavior in SpaceStation
 title: "[Bug]: "
 labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: Thanks for helping improve StarNet. Do not include secrets or private data.
+      value: Thanks for helping improve SpaceStation. Do not include secrets or private data.
   - type: input
     id: version
     attributes:
-      label: StarNet version
+      label: SpaceStation version
       description: Version, commit, or build description shown by the app.
     validations:
       required: true

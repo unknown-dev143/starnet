@@ -12,7 +12,7 @@
 # always created as a DRAFT (--draft) — a draft does not move releases/latest, so a human must
 # still click Publish in the GitHub UI. That human step is the real 4-platform checkpoint.
 #
-# StarNet release build — machine-independent signed cut.
+# SpaceStation release build — machine-independent signed cut.
 #
 # Why this exists: local release builds depend on the dev machine's Smart App Control
 # state (SAC enforce blocks freshly compiled proc-macro DLLs — see docs/LAUNCH_CHECKLIST.md).
@@ -76,8 +76,8 @@ jobs:
         with:
           name: starnet-v${{ steps.ver.outputs.version }}
           path: |
-            release/StarNet_${{ steps.ver.outputs.version }}_x64-setup.exe
-            release/StarNet_${{ steps.ver.outputs.version }}_x64-setup.exe.sig
+            release/SpaceStation_${{ steps.ver.outputs.version }}_x64-setup.exe
+            release/SpaceStation_${{ steps.ver.outputs.version }}_x64-setup.exe.sig
             release/latest.json
           if-no-files-found: error
 
@@ -110,11 +110,11 @@ jobs:
           $v = "${{ steps.ver.outputs.version }}"
           gh release create "v$v" `
             --repo androoAGI/starnet-releases `
-            --title "StarNet $v" `
+            --title "SpaceStation $v" `
             --notes-file RELEASE_NOTES.md `
             --draft `
-            "release/StarNet_${v}_x64-setup.exe" `
-            "release/StarNet_${v}_x64-setup.exe.sig" `
+            "release/SpaceStation_${v}_x64-setup.exe" `
+            "release/SpaceStation_${v}_x64-setup.exe.sig" `
             "release/latest.json"
 
       - name: Verify manifest (draft — not live yet)
