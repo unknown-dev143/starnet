@@ -32,7 +32,14 @@
 
   // Closed vocabularies — a value outside these is REFUSED, never coerced. An activity log that accepts
   // free-text outcomes is an activity log that cannot be trusted to mean anything.
-  const RESULTS = ['ok', 'error', 'pending'];
+  //
+  // 'refused' is NOT a synonym for 'error' and was added deliberately. An error is something that went wrong;
+  // a refusal is the system DELIBERATELY declining to act, and the reason is the useful part ("this agent
+  // belongs to another business"). Collapsing the two would make "why did nothing happen?" unanswerable from
+  // the log — the exact question this trail exists to answer. The distinction is already house vocabulary
+  // (business-workorders-store STEP_STATUSES, subagents.js TERMINAL, live-doctor.js); this only lets the
+  // activity log say it too.
+  const RESULTS = ['ok', 'error', 'pending', 'refused'];
   const APPROVALS = ['not-required', 'required', 'granted', 'denied'];
   const ACTOR_KINDS = ['user', 'agent', 'system'];
 

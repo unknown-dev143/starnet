@@ -287,3 +287,88 @@ fails **open**, where this codebase's convention is to report a source unavailab
 **HTTP 200 / 10273 bytes / text/css**, `a11y.css` is the **last** stylesheet in the served `index.html`,
 and the served `style.css` carries the three new `--ph-dim` declarations exactly once each.
 
+---
+
+## 9. Postscript — "add boss-agent": a P4 finding, and the one guarantee actually worth porting
+
+**The request** was to integrate the standalone `boss-agent/` coordinator (the sibling tool restored beside
+this repo) into the app, as the opening of a second feature phase.
+
+**The finding: it has no non-duplicating form as a subsystem.** Its own README says the intent is that
+"this becomes a module inside your OpenClaw fork" — and the fork already has every module it would become.
+Wiring it in unchanged would have been **four P4 duplicate subsystems**, plus SQL in a repo that has none,
+plus an LLM in the trust path:
+
+| boss-agent | Already in this app | Verdict |
+|---|---|---|
+| `lib/db.js` — `node:sqlite` (`managed_agents`/`agent_tasks`/`decisions_log`) | `durable-store.js` — JSON, fsync-before-rename. The repo has **no SQL by rule** | duplicate — not ported |
+| `lib/registry.js` — `managed_agents` | `business-agents-store.js` — hire/update/remove, §13 grants, memory namespace | duplicate — not ported |
+| `lib/boss.js` — `assignTask` + task table | `business-tasks-store.js` + `agent-routes.js`, which already refuses cross-tenant assignment with an explicit `(P6)` error | duplicate — not ported |
+| `lib/gate.js` — firewall choke point before registration | `sidecar/skills/gate.js` — and stricter: approvals are bound to a **content digest**, with a live re-scan on delivery that catches post-review tampering | duplicate — not ported |
+| `lib/firewall/*` — LLM code review | `sidecar/skills/guard.js` — the deterministic 12-class scanner. The LLM reviewer is the piece `PHASE0-AUDIT-v3.md:414` records as **"Deliberately NOT adopted"** (it breaks determinism and offline-first) | not adopted |
+| `decisions_log` — REFUSED/ASSIGNED/COMPLETED/FAILED | `sidecar/autonomy-ledger.js` — built for this exact question ("what did the station decide overnight, and why?") | duplicate — not ported |
+
+**What was genuinely missing** was the one thing boss-agent's README calls its whole point: *"assigning work
+to an unregistered agent is refused, **and the refusal itself is logged**."* `agent-routes.js` audited every
+SUCCESSFUL mutation (hire, fire, status, grants) and **not one refusal** — a cross-business assignment
+answered 409 with an explanation that lived only in a response body, so once the tab closed, *"why did
+nothing happen?"* was unanswerable from the log.
+
+**So that guarantee was ported — and only that.** It composes with the store that already owns the job
+rather than adding a second one:
+
+- **`business-activity-store.js`** — `'refused'` joins the closed `RESULTS` vocabulary. A refusal is
+  **not** an `error`: an error is something going wrong, a refusal is the system *choosing* not to act, and
+  the reason is the payload. Collapsing them makes "why did nothing happen?" unanswerable — the exact
+  question the trail exists to answer. `'refused'` was already house vocabulary
+  (`business-workorders-store` `STEP_STATUSES`, `subagents.js` `TERMINAL`, `live-doctor.js`).
+- **`agent-routes.js`** — `auditDecision()` now records **both** outcomes of an assignment: the assignment
+  itself, and every refusal (the P6 cross-business 409, the unknown-agent 404, the store's 400). Also the
+  "this agent still has tasks" 409 on removal. Every existing status code and response body is unchanged —
+  the audit **describes** the decision, it never makes it.
+- **`frontend/app/businesscenter.js`** (+ the generated `website/app/` mirror) — the result vocabulary is
+  mirrored there, so `'refused'` was added to **both** `RESULTS` and `RESULT_LABEL`; without it the log
+  would be correct while the UI rendered `UNKNOWN`. A parity assertion in the new gate stops the two
+  copies drifting again.
+
+**Gates after:** `boss-decision-trace` (**58**, new), `agent-routes` 144, `business-activity-store` 44,
+`businesscenter` 100, `task-routes` 82, `business-routes` 104, `business-os-hardening` 196,
+`business-os-lifecycle` 39, `automation-routes` 219, `maker-routes` 138, `manager-routes` 147,
+`twin-routes` 68, `mission-control` 89, `business-security` 70, `events-contract` 9, `failopen` 18,
+`failopen-ratchet` 157, `lint-determinism` scanned 336 files OK. Website mirror `--check` **OK**
+(3925 files + 2 embed-only). `source-text-integrity` is the documented sandbox artifact
+(`spawnSync git EBUSY`), not a defect.
+
+**The new gate was proven to bite, not merely written.** Its source-lock asserts that every 4xx exit in
+`handleAssign` audits *inside its own branch* — the first version used a fixed 600-character window and
+**passed with an audit removed**, because the window reached back into the sibling branch's call. It was
+replaced with a positional test (the nearest preceding `auditDecision` must come *after* the previous
+`return`), re-sabotaged, and confirmed red — `expected 1, got 2` — before being restored. Two boundary bugs
+in the lock itself were found the same way: `indexOf('async function handleBizMemory')` silently matched
+`handleBizMemoryWrite` (the real one is not `async`), swallowing the whole memory section into the body.
+
+**Live proof, on a scratch workspace (never the real station):** two businesses created, an agent hired into
+Beta, a task created in Alpha, then the cross-business assignment → **HTTP 409**, and Alpha's activity log
+returned the refusal as `alpha#3` with `result:"refused"`, the full P6 reason, and a traceable
+`detail:"task=alpha~t1 agent=beta~a1 taskBusiness=alpha agentBusiness=beta"`. The sidecar was **restarted**
+and the row was still there — read back through `GET /api/businesses/alpha/activity`, not from memory. The
+success path (`alpha~a1` → 200) and the unknown-agent path (`ghost~a9` → 404) were exercised too, leaving a
+six-row trail in which refusals and successes are distinguishable:
+
+```
+ 1 | ok       | Business created
+ 2 | ok       | Task created
+ 3 | refused  | Refused to assign task "Ship the thing" to agent beta~a1
+ 4 | ok       | Hired the engineering agent (Engineer)
+ 5 | ok       | Assigned task "Ship the thing" to the engineering agent (Engineer)
+ 6 | refused  | Refused to assign task "Ship the thing" — no such agent
+```
+
+**Not complete / deliberately not done:** `boss-agent` itself is **not** a dependency and **not** wired into
+the app — it remains a standalone tool sitting beside it, exactly as `PHASE0-AUDIT-v3.md:414` recorded. §28's
+dependency rule stays **SATISFIED** ("zero of the 8 researched repos are dependencies"). Nothing was deleted
+from it. The one honest limitation in the new code: the `no such task` 404 is the **only** unaudited refusal
+exit, because the activity store is business-scoped and a task id that resolves to nothing names no business
+to log against — the gate pins that as an explicit count so it cannot drift silently.
+
+

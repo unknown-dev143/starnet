@@ -21,6 +21,9 @@
                     not applied rather than believing it was.
      P1 (§9)      — a memory write requires a source; the store refuses one without. The route passes it
                     straight through and returns the refusal with a 422.
+     §20          — an ASSIGNMENT decision is durable, whichever way it went. Both the assignment and every
+                    refusal of one write an activity row, so "why was this refused?" is answerable after the
+                    fact instead of living only in a response body nobody kept. See auditDecision().
 
    ROUTES (all JSON):
      GET    /api/roles                          -> { roles, unresolved }
@@ -179,6 +182,12 @@ function makeAgentRoutes(deps) {
     if (tasks) {
       const assigned = tasks.list(a.businessId).filter(t => t.assignedAgent === id);
       if (assigned.length) {
+        auditDecision(a.businessId, {
+          action: 'Refused to remove the ' + a.role + ' agent (' + a.name + ')',
+          reason: 'this agent has ' + assigned.length + ' task(s) assigned — reassign or clear them before removing it',
+          result: 'refused',
+          detail: 'agent=' + id + ' tasks=' + assigned.map(t => t.id).join(',')
+        });
         return json(res, 409, {
           ok: false,
           error: 'this agent has ' + assigned.length + ' task(s) assigned — reassign or clear them before removing it',
@@ -253,21 +262,54 @@ function makeAgentRoutes(deps) {
     const agentId = String(parsed.body.agentId == null ? '' : parsed.body.agentId).trim();
     if (agentId) {
       const a = agents.get(agentId);
-      if (!a) return json(res, 404, { ok: false, error: 'no such agent: ' + agentId });
+      if (!a) {
+        auditDecision(task.businessId, {
+          action: 'Refused to assign task "' + task.title + '" — no such agent',
+          reason: 'no such agent: ' + agentId,
+          result: 'refused',
+          detail: 'task=' + taskId + ' agent=' + agentId
+        });
+        return json(res, 404, { ok: false, error: 'no such agent: ' + agentId });
+      }
       // P6: the agent must belong to the SAME business as the task. A cross-business assignment is the one
       // link a flat JSON store cannot catch, so it is refused here with a 409 the user can act on.
       if (a.businessId !== task.businessId) {
-        return json(res, 409, {
-          ok: false,
-          error: 'agent ' + agentId + ' belongs to business "' + a.businessId + '", but this task belongs to "' + task.businessId + '" — cross-business assignment is refused (P6)'
+        const why = 'agent ' + agentId + ' belongs to business "' + a.businessId + '", but this task belongs to "' + task.businessId + '" — cross-business assignment is refused (P6)';
+        auditDecision(task.businessId, {
+          action: 'Refused to assign task "' + task.title + '" to agent ' + agentId,
+          reason: why,
+          result: 'refused',
+          detail: 'task=' + taskId + ' agent=' + agentId + ' taskBusiness=' + task.businessId + ' agentBusiness=' + a.businessId
         });
+        return json(res, 409, { ok: false, error: why });
       }
     }
     const r = tasks.update(taskId, { assignedAgent: agentId });
-    if (!r.ok) return json(res, 400, { ok: false, error: r.reason });
+    if (!r.ok) {
+      auditDecision(task.businessId, {
+        action: 'Refused to assign task "' + task.title + '"',
+        reason: r.reason,
+        result: 'refused',
+        detail: 'task=' + taskId + ' agent=' + agentId
+      });
+      return json(res, 400, { ok: false, error: r.reason });
+    }
     if (agentId) {
       const a = agents.get(agentId);
       emitSafe('agent.assigned', { businessId: task.businessId, taskId: taskId, agentId: agentId, role: a ? a.role : '' });
+      auditDecision(task.businessId, {
+        action: 'Assigned task "' + task.title + '" to the ' + ((a && a.role) || 'agent') + ' agent (' + ((a && a.name) || agentId) + ')',
+        reason: 'assigned from the task board',
+        result: 'ok',
+        detail: 'task=' + taskId + ' agent=' + agentId
+      });
+    } else {
+      auditDecision(task.businessId, {
+        action: 'Unassigned task "' + task.title + '"',
+        reason: 'cleared from the task board',
+        result: 'ok',
+        detail: 'task=' + taskId + ' agent='
+      });
     }
     return json(res, 200, { ok: true, task: r.task });
   }
@@ -363,6 +405,27 @@ function makeAgentRoutes(deps) {
   function audit(businessId, row) {
     if (!activity) return;
     try { activity.append(businessId, row); } catch (e) { return e; }
+  }
+
+  /* THE DECISION TRACE. A REFUSED assignment must leave the same kind of durable row a successful one does,
+     because the question worth answering after the fact is "why did nothing happen?" — and a 409 in a response
+     body nobody kept answers it for exactly as long as the tab stays open. This is the guarantee the reference
+     boss-agent called its whole point ("assigning work to an unregistered agent is refused, and the refusal
+     itself is logged"), expressed in this app's own durable sink rather than a second registry.
+
+     `result:'refused'` is a closed-vocabulary value (business-activity-store.js), deliberately NOT 'error': an
+     error is something going wrong, a refusal is the system choosing not to act, and the reason is the payload.
+
+     Best-effort like every other audit here — a log we cannot write must never change the decision it describes,
+     so a failed row leaves the 409 a 409. (test/boss-decision-trace.test.js pins that.) */
+  function auditDecision(businessId, decision) {
+    audit(businessId, {
+      actor: { kind: 'system', id: '', name: '' },
+      action: decision.action,
+      reason: decision.reason || '',
+      result: decision.result,
+      detail: decision.detail || ''
+    });
   }
 
   // ---- dispatchers --------------------------------------------------------------------------------

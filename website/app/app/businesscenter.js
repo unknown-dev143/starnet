@@ -40,7 +40,7 @@
   // is the sidecar; this list must match it or the UI offers a launch the engine will refuse).
   const INACTIVE_STAGES = ['paused', 'winding-down', 'archived'];
   const TEMPLATES = ['saas', 'content', 'digital-product', 'agency', 'custom'];
-  const RESULTS = ['ok', 'error', 'pending'];
+  const RESULTS = ['ok', 'error', 'pending', 'refused'];
   const APPROVALS = ['not-required', 'required', 'granted', 'denied'];
 
   const STAGE_LABEL = {
@@ -52,7 +52,7 @@
     saas: 'SAAS', content: 'CONTENT', 'digital-product': 'DIGITAL PRODUCT',
     agency: 'AGENCY', custom: 'CUSTOM'
   };
-  const RESULT_LABEL = { ok: 'OK', error: 'FAILED', pending: 'PENDING' };
+  const RESULT_LABEL = { ok: 'OK', error: 'FAILED', pending: 'PENDING', refused: 'REFUSED' };
   const APPROVAL_LABEL = {
     'not-required': '', required: 'NEEDS APPROVAL', granted: 'APPROVED', denied: 'DENIED'
   };
