@@ -134,6 +134,7 @@ async function collect(provider, req) { const out = []; for await (const e of pr
     const modelsFetch = async () => new Response(JSON.stringify({ data: [
       { id: 'tooly', supported_parameters: ['tools'] },
       { id: 'brainy', supported_parameters: ['tools', 'reasoning_effort'], reasoningEfforts: ['low', 'high'] },
+      { id: 'cap', supported_parameters: ['reasoning'], supportsReasoning: true },   // reasoning-capable, no declaring effort list -> full spectrum incl 'none'
       { id: 'plain', supported_parameters: [] }
     ] }), { status: 200 });
     const p = makeOpenRouterProvider({ fetch: modelsFetch });
@@ -157,6 +158,27 @@ async function collect(provider, req) { const out = []; for await (const e of pr
     calls.length = 0;
     await collect(makeOpenRouterProvider({ fetch: capFetch, key: 'k', reasoningEffort: 'high' }), { model: 'plain', messages: [] });
     A.eq(calls[0].body.reasoning, undefined, 'non-reasoning model omits the reasoning block');
+    calls.length = 0;
+    // I3b. THE MISFIRING CASE: a reasoning-CAPABLE model dialled to OFF ('none'). `cap` declares `reasoning`
+    //   in supported_parameters WITHOUT an explicit effort list, so its allowed set is the FULL spectrum
+    //   (incl. 'none') — the exact shape that used to emit {effort:'none'} and get HTTP 400 "Reasoning is
+    //   mandatory for this endpoint and cannot be disabled" on a mandatory-reasoning endpoint. (The
+    //   `|| allowed.length > 1` arm fired because a reasoning model always has more than one allowed effort.)
+    //   The fix OMITS the block instead of asserting a disable.
+    await collect(makeOpenRouterProvider({ fetch: capFetch, key: 'k', reasoningEffort: 'none' }), { model: 'cap', messages: [] });
+    A.eq(calls[0].body.reasoning, undefined, 'reasoning-capable model dialled OFF omits the block (was {effort:none} -> 400)');
+    calls.length = 0;
+    await collect(makeOpenRouterProvider({ fetch: capFetch, key: 'k', reasoningEffort: 'none' }), { model: 'plain', messages: [] });
+    A.eq(calls[0].body.reasoning, undefined, 'non-reasoning model dialled OFF also omits the reasoning block');
+    calls.length = 0;
+    // and the boundary stays honest: a NON-none effort on that same model DOES send the block ...
+    await collect(makeOpenRouterProvider({ fetch: capFetch, key: 'k', reasoningEffort: 'low' }), { model: 'cap', messages: [] });
+    A.eq(calls[0].body.reasoning, { effort: 'low' }, 'a reasoning model dialled ON still sends its reasoning block');
+    calls.length = 0;
+    // ... and a model that declares ONLY 'low'/'high' (brainy) can never disable: 'none' clamps UP to its weakest
+    //     supported level and therefore still SENDS a block — the fix must not silence this legitimate case.
+    await collect(makeOpenRouterProvider({ fetch: capFetch, key: 'k', reasoningEffort: 'none' }), { model: 'brainy', messages: [] });
+    A.eq(calls[0].body.reasoning, { effort: 'low' }, 'a model that cannot disable reasoning clamps none -> its weakest level (still sent)');
   }
 
   // J. REGRESSION LOCK: a cancel during the PRE-STREAM request (POST / retry backoff) ends cleanly as a

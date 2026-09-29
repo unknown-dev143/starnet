@@ -199,7 +199,14 @@
       const allowed = reasoningEffortsForModel(req.model, meta);
       const effort = clampReasoningEffortForModel(req.model, req.reasoningEffort || reasoningEffort, meta);
       const body = { model: req.model, messages: applyCacheControl(req.messages, req.model), stream: true, usage: { include: true } };
-      if (effort !== 'none' || allowed.length > 1) body.reasoning = { effort };
+      // Send the block ONLY when reasoning is actually ON. An effort of 'none' means the caller dialled reasoning
+      // OFF, and the correct wire shape for that is to OMIT the field entirely — never to send {effort:'none'}.
+      // Some endpoints (reasoning-mandatory models) reject an explicit disable with HTTP 400 "Reasoning is
+      // mandatory for this endpoint and cannot be disabled"; they accept the field's ABSENCE (server default).
+      // The old `|| allowed.length > 1` arm was the bug: a reasoning-capable model always has >1 allowed effort,
+      // so it emitted {effort:'none'} on a dialled-off run and 400'd. Omitting is also strictly more honest —
+      // we are not asserting a reasoning parameter we don't intend to set.
+      if (effort !== 'none') body.reasoning = { effort };
       if (req.tools && req.tools.length) {
         body.tools = req.tools;
         body.tool_choice = 'auto';
