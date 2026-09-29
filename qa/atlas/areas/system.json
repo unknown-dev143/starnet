@@ -4036,7 +4036,7 @@
       "kind": "ui",
       "area": "system",
       "name": "input",
-      "purpose": "LAUNCH AT LOGIN — register StarNet to start automatically at sign-in (desktop app only).",
+      "purpose": "LAUNCH AT LOGIN — register SpaceStation to start automatically at sign-in (desktop app only).",
       "promise": "On desktop the toggle reflects the real OS autostart state (Lifecycle.autostartStatus) and registers/unregisters on change; in browser/dev it renders disabled with a 'desktop app only' note.",
       "wiring": {
         "files": [
@@ -4068,7 +4068,7 @@
       "kind": "ui",
       "area": "system",
       "name": "input",
-      "purpose": "KEEP COMPUTER AWAKE — prevent idle sleep while StarNet is open (desktop app only).",
+      "purpose": "KEEP COMPUTER AWAKE — prevent idle sleep while SpaceStation is open (desktop app only).",
       "promise": "On desktop the toggle flips store.settings.keepComputerAwake and requests a wake lock; in browser/dev it renders disabled with a \"desktop app only\" note.",
       "wiring": {
         "files": [
@@ -4395,7 +4395,7 @@
       "kind": "ui",
       "area": "system",
       "name": "UPDATE CENTER",
-      "purpose": "Open the UPDATE CENTER window to check for / apply a new StarNet version.",
+      "purpose": "Open the UPDATE CENTER window to check for / apply a new SpaceStation version.",
       "promise": "Clicking UPDATE CENTER opens the updates window (BUILDERS.updates).",
       "wiring": {
         "files": [

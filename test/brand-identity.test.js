@@ -27,8 +27,9 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
    which had two blind spots that each hid a REAL user-visible offender and let it ship green:
      · a `/*` INSIDE a string literal — sidecar/plugins.js writes `'/* ' + name + ' — a … plugin.'`,
        so the phantom block comment swallowed the rest of the file;
-     · a regex literal containing a quote — sidecar/tools/builtin/shell.js has /[\s"'`=(]/ in its
-       guard, which desynced the quote matcher so the `why:` sentence after it was never inspected.
+     · a regex literal containing a quote — sidecar/tools/builtin/shell.js has a character class
+       combining whitespace and the three quote characters in its guard, which desynced the quote
+       matcher so the why: sentence after it was never inspected.
    A single pass that tracks the previous significant token (to tell a regex from a division) cannot
    be fooled by either. */
 function extractStrings(src, { regexes = false } = {}) {
@@ -488,6 +489,58 @@ const allowedContent = (lit) => HONEST.test(lit) || IDENTIFIER.test(lit);
   A.eq(offenders.length, 0, 'no test/ expectation pins the legacy brand');
   if (offenders.length) console.log('  offenders:\n   ' + offenders.join('\n   '));
   A.ok(files.length > 200, 'the test scan actually found the suite');
+}
+
+/* ---------- 13. qa/**: the QA LEDGERS an operator reads and a gate can REJECT ----------
+   Every earlier section guards shipped source. `qa/` is scanned by NO section — and that made it the last
+   hiding place, in a shape the source scans structurally cannot see: STALE DATA, not stale code. §10h already
+   paid for this once (two `qa/product-perfect/` JSON values rejected by their own rebranded validators). The
+   perverse part is the pressure: `scripts/qa/closer.mjs` forbids a patch from touching `qa/STATUS.md` and
+   `qa/product-perfect/claims.json`, so a rebrand CANNOT be validated in the same pass that edits them.
+
+   A blanket scan is WRONG — most of the directory is deliberately historical:
+     · `qa/bugs/**`, `qa/STATUS.md`, `qa/QA_STATION.md` — dated findings and digests that NARRATE the legacy
+       name; renaming them would falsify the record.
+     · nested `README.md` files — docs that legitimately use the lineage allowlist; prose about the lineage,
+       not a rendered string.
+   So this section asserts exactly two things an operator or a gate actually CONSUMES:
+     (1) the ATLAS entries whose status is 'perfected' — a blessed verdict that the entry is verified
+         correct against shipping code. A perfected entry whose RENDERED fields (name/purpose/promise,
+         the text describing what the user sees) still assert the legacy word is a FALSE VERDICT about the
+         shipped product: command/version was perfected while claiming that /version prints the real
+         StarNet version/build string, but frontend/app/chat.js renders the product name from j.app.
+         Four such entries existed. HISTORICAL fields (notes, findings) are exempt by name — they narrate
+         the past, and rewriting them would destroy the audit trail.
+     (2) the PRODUCT-PERFECT LEDGER's discriminating values (waves[].campaign, claims[].authority) — the
+         strings the rebranded validators in scripts/qa/product-perfect/ compare against, so a stale value
+         does not merely read oddly, it BLOCKS the controller.
+   Verdict: an entry may not be perfected while denying the shipped brand. */
+{
+  const RENDERED = ['name', 'purpose', 'promise'];
+  const ATLAS_DIR = path.join(ROOT, 'qa', 'atlas', 'areas');
+  const files = fs.existsSync(ATLAS_DIR) ? fs.readdirSync(ATLAS_DIR).filter((f) => f.endsWith('.json')) : [];
+  A.ok(files.length >= 5, 'the atlas area files are present (' + files.length + ' found)');
+
+  const falseVerdicts = [];
+  let perfected = 0;
+  for (const f of files) {
+    const area = JSON.parse(fs.readFileSync(path.join(ATLAS_DIR, f), 'utf8'));
+    for (const e of (area.entries || [])) {
+      if (e.status !== 'perfected') continue;
+      perfected++;
+      const fields = RENDERED.filter((k) => e[k] != null && LEGACY.test(String(e[k])) && !allowedContent(String(e[k])));
+      if (fields.length) falseVerdicts.push(f + ' ' + e.id + '  [' + fields.join(',') + ']');
+    }
+  }
+  A.eq(falseVerdicts.length, 0, 'no atlas entry is blessed perfected while its RENDERED text asserts the legacy brand');
+  if (falseVerdicts.length) console.log('  false verdicts:\n   ' + falseVerdicts.join('\n   '));
+  A.ok(perfected > 0, 'the atlas scan actually found blessed entries (the lock has something to judge)');
+
+  // (2) the discriminating ledger values the rebranded validators compare against
+  const waves = JSON.parse(read('qa/product-perfect/waves.json'));
+  A.ok(!LEGACY.test(String(waves.campaign || '')), 'the product-perfect wave campaign names the shipped product');
+  const claims = JSON.parse(read('qa/product-perfect/claims.json'));
+  A.ok(!LEGACY.test(String(claims.authority || '')), 'the claims-ledger authority names the shipped product');
 }
 
 A.report('brand-identity');

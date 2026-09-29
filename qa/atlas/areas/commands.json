@@ -407,7 +407,7 @@
       "area": "commands",
       "name": "/fast — drop reasoning effort to minimal for quicker, cheaper replies",
       "purpose": "One-word shortcut to the fastest, cheapest setting, for users who will never think in terms of a reasoning dial.",
-      "promise": "Typing /fast drops reasoning effort to minimal through the SAME real dial /reasoning writes, confirms the before -> after levels, and names the command to restore the previous one. If effort is already minimal or none it says so and changes nothing. It never claims a \"fast mode\" as an independent switch, because StarNet has none.",
+      "promise": "Typing /fast drops reasoning effort to minimal through the SAME real dial /reasoning writes, confirms the before -> after levels, and names the command to restore the previous one. If effort is already minimal or none it says so and changes nothing. It never claims a \"fast mode\" as an independent switch, because SpaceStation has none.",
       "wiring": {
         "files": [
           "sidecar/slash.js",
@@ -587,7 +587,7 @@
       "area": "commands",
       "name": "/loop — repeat a prompt on an interval in this workstream",
       "purpose": "The in-session watcher shape: keep re-asking the same question on a clock while you watch, distinct from /goal (judge-driven) and /routine (persisted, headless).",
-      "promise": "Typing /loop <interval> <prompt> re-sends that prompt into THIS workstream every interval, visible in COMMS, capped at 20 runs and refusing sub-minute cadence; it skips a tick while the stream is busy or unfocused rather than firing into the wrong conversation; /stop and /loop off end it; the status line states it does not survive closing StarNet.",
+      "promise": "Typing /loop <interval> <prompt> re-sends that prompt into THIS workstream every interval, visible in COMMS, capped at 20 runs and refusing sub-minute cadence; it skips a tick while the stream is busy or unfocused rather than firing into the wrong conversation; /stop and /loop off end it; the status line states it does not survive closing SpaceStation.",
       "wiring": {
         "files": [
           "sidecar/slash.js",
@@ -839,7 +839,7 @@
       "firstSeen": "2026-07-07T08:09:25.408Z",
       "lastSeen": "2026-07-18T00:54:02.711Z",
       "missing": false,
-      "notes": "Was a NOTE-ONLY placeholder: any non-status arg answered \"Reasoning effort is not a separate StarNet toggle yet\", which was false — Harness.get/setReasoningEffort, the model dock and the run payload all carried the dial already; the command simply never reached it. applyAgentConfig gained a reasoningEffort branch (it handled model/persona/approval but not effort). Re-audit owed: dropped from perfected because the implementation changed."
+      "notes": "Was a NOTE-ONLY placeholder: any non-status arg answered \"Reasoning effort is not a separate SpaceStation toggle yet\", which was false — Harness.get/setReasoningEffort, the model dock and the run payload all carried the dial already; the command simply never reached it. applyAgentConfig gained a reasoningEffort branch (it handled model/persona/approval but not effort). Re-audit owed: dropped from perfected because the implementation changed."
     },
     {
       "id": "command/reload-mcp",
@@ -1414,9 +1414,9 @@
       "id": "command/version",
       "kind": "command",
       "area": "commands",
-      "name": "/version — show StarNet version information",
-      "purpose": "Show the running StarNet version/build information so the Commander knows what they are on.",
-      "promise": "Typing /version (or /v) prints the real StarNet version/build string.",
+      "name": "/version — show SpaceStation version information",
+      "purpose": "Show the running SpaceStation version/build information so the Commander knows what they are on.",
+      "promise": "Typing /version (or /v) prints the real SpaceStation version/build string.",
       "wiring": {
         "files": [
           "sidecar/slash.js",

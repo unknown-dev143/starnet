@@ -413,9 +413,9 @@
       "id": "ui/world/btn-future-update",
       "kind": "ui",
       "area": "world",
-      "name": "⭯ UPDATE STARNET ▸",
-      "purpose": "The single action on the FORWARD-VERSION gate — the blocking screen shown when the save was written by a NEWER StarNet than this build can read.",
-      "promise": "On the gate screen, clicking re-checks/opens the desktop Update Center when a Tauri updater is present, else shows plain \"update StarNet then reopen\" guidance; while the gate is up nothing persists (the newer save stays untouched).",
+      "name": "⭯ UPDATE SPACESTATION ▸",
+      "purpose": "The single action on the FORWARD-VERSION gate — the blocking screen shown when the save was written by a NEWER SpaceStation than this build can read.",
+      "promise": "On the gate screen, clicking re-checks/opens the desktop Update Center when a Tauri updater is present, else shows plain \"update SpaceStation then reopen\" guidance; while the gate is up nothing persists (the newer save stays untouched).",
       "wiring": {
         "files": [
           "frontend/index.html",
@@ -448,7 +448,7 @@
       "kind": "ui",
       "area": "world",
       "name": "⭱ RESTORE BACKUP",
-      "purpose": "Restores a previously-exported StarNet backup file to bring an agent back on any browser/machine (renamed from IMPORT AGENT to avoid collision with the Recruitment Bay harness importer).",
+      "purpose": "Restores a previously-exported SpaceStation backup file to bring an agent back on any browser/machine (renamed from IMPORT AGENT to avoid collision with the Recruitment Bay harness importer).",
       "promise": "Clicking opens the hidden file picker (accept=.json); choosing a valid export restores the agent + memories and resumes into it.",
       "wiring": {
         "files": [
