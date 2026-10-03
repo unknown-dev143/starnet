@@ -313,8 +313,36 @@
     };
   }
 
-  // ================================ DOM HALF ================================
+  /* PRICE A RUN. The AI COST panel reviews what WAS spent; this answers the forward-looking question the
+     optimizer already supports and nothing in the UI ever asked: "what would a run of N tokens cost on each
+     catalogued model?" Same honesty rule as everything else here — an unpriced model reports null and is
+     rendered as such, never as $0 (a free-looking model that is merely unpriced is the expensive mistake).
 
+     Pure (no DOM, no clock): the panel calls it after the route responds. `rows` keeps the engine's own order
+     because the panel groups priced vs unpriced rather than re-sorting, so what is read back matches what the
+     route returned. */
+  function shapePricing(raw) {
+    raw = raw || {};
+    const models = (Array.isArray(raw.models) ? raw.models : []).map(m => ({
+      id: String(m.id || ''),
+      name: String(m.name || m.id || ''),
+      provider: String(m.provider || ''),
+      priced: !!m.priced,
+      usd: (m.usd == null || !isFinite(Number(m.usd))) ? null : Number(m.usd),
+      usdText: (m.usd == null || !isFinite(Number(m.usd))) ? 'unpriced' : fmtUsd(Number(m.usd)),
+      perMTokText: fmtUsd(m.perMTok)
+    }));
+    return {
+      tokensIn: raw.tokensIn == null ? null : Number(raw.tokensIn),
+      tokensOut: raw.tokensOut == null ? null : Number(raw.tokensOut),
+      cheapest: raw.cheapest ? { name: String(raw.cheapest.name || raw.cheapest.id || ''), usdText: fmtUsd(raw.cheapest.usd) } : null,
+      dearest: raw.dearest ? { name: String(raw.dearest.name || raw.dearest.id || ''), usdText: fmtUsd(raw.dearest.usd) } : null,
+      spreadText: (raw.spreadUsd == null || !isFinite(Number(raw.spreadUsd))) ? '' : fmtUsd(Number(raw.spreadUsd)),
+      models: models
+    };
+  }
+
+  // ================================ DOM HALF ================================
   function apiFetch(path, opts) {
     const o = opts || {};
     const init = { method: o.method || 'GET' };
@@ -355,7 +383,7 @@
         '</div>' +
       '</div>';
 
-    const state = { businessId: '', tab: 'digest', digest: null };
+    const state = { businessId: '', tab: 'digest', digest: null, costs: null, pricing: null };
 
     function panel(id) { return host.querySelector('#in-panel-' + id); }
     function say(id, html) { const p = panel(id); if (p) p.innerHTML = html; }
@@ -403,7 +431,7 @@
         if (o.value === state.businessId) o.selected = true;
         sel.appendChild(o);
       }
-      sel.addEventListener('change', () => { state.businessId = sel.value; load(state.tab); });
+      sel.addEventListener('change', () => { state.businessId = sel.value; state.costs = null; state.pricing = null; load(state.tab); });
       el.innerHTML = '';
       el.appendChild(document.createTextNode('business '));
       el.appendChild(sel);
@@ -605,19 +633,101 @@
       return apiFetch('/api/intelligence/costs')
         .then(res => {
           if (!res || !res.ok) { say('costs', '<p class="in-empty">' + esc((res && res.reason) || 'could not read spend') + '</p>'); return; }
-          const c = res.costs;
-          let html = '<p class="in-sub in-count">total ' + esc(fmtUsd(c.totalUsd)) + ' across ' + esc(c.totalRuns) + ' runs' +
-            (c.potentialSavingUsd ? ' · up to <b>' + esc(fmtUsd(c.potentialSavingUsd)) + '</b> estimated saving identified' : '') + '</p>';
-          html += countLine((c.recommendations || []).length, 'recommendation', 'No swap clears the threshold on the current spend. Nothing here changes a model automatically — switching one is yours to make.');
-          html += (c.recommendations || []).map(recommendationRow).join('');
-          if ((c.blindSpots || []).length) {
-            html += '<div class="in-subhead">NOT PROPOSED — what this analysis cannot see</div>';
-            html += c.blindSpots.map(blindSpotRow).join('');
-          }
-          for (const w of (c.warnings || [])) html += '<p class="in-note">' + esc(w) + '</p>';
-          say('costs', html);
+          state.costs = res.costs;
+          renderCostsOnly();
         })
         .catch(e => say('costs', '<p class="in-empty">could not read spend: ' + esc((e && e.message) || e) + '</p>'));
+    }
+
+    /* The spend review body. Split out from loadCosts so re-rendering after a price-a-run does not re-fetch
+       the spend — the two are independent and only one of them changed. */
+    function renderCostsBody() {
+      const c = state.costs || {};
+      let html = '<p class="in-sub in-count">total ' + esc(fmtUsd(c.totalUsd)) + ' across ' + esc(c.totalRuns) + ' runs' +
+        (c.potentialSavingUsd ? ' · up to <b>' + esc(fmtUsd(c.potentialSavingUsd)) + '</b> estimated saving identified' : '') + '</p>';
+      html += countLine((c.recommendations || []).length, 'recommendation', 'No swap clears the threshold on the current spend. Nothing here changes a model automatically — switching one is yours to make.');
+      html += (c.recommendations || []).map(recommendationRow).join('');
+      if ((c.blindSpots || []).length) {
+        html += '<div class="in-subhead">NOT PROPOSED — what this analysis cannot see</div>';
+        html += c.blindSpots.map(blindSpotRow).join('');
+      }
+      for (const w of (c.warnings || [])) html += '<p class="in-note">' + esc(w) + '</p>';
+      return html;
+    }
+
+    /* PRICE A RUN — the forward-looking question the spend review cannot answer. A run of N tokens, priced on
+       every catalogued model. This is a what-if, so it is LABELLED as one and renders unpriced models as
+       "unpriced" rather than folding them into a $0 that would read as the cheapest. */
+    function pricingFormHtml() {
+      const p = state.pricing;
+      let out = '<div class="in-subhead">PRICE A RUN — what a run of N tokens would cost on each model</div>' +
+        '<div class="in-priceform">' +
+          '<input class="in-inp in-price-in" id="in-price-in" type="number" min="0" step="1" placeholder="tokens in" data-hint="intelligence" />' +
+          '<input class="in-inp in-price-out" id="in-price-out" type="number" min="0" step="1" placeholder="tokens out" data-hint="intelligence" />' +
+          '<button class="in-btn" id="in-price-go" data-hint="intelligence">PRICE IT</button>' +
+        '</div>' +
+        '<p class="in-note">A price needs a token count — none will be assumed. This is an estimate on the ' +
+        'catalogued per-token rates, not a quote.</p>';
+      if (!p) return out;
+      if (!p.ok) return out + '<p class="in-empty">' + esc(p.reason || 'could not price that run') + '</p>';
+      if (!p.models.length) return out + '<p class="in-empty">No models are catalogued, so there is nothing to price against.</p>';
+      const priced = p.models.filter(m => m.usd !== null);
+      const unpriced = p.models.filter(m => m.usd === null);
+      let head = '';
+      if (p.cheapest) {
+        head = '<p class="in-sub in-count">cheapest ' + esc(p.cheapest.usdText) + ' on ' + esc(p.cheapest.name) +
+          (p.dearest && p.dearest.name !== p.cheapest.name ? ' · dearest ' + esc(p.dearest.usdText) + ' on ' + esc(p.dearest.name) +
+            (p.spreadText ? ' · spread ' + esc(p.spreadText) : '') : '') + '</p>';
+      }
+      const row = (m) => '<div class="in-row">' +
+        '<div class="in-rowhead"><span class="in-metric">' + esc(m.name) + '</span>' +
+          '<span class="in-spacer"></span><span class="in-chip">' + esc(m.usdText) + '</span></div>' +
+        '<div class="in-rowbody">' + esc(m.provider) + ' · ' + esc(m.perMTokText) + '/M tok</div>' +
+      '</div>';
+      out += head + (priced.length ? priced.map(row).join('') : '<p class="in-empty">No catalogued model is priced, so no estimate can be made.</p>');
+      if (unpriced.length) {
+        out += countLine(unpriced.length, 'unpriced model', '') +
+          '<div class="in-sub">unpriced — the rate is unknown, so a $0 here would read as the cheapest and would be the expensive mistake</div>' +
+          unpriced.map(row).join('');
+      }
+      return out;
+    }
+
+    function wirePricing() {
+      const go = host.querySelector('#in-price-go');
+      if (!go) return;
+      go.addEventListener('click', () => {
+        const tin = Number((host.querySelector('#in-price-in') || {}).value);
+        const tout = Number((host.querySelector('#in-price-out') || {}).value);
+        /* MIRROR THE ROUTE'S OWN RULE client-side: a price with no token count is refused here rather than
+           being sent and bounced, and a blank field is refused rather than coerced by Number('') to 0. */
+        if ((!isFinite(tin) || tin <= 0) && (!isFinite(tout) || tout <= 0)) {
+          state.pricing = { ok: false, reason: 'give at least one token count — a price needs one, and none will be assumed' };
+          renderCostsOnly();
+          return;
+        }
+        const panelEl = panel('costs');
+        if (panelEl) panelEl.innerHTML = '<p class="in-loading">pricing that run…</p>';
+        const body = {};
+        if (isFinite(tin) && tin > 0) body.tokensIn = Math.floor(tin);
+        if (isFinite(tout) && tout > 0) body.tokensOut = Math.floor(tout);
+        apiFetch('/api/intelligence/costs/price', { method: 'POST', body: body })
+          .then(res => {
+            if (!res || !res.ok) { state.pricing = { ok: false, reason: (res && res.reason) || 'could not price that run' }; }
+            else state.pricing = Object.assign({ ok: true }, shapePricing(res.pricing));
+            renderCostsOnly();
+          })
+          .catch(e => { state.pricing = { ok: false, reason: 'could not reach the station: ' + esc((e && e.message) || e) }; renderCostsOnly(); });
+      });
+    }
+
+    function renderCostsOnly() {
+      const p = panel('costs');
+      if (!p) return;
+      const body = state.costs ? renderCostsBody()
+        : '<p class="in-empty">could not read spend — the price-a-run estimate below still works off the catalogue.</p>';
+      p.innerHTML = body + pricingFormHtml();
+      wirePricing();
     }
 
     function load(tab) {
@@ -641,6 +751,6 @@
     esc, relTime, fmt, fmtHtml, fmtUsd, fmtChange,
     directionChip, confidenceChip, trendRow, causeRow, causesHtml, signalRow,
     portfolioRow, modelRow, recommendationRow, blindSpotRow, headlineHtml, countLine,
-    validateRouteForm, mount
+    validateRouteForm, shapePricing, mount
   };
 });

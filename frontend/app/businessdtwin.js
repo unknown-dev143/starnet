@@ -173,6 +173,10 @@
   function shapeComparison(raw) {
     raw = raw || {};
     const scenarios = (Array.isArray(raw.scenarios) ? raw.scenarios : []).map(s => String(s.name || 'scenario'));
+    const excluded = (Array.isArray(raw.excluded) ? raw.excluded : []).map(x => ({
+      name: String(x.name || 'what-if'),
+      reason: String(x.reason || 'this run produced no result').slice(0, MAX_REASON)
+    }));
     const metrics = (Array.isArray(raw.metrics) ? raw.metrics : []).map(m => ({
       metric: String(m.metric || ''),
       label: String(m.label || m.metric || ''),
@@ -182,7 +186,34 @@
         deltaText: s.present ? fmtDelta(s.delta, m.unit) : ''
       }))
     }));
-    return { ok: !!raw.ok, scenarios: scenarios, metrics: metrics, note: String(raw.note || '') };
+    return { ok: !!raw.ok, scenarios: scenarios, metrics: metrics, note: String(raw.note || ''), excluded: excluded };
+  }
+
+  /* PICK THE RUNS THAT MAY BE COMPARED — and REFUSE the rest BY NAME.
+
+     COMPARE lines scenarios up because all of them are carried through the SAME recorded baseline, which is
+     the only thing that makes their deltas commensurable. A run that produced no result has NOTHING to carry
+     and cannot be a column; silently dropping it would leave a table that looks like a complete set while one
+     of the owner's what-ifs was quietly absent (P7 — no fake anything). So this returns BOTH:
+       · `runs`     the shaped scenarios to send, each with the ONE what-if name its owner gave it (never a
+                    computed label like "scenario 1", which could not be read back out of a URL or a log), and
+       · `excluded` every run that was left out, NAMED, so the panel can say which one and why.
+     Pure and header-free (no DOM, no clock): the caller owns the "what is a run" test, this owns the refusal.
+
+     `isSimulatable(run)` is injected rather than imported from the engine's own `ok`, because the decision to
+     compare belongs to the CONSOLE's honesty policy — the engine's `ok` also goes false for a scenario that
+     merely clamped a rate, which is still a perfectly comparable column. */
+  function pickComparable(runs, isSimulatable) {
+    const all = Array.isArray(runs) ? runs : [];
+    const test = typeof isSimulatable === 'function' ? isSimulatable : (r => !!(r && r.ok));
+    const good = [];
+    const excluded = [];
+    all.forEach((run, i) => {
+      const name = String((run && run.name) || '').trim();
+      if (test(run)) good.push({ name: name || ('scenario ' + (i + 1)), steps: (run && run.steps) || [] });
+      else excluded.push({ name: name || ('what-if ' + (i + 1)), reason: (run && run.reason) || 'this run produced no result' });
+    });
+    return { ok: good.length > 0, scenarios: good, excluded: excluded };
   }
 
   /* BUILD THE REQUEST BODY from the form's raw inputs — and REFUSE rather than coerce when the input is
@@ -224,6 +255,11 @@
 
   const PREFIX = '/api/businesses/';
 
+  /* HOW MANY RECALLED RUNS MAY BE COMPARED. A bound, not a policy: the engine caps a comparison at 12 columns
+     and more than a handful is unreadable side by side anyway. Kept BELOW the engine's cap so the console can
+     never assemble a request the engine refuses with a mystery 422. */
+  const MAX_RUNS = 8;
+
   function apiFetch(path, init) {
     const H = (typeof StationUI !== 'undefined' && StationUI.h) || {};
     if (typeof H.api === 'function') return H.api(path, init);
@@ -256,7 +292,7 @@
         '</div>' +
       '</div>';
 
-    const state = { businessId: '', tab: 'run', catalog: null, result: null, comparison: null };
+    const state = { businessId: '', tab: 'run', catalog: null, result: null, comparison: null, runs: [], compareBusy: false };
 
     function panel(id) { return host.querySelector('#dt-panel-' + id); }
     function say(id, html) { const p = panel(id); if (p) p.innerHTML = html; }
@@ -269,12 +305,16 @@
       for (const p of host.querySelectorAll('.dt-panel')) p.classList.toggle('dt-on', p.id === 'dt-panel-' + tab);
       render(tab);
     }
-    for (const t of host.querySelectorAll('.dt-tab')) t.addEventListener('click', () => showTab(t.getAttribute('data-tab')));
+    for (const t of host.querySelectorAll('.dt-tab')) t.addEventListener('click', () => {
+      const tab = t.getAttribute('data-tab');
+      if (tab === 'compare') enterCompare();
+      else showTab(tab);
+    });
     const refresh = host.querySelector('#dt-refresh');
     if (refresh) refresh.addEventListener('click', () => loadCatalog());
 
     const bizSel = host.querySelector('#dt-biz');
-    if (bizSel) bizSel.addEventListener('change', () => { state.businessId = String(bizSel.value || ''); state.result = null; state.comparison = null; loadCatalog(); });
+    if (bizSel) bizSel.addEventListener('change', () => { state.businessId = String(bizSel.value || ''); state.result = null; state.comparison = null; state.runs = []; loadCatalog(); });
 
     function currencyOf() { return 'USD'; }   // the store's default; a business-level override is a later concern
 
@@ -351,10 +391,31 @@
             '<button class="dt-btn dt-go" id="dt-run" data-hint="digitaltwin">SIMULATE</button>' +
           '</div>' +
           '<p class="dt-note">Each assumption is applied to the LATEST RECORDED value. Nothing is dated in the future.</p>' +
-        '</div>' + resultHtml();
+        '</div>' + runListHtml() + resultHtml();
 
       say('run', html);
       wireRun();
+    }
+
+    /* THE RECALLED RUNS. The twin stores nothing, so this strip is the ONLY place a set of comparable
+       scenarios exists — it is the live memory the COMPARE tab reads. Rendered with a one-click hand-off so
+       the owner does not have to retype a what-if to line it up against another. */
+    function runListHtml() {
+      const runs = state.runs || [];
+      if (!runs.length) {
+        return '<p class="dt-note dt-runs-hint">Simulate a what-if and it is recalled here, ready to line up ' +
+          'against others on the COMPARE tab. Nothing is saved — recalling ends when this window closes.</p>';
+      }
+      const chips = runs.map(r =>
+        '<span class="dt-run" data-hint="digitaltwin">' + esc(r.name) +
+          '<button class="dt-x dt-run-del" data-name="' + esc(r.name) + '" title="forget this run">×</button>' +
+        '</span>'
+      ).join('');
+      return '<div class="dt-runs">' +
+        '<span class="dt-lbl dt-runs-lbl" data-hint="digitaltwin">recalled this session (' + runs.length + ')</span>' +
+        '<div class="dt-runs-list">' + chips + '</div>' +
+        '<button class="dt-btn dt-cmp" id="dt-cmp" data-hint="digitaltwin">COMPARE ' + runs.length + '</button>' +
+      '</div>';
     }
 
     function resultHtml() {
@@ -401,6 +462,17 @@
       if (nameIn) nameIn.addEventListener('input', () => { state.nameDraft = nameIn.value; });
       const go = host.querySelector('#dt-run');
       if (go) go.addEventListener('click', () => submit());
+      const cmp = host.querySelector('#dt-cmp');
+      if (cmp) cmp.addEventListener('click', () => enterCompare());
+      for (const b of host.querySelectorAll('.dt-run-del')) {
+        b.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const name = b.getAttribute('data-name');
+          state.runs = (state.runs || []).filter(r => r.name !== name);
+          state.comparison = null;
+          renderRun();
+        });
+      }
     }
     function wireStepDeletes() {
       for (const b of host.querySelectorAll('.dt-step-del')) {
@@ -439,6 +511,18 @@
         body: JSON.stringify({ name: String(raw.name).trim(), steps: steps })
       }).then(res => {
         state.result = shapeScenario(res, currencyOf());
+        /* RECALL THIS RUN so COMPARE has something to line up. The twin STORES NOTHING (its own header is
+           explicit: a persisted projection would be a fact made of an assumption), so the only place a set of
+           comparable scenarios can live is right here in the session — and it is bounded, because an
+           unbounded list is a place to hide a workload. Only a run that actually produced results is kept: a
+           what-if that had no baseline is not a column, and pretending it is one is exactly the lie P7 bans. */
+        if (state.result && state.result.ok) {
+          const run = { name: state.result.name, steps: steps, ok: true };
+          state.runs = (state.runs || []).filter(r => r.name !== run.name);
+          state.runs.push(run);
+          if (state.runs.length > MAX_RUNS) state.runs.shift();
+          state.comparison = null;              // a new run makes the old table stale — rebuild on demand
+        }
         renderRun();
       }).catch(() => { err('run', 'could not reach the station'); setTimeout(renderRun, 0); });
     }
@@ -460,14 +544,45 @@
     }
 
     // ---- compare ------------------------------------------------------------------------------------
+    /* FETCH THE COMPARISON over the recalled runs, through the SAME endpoint a what-if uses. Read-only — the
+       route computes and returns; the twin stores nothing, so a comparison is regenerated on demand rather
+       than kept, which is also why the table is stale the moment a new run is simulated. */
+    function loadComparison() {
+      const runs = state.runs || [];
+      if (!runs.length) { state.comparison = null; renderCompare(); return Promise.resolve(); }
+      if (!state.businessId) { err('compare', 'create a business first — a twin simulates over its recorded readings'); return Promise.resolve(); }
+      state.compareBusy = true;
+      renderCompare();
+      /* Only runs that produced results become columns; the rest are carried through as `excluded` so the
+         refusal is VISIBLE. `isSimulatable` is the session's own test — a run is recallable only when it
+         actually simulated, which is why a clamped-but-ok run is still comparable. */
+      const picked = pickComparable(runs, r => !!r.ok);
+      return apiFetch(PREFIX + encodeURIComponent(state.businessId) + '/twin/compare', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarios: picked.scenarios })
+      }).then(res => {
+        state.comparison = shapeComparison(Object.assign({}, res, { excluded: picked.excluded }));
+      }).catch(() => {
+        state.comparison = { ok: false, scenarios: [], metrics: [], note: '', excluded: picked.excluded, reason: 'could not reach the station' };
+      }).then(() => { state.compareBusy = false; renderCompare(); });
+    }
+
     function renderCompare() {
-      const r = state.comparison;
-      if (!r) {
-        say('compare', '<p class="dt-empty">Run a what-if first. COMPARE lines up several what-ifs against the SAME ' +
-          'recorded baseline, so their changes are directly comparable — it does not pick a best one.</p>');
+      const runs = state.runs || [];
+      if (!runs.length) {
+        say('compare', '<p class="dt-empty">Nothing to compare yet. Run a what-if on the RUN A WHAT-IF tab — ' +
+          'COMPARE lines up several what-ifs against the SAME recorded baseline, so their changes are directly ' +
+          'comparable. It does not pick a best one. (Nothing is saved; the runs are recalled for this session only.)</p>');
         return;
       }
-      if (!r.ok) { err('compare', 'this comparison could not be built — one or more scenarios had no baseline'); return; }
+      if (state.compareBusy) { busy('compare', 'carrying every what-if through the same recorded baseline…'); return; }
+      const r = state.comparison;
+      if (!r) { busy('compare', 'building the comparison…'); return; }
+      if (!r.ok) {
+        say('compare', '<p class="dt-err">' + esc(r.reason || 'this comparison could not be built — one or more what-ifs had no recorded baseline') + '</p>');
+        appendExcluded(r);
+        return;
+      }
       const head = '<tr><th>metric</th><th>recorded</th>' + r.scenarios.map(s => '<th>' + esc(s) + '</th>').join('') + '</tr>';
       const body = r.metrics.map(m =>
         '<tr><td class="dt-cell-metric">' + esc(m.label) + '</td><td class="dt-cell-basis">' + esc(m.basisText) + '</td>' +
@@ -478,12 +593,38 @@
         '<div class="dt-result-head">COMPARISON <span class="dt-sim">SIMULATION</span></div>' +
         '<table class="dt-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>' +
         '<p class="dt-note">' + esc(r.note) + '</p>' +
+        '<p class="dt-note">Each column is one recalled what-if. Nothing here is ranked: which assumption is ' +
+        'better is the owner\'s call, and the twin does not make it.</p>' +
       '</div>');
+
+      // If any recalled this session could not be simulated, name them — the table above is what CAN be compared.
+      appendExcluded(r);
     }
+
+    /* NAME THE RUNS THAT DID NOT MAKE A COLUMN. Rendered under BOTH the success and the failure table, because
+       a what-if that produced no result is the most important thing to say out loud when the owner expects to
+       see it lined up. */
+    function appendExcluded(r) {
+      if (!r || !r.excluded || !r.excluded.length) return;
+      const p = panel('compare');
+      if (!p) return;
+      p.insertAdjacentHTML('beforeend', '<div class="dt-bad">' +
+        '<div class="dt-result-head">not compared</div>' +
+        r.excluded.map(x => '<p class="dt-fail">' + esc(x.name) + ': ' + esc(x.reason) + '</p>').join('') +
+        '<p class="dt-note">A what-if that produced no result is not a column. It is named here rather than ' +
+        'silently dropped, so the table cannot look complete while one of your runs is missing.</p>' +
+      '</div>');    }
 
     function render(tab) {
       if (tab === 'run') renderRun();
       else renderCompare();
+    }
+
+    /* Switching to COMPARE triggers the fetch if there are runs and no current table; the click handler and
+       the COMPARE button both land here, so there is one door into the comparison. */
+    function enterCompare() {
+      showTab('compare');
+      if ((state.runs || []).length && !state.comparison && !state.compareBusy) loadComparison();
     }
 
     loadBusinesses().then(() => loadCatalog());
@@ -493,7 +634,7 @@
   return {
     // pure half — the tested surface
     esc, relTime, fmtValue, fmtDelta, shapeResult, shapeScenario, shapeCatalog,
-    buildStep, validateForm, OPS, OP_IDS, MAX_REASON,
+    buildStep, validateForm, pickComparable, OPS, OP_IDS, MAX_REASON,
     // dom
     mount, shapeComparison
   };

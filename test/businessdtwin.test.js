@@ -179,4 +179,66 @@ const Engine = require('../sidecar/business-twin.js');
   A.ok(!/window\.(alert|confirm|prompt)\s*\(/.test(src), 'the console uses no banned window.alert/confirm/prompt');
 }
 
+/* ---------- the COMPARE hand-off picks only runs that produced results, and NAMES the rest ---------- */
+{
+  // Three recalled runs, one of which produced no result. Only the two real ones may become columns; the
+  // third must be returned BY NAME so the panel can say which one is missing — never silently dropped.
+  const picked = C.pickComparable([
+    { name: 'half', ok: true, steps: [{ metric: 'customers', op: 'multiply', factor: 0.5 }] },
+    { name: 'no baseline', ok: false, steps: [{ metric: 'revenue', op: 'set', value: 1 }] },
+    { name: 'double', ok: true, steps: [{ metric: 'customers', op: 'multiply', factor: 2 }] }
+  ], r => !!r.ok);
+  A.eq(picked.ok, true, 'a comparison over at least one real run is ok');
+  A.eq(picked.scenarios.length, 2, 'only the runs that produced results become columns');
+  A.eq(picked.scenarios[0].name, 'half', 'and they carry the ONE name their owner gave them');
+  A.eq(picked.excluded.length, 1, 'the run with no result is excluded');
+  A.eq(picked.excluded[0].name, 'no baseline', 'and it is named, so a missing column is not a silent gap');
+
+  // A run with NO name still gets one — never an empty column header the table cannot be read against.
+  const nameless = C.pickComparable([{ ok: true, steps: [] }, { ok: false }], r => !!r.ok);
+  A.ok(nameless.scenarios[0].name.length > 0, 'a nameless run is given a readable fallback name, never a blank header');
+  A.ok(nameless.excluded[0].name.length > 0, 'and an excluded nameless run is named too');
+
+  // NOTHING comparable -> ok:false, so the panel does not build an empty table that reads as "no change".
+  const none = C.pickComparable([{ name: 'x', ok: false }], r => !!r.ok);
+  A.eq(none.ok, false, 'a comparison with no comparable run is NOT ok — an empty table must not read as a result');
+  A.eq(none.scenarios.length, 0, 'and it carries no columns');
+
+  // Empty / absent input is refused the same way, not thrown on.
+  A.eq(C.pickComparable(null, r => !!r.ok).ok, false, 'a null run-list is refused, not thrown on');
+  A.eq(C.pickComparable([], () => true).ok, false, 'and an empty run-list produces nothing to compare');
+}
+
+/* ---------- a comparison carries its EXCLUDED runs through the shaper ---------- */
+{
+  const cmp = C.shapeComparison({
+    ok: true, scenarios: [{ name: 'a' }], metrics: [],
+    excluded: [{ name: 'gone', reason: 'no recorded reading' }], note: 'n'
+  });
+  A.eq(cmp.excluded.length, 1, 'the shaped comparison keeps the runs that could not be compared');
+  A.eq(cmp.excluded[0].name, 'gone', 'named');
+  A.ok(/no recorded reading/.test(cmp.excluded[0].reason), 'with the engine\'s own reason, so the panel never invents one');
+
+  // An excluded reason is bounded like every other reason, never dropped.
+  const long = C.shapeComparison({ ok: false, excluded: [{ name: 'x', reason: 'y'.repeat(C.MAX_REASON + 50) }] });
+  A.eq(long.excluded[0].reason.length, C.MAX_REASON, 'an overlong exclusion reason is truncated to the bound, never dropped');
+
+  // A comparison with no excluded set shapes an EMPTY list, so the panel can test its length without a guard.
+  A.eq(C.shapeComparison({ ok: true }).excluded.length, 0, 'a comparison with no exclusions shapes an empty list, not undefined');
+}
+
+/* ---------- the COMPARE tab is WIRED, not a dead stub ---------- */
+{
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'app', 'businessdtwin.js'), 'utf8');
+  // The audit found this tab rendered a button and an empty panel while NO frontend file ever called the
+  // compare route. These locks fail if the wiring is removed again.
+  A.ok(/\/twin\/compare/.test(src), 'the console actually calls POST /twin/compare — COMPARE is not a dead tab');
+  A.ok(/function loadComparison/.test(src), 'through a named loader');
+  A.ok(/state\.runs/.test(src), 'recalling each successful run so there is something to compare');
+  A.ok(/pickComparable\(/.test(src), 'and refusing the runs that produced no result, by name');
+  A.ok(!/window\.(alert|confirm|prompt)\s*\(/.test(src), 'still no banned dialog API after the wiring');
+}
+
 A.report('businessdtwin');

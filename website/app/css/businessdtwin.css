@@ -91,3 +91,16 @@
 /* A clamped assumption: the request was impossible and the result stopped at the edge of the definition.
    Marked so 1.0 is not read as a computed conversion rate. */
 .dt-clamp { font-size: 9px; letter-spacing: 0.06em; color: #8a5a1a; background: #fdf4e6; border: 1px solid #f0dcb8; border-radius: 3px; padding: 0 4px; }
+
+/* THE RECALLED RUNS (the COMPARE hand-off). The twin stores nothing, so this strip is the only memory a set of
+   comparable what-ifs has; it is deliberately quiet — a session scratchpad, not a saved list — and the one
+   action it offers is the hand-off to COMPARE. */
+.dt-runs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; padding: 8px 10px; border: 1px dashed #cfd8e6; border-radius: 4px; background: #fafcff; }
+.dt-runs-lbl { flex: 0 0 auto; }
+.dt-runs-list { display: flex; gap: 5px; flex-wrap: wrap; flex: 1 1 auto; }
+.dt-run { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #1a1d24; background: #eef3fb; border: 1px solid #cfdcef; border-radius: 3px; padding: 2px 4px 2px 7px; }
+.dt-run-del { font-size: 11px; padding: 1px 4px; border: none; background: transparent; color: #8a93a3; }
+.dt-run-del:hover { color: #9c3a3a; background: transparent; }
+.dt-cmp { flex: 0 0 auto; background: #4a6fa5; color: #fff; border-color: #3d5d8c; }
+.dt-cmp:hover { background: #3d5d8c; }
+.dt-runs-hint { margin-top: 12px; }

@@ -455,6 +455,7 @@ test/worker-routes.test.js
 test/businessworker.test.js
 test/business-twin.test.js
 test/twin-routes.test.js
+test/businessdtwin.test.js
 test/business-security.test.js
 test/security-routes.test.js
 test/businesssecurity.test.js
@@ -758,3 +759,11 @@ test/failopen.test.js
 test/failopen-ratchet.test.js
 test/frontend-fetch-truth-ratchet.test.js
 test/loop-verdict.test.js
+test/onboarding-legibility.test.js
+test/refit-testride-intake.test.js
+test/mcp.manager-race.test.js
+test/skill-metrics.test.js
+test/skill-package-format.test.js
+test/skill-registry.test.js
+test/credrotate.e2e.test.js
+test/summarize-failover.e2e.test.js

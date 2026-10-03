@@ -100,3 +100,8 @@
 .in-rec { border-left: 3px solid #1e7a3c; }
 .in-caveat { margin-top: 5px; font-size: 10px; color: #7a8392; line-height: 1.5; font-style: italic; border-top: 1px dotted #dde3ec; padding-top: 4px; }
 .in-blind { border-left: 3px solid #c8cfdb; background: #fbfbfc; }
+
+/* PRICE A RUN — the token-count inputs that ask the forward question the spend review cannot. Laid out in one
+   row so the count and the action read as a single question. */
+.in-priceform { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0 2px; }
+.in-price-in, .in-price-out { width: 120px; }

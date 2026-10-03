@@ -220,6 +220,43 @@ prior audits were about the brand. Two are worth naming (both noted, **neither i
 
 These two are **presentation/composition** gaps. Neither requires touching an engine.
 
+### 6a. Two more dead-ends closed (same "backend exists, viewer missing" class)
+
+Found by re-sweeping every route for a frontend consumer, rather than trusting the earlier ranking:
+
+- **DIGITAL TWIN ▸ COMPARE was a dead stub.** `frontend/app/businessdtwin.js` rendered a `COMPARE` tab
+  button and an empty panel, but `state.comparison` was only ever set to `null` and **no frontend file called
+  `POST /api/businesses/:id/twin/compare`** (the pure `shapeComparison` shaper was exported and unused). The
+  tab is now wired: a successful what-if is **recalled in-session** (the twin stores nothing by design), the
+  recalled runs are handed to the compare route through a new pure `pickComparable` (which returns the
+  comparable scenarios **and names, by name, every run that produced no result** — a what-if that is not a
+  column must be said out loud, never silently dropped), and the table renders one column per scenario over
+  the shared recorded baseline. `businessdtwin.test.js` 61 → 82 assertions; sabotage-proven two ways
+  (invert the pick branch · remove the compare call).
+- **`POST /api/intelligence/costs/price` had no UI.** The AI COST panel reviewed what *was* spent but never
+  asked what a run *would* cost. A **PRICE A RUN** form (token in/out) now prices a hypothetical run on every
+  catalogued model through a new pure `shapePricing`; an unpriced model renders as **"unpriced"**, never as
+  `$0` (a free-looking model that is merely unpriced is the expensive mistake). `businessintelligence.test.js`
+  21 → 28 assertions; sabotage-proven (unpriced → `$0` goes red by name).
+
+Re-checked and **already wired** (the earlier ranking was stale): `/api/factory/stages` has a reference
+surface; `POST /api/worker/test` is consumed by `businessworker.js`; `/api/automation/{halt,resume}` is the
+STOP ALL / RESUME button; OPPORTUNITY RADAR is the MAKER window's §22 tab.
+
+### 6b. A test that ran in NO suite — the silent-shadow shape, again
+
+Every manifest check went **list → file** ("every listed file exists"); none went **file → list**. So
+**11 `test/*.test.js` were in neither `fast.list` nor `http.list`** and ran in no suite — green-looking files
+with no runner. Two real consequences, both now fixed:
+
+- `onboarding-legibility.test.js` had been unrun and **did** catch a real gap: a shipped `data-hint=
+  "creatorstudio"` with no glossary copy. Entry added to `frontend/app/glossary.js`.
+- `businessdtwin.test.js` (the console above) was never registered.
+
+All 11 are now listed (green/skip ones in `fast.list`; the two that `spawnSync` in `http.list`), and
+`test/test-list-runner.test.js` gained the **reverse assertion** — every `test/*.test.js` must appear in a
+manifest — sabotage-proven with a planted orphan (red by name, green after removal).
+
 ---
 
 ## 7. The ten Phase-0 questions, answered

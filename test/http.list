@@ -82,3 +82,5 @@ test/station-recovery.e2e.test.js
 test/routing.persist.e2e.test.js
 test/run-recovery.api.test.js
 test/routing.sample.e2e.test.js
+test/eval-comparison.test.js
+test/lsp-live-installed.test.js

@@ -49,6 +49,47 @@ function main() {
   A.ok(!C.validateRouteForm({ needs: {}, prefer: 'cost', tokensIn: 0, tokensOut: 0 }).ok, 'all-zero token count rejected');
   A.ok(!C.validateRouteForm({ needs: {}, prefer: 'cost', tokensIn: 200000000 }).ok, 'token count above any context rejected');
 
+  // ---- PRICE A RUN: a priced model carries its dollar figure; an unpriced one is NOT a $0 ----
+  {
+    const p = C.shapePricing({
+      tokensIn: 1000, tokensOut: 200,
+      cheapest: { id: 'haiku', name: 'Haiku', usd: 0.001 },
+      dearest: { id: 'opus', name: 'Opus', usd: 0.12 },
+      spreadUsd: 0.119,
+      models: [
+        { id: 'haiku', name: 'Haiku', provider: 'anthropic', priced: true, usd: 0.001, perMTok: 0.8 },
+        { id: 'opus', name: 'Opus', provider: 'anthropic', priced: true, usd: 0.12, perMTok: 15 },
+        { id: 'free-local', name: 'Local', provider: 'local', priced: false, usd: null, perMTok: null }
+      ]
+    });
+    A.eq(p.models.length, 3, 'every catalogued model is priced');
+    A.eq(p.models[0].usdText, '$0.001000', 'a priced model carries its dollar estimate');
+    A.eq(p.models[2].usd, null, 'an unpriced model carries a NULL price, never a number');
+    A.eq(p.models[2].usdText, 'unpriced', 'and renders as "unpriced", NOT as $0 (a free-looking model is the expensive mistake)');
+    A.eq(p.cheapest.name, 'Haiku', 'the cheapest is named');
+    A.ok(/\$/.test(p.spreadText), 'and the spread is a real currency string');
+    A.eq(p.tokensIn, 1000, 'the priced token counts are carried through');
+
+    // A comparison with nothing priced -> no cheapest, and that must not throw.
+    const none = C.shapePricing({ tokensIn: 5, models: [{ id: 'x', name: 'X', priced: false, usd: null }] });
+    A.eq(none.cheapest, null, 'no priced model means no cheapest, and no throw');
+    A.eq(none.models[0].usdText, 'unpriced', 'and the lone model is still rendered as unpriced');
+
+    // Absent input shapes harmlessly rather than throwing.
+    A.eq(C.shapePricing(null).models.length, 0, 'an absent pricing payload shapes an empty list, not a throw');
+  }
+
+  // ---- the PRICE A RUN surface is WIRED, not a stub over an unused route ----
+  {
+    const fs = require('fs');
+    const pathMod = require('path');
+    const src = fs.readFileSync(pathMod.join(__dirname, '..', 'frontend', 'app', 'businessintelligence.js'), 'utf8');
+    // The audit found POST /api/intelligence/costs/price had NO consumer anywhere in the frontend.
+    A.ok(/\/intelligence\/costs\/price/.test(src), 'the console actually calls POST /intelligence/costs/price — the route has a consumer');
+    A.ok(/function shapePricing/.test(src), 'through a pure shaper');
+    A.ok(/pricingFormHtml/.test(src), 'and renders the token-count form the route needs');
+  }
+
   A.report('businessintelligence: honest console rendering (pure half)');
 }
 
