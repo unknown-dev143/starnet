@@ -224,6 +224,43 @@
     return { text: n ? String(n) : '', count: n, known: true };
   }
 
+  /* ★ THE TILE STRIP — the §6 "add any missing tile" item, made declarative and testable.
+     The Command Center is the HOME of the station, so it must be the door to the surfaces it ranks. A tile
+     here is NOT a button that acts (this console mutates nothing) — it is a DEEP LINK to a real window,
+     plus a declaration of the route(s) that BACK that surface. That pairing is what the audit's Step B
+     evidence column asked for ("a tile→route contract test"): the test asserts every `term` is a real
+     registered window key and every `route` is a real mission/creator route, so a tile can never point at
+     a door that does not open or a route that does not exist.
+
+     `tiles` are PURE DATA (no DOM), so the contract test reads them headless. Adding a tile is a deliberate
+     edit here — never a silent button appearing in the console. */
+  const TILES = [
+    // the four mission reads this console IS — each tab owns one route
+    { id: 'board',   label: 'THE BOARD',   term: 'mission', routes: ['/api/mission/board'],      section: 'board',
+      note: 'every business, ranked by what blocks it' },
+    { id: 'fleet',   label: 'FLEET FIGURES', term: 'mission', routes: ['/api/mission/fleet'],    section: 'fleet',
+      note: 'the cross-business numbers beside the board' },
+    { id: 'trail',   label: 'TRAIL',       term: 'mission', routes: ['/api/mission/trail'],      section: 'trail',
+      note: 'what changed, across every business' },
+    // the sibling surfaces the home should reach — the §37 creations index (Step D) and the §20 studio (Step C)
+    { id: 'creations', label: 'MY CREATIONS', term: 'creatorstudio', routes: ['/api/creations'], section: 'creations',
+      note: 'every made thing in one place — content, documents, work orders, deliverables' },
+    { id: 'studio',  label: 'CREATOR STUDIO', term: 'creatorstudio', routes: ['/api/creator/pipeline', '/api/creator/calendar'], section: 'pipeline',
+      note: 'the §17 content pipeline from idea to published' }
+  ];
+
+  /* Resolve a tile to the surface it opens. Returns null when the window key is unknown, so a caller can
+     refuse to render a dead door rather than print one. */
+  function tileTarget(tile) {
+    if (!tile || !tile.term) return null;
+    const H = (typeof StationUI !== 'undefined' && StationUI.h) || null;
+    const builders = (typeof BUILDERS !== 'undefined') ? BUILDERS : null;
+    // a real window key is either in the inline BUILDERS table or registered through registerWindow.
+    const known = builders ? !!builders[tile.term] : true;   // no BUILDERS in a headless test → trust the table
+    if (!known) return null;
+    return { term: tile.term, section: tile.section || '', label: tile.label, note: tile.note || '' };
+  }
+
   // ---------------------------------------------------------------------------------------------
   // DOM HALF
   // ---------------------------------------------------------------------------------------------
@@ -282,6 +319,15 @@
 
     const state = { tab: 'attention', board: null, attention: null, fleet: null, trail: null, alerts: {} };
 
+    /* A tile deep-links with a section (openTerm sets consoleSection['mission']), so a "TRAIL" tile must
+       land on TRAIL — not the default tab. Read the last-requested section and honour it when it names a
+       real tab; otherwise open the attention-first home. This is what makes the tile strip honest: a door
+       that promised a tab opens that tab. */
+    const MTABS = ['attention', 'board', 'fleet', 'trail'];
+    const H0 = (typeof StationUI !== 'undefined' && StationUI.h) || null;
+    const wantTab = (H0 && H0.consoleSection && H0.consoleSection['mission']) || '';
+    const startTab = MTABS.indexOf(wantTab) >= 0 ? wantTab : 'attention';
+
     function panel(id) { return host.querySelector('#mssn-panel-' + id); }
     function say(id, html) { const p = panel(id); if (p) p.innerHTML = html; }
     function busy(id, t) { say(id, '<p class="mssn-loading">' + esc(t || 'reading…') + '</p>'); }
@@ -294,13 +340,40 @@
       render(tab);
     }
 
+    /* THE TILE STRIP — the doors out of the home. Deep links only (data-hint carries the destination), and
+       a tile whose window is unknown is dropped rather than rendered as a dead button. */
+    function renderTiles() {
+      const live = TILES.map(t => ({ t: t, target: tileTarget(t) })).filter(x => x.target);
+      if (!live.length) return '';
+      return '<div class="mssn-tiles">' + live.map(x =>
+        '<button class="mssn-tile" data-tile="' + esc(x.t.id) + '" data-term="' + esc(x.t.term) +
+          '" data-tile-section="' + esc(x.t.section || '') + '" data-hint="' + esc(x.t.term) + '">' +
+          '<span class="mssn-tile-t">' + esc(x.t.label) + '</span>' +
+          '<span class="mssn-tile-n">' + esc(x.t.note) + '</span>' +
+        '</button>').join('') + '</div>';
+    }
+
+    /* A tile is a DEEP LINK, never an action — it opens the real window (openTerm) and lands on the right
+       section. No mutation, so this console stays a read view. */
+    function onTileClick(ev) {
+      const t = ev.target.closest && ev.target.closest('.mssn-tile');
+      if (!t) return;
+      const term = t.getAttribute('data-term');
+      const section = t.getAttribute('data-tile-section') || '';
+      const H = (typeof StationUI !== 'undefined' && StationUI.h) || null;
+      if (H && typeof H.openTerm === 'function') H.openTerm(term, section || undefined);
+    }
+
     function renderAttention() {
       const a = state.attention;
       if (!a) return busy('attention');
       const warns = [];
       if (a.pending === null) warns.push('the approval queue could not be read — what is waiting on you is unknown, not zero');
+      /* THE TILE STRIP sits on the home tab: the doors out of the Command Center to the surfaces it ranks.
+         A tile whose window key is unknown is DROPPED, not rendered dead (tileTarget returns null). */
+      const tileHtml = renderTiles();
       if (!a.rows.length) {
-        return say('attention', (warns.length ? '<div class="mssn-warn">' + warns.map(w => esc(w)).join('<br>') + '</div>' : '') +
+        return say('attention', tileHtml + (warns.length ? '<div class="mssn-warn">' + warns.map(w => esc(w)).join('<br>') + '</div>' : '') +
           '<p class="mssn-quiet">nothing needs you right now — every business is operating quietly.</p>');
       }
       const rows = a.rows.map(r => {
@@ -317,6 +390,7 @@
           '</tr>';
       }).join('');
       say('attention', '' +
+        tileHtml +
         (warns.length ? '<div class="mssn-warn">' + warns.map(w => esc(w)).join('<br>') + '</div>' : '') +
         '<table class="mssn-table"><thead><tr>' +
           '<th>business</th><th>stage</th><th class="mssn-th-num">waiting</th><th>last moved</th>' +
@@ -432,6 +506,11 @@
     for (const t of host.querySelectorAll('.mssn-tab')) t.addEventListener('click', () => showTab(t.getAttribute('data-tab')));
     const attPanel = panel('attention');
     if (attPanel) attPanel.addEventListener('click', onAttentionClick);
+    if (attPanel) attPanel.addEventListener('click', onTileClick);
+
+    // honour a tile's section hint: land on the promised tab, not the default. (No-op for 'attention',
+    // which the markup already marks active.)
+    if (startTab !== 'attention') showTab(startTab);
 
     loadAll();
     return { state: state, reload: loadAll };
@@ -443,6 +522,8 @@
     shapeHeader, shapeRow, shapeBoard, shapeAttention, shapeFleet, shapeTrail, shapeAlerts,
     availabilityWarnings, attentionBadge, paintDockBadge,
     STAGE_LABEL,
+    // the §6 tile strip — the home's doors out (tile→route contract test reads these headless)
+    TILES, tileTarget,
     // dom
     mount
   };

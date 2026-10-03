@@ -63,7 +63,7 @@ const NavGroups = (() => {
 
     { id: 'creator-studio', label: 'CREATOR STUDIO', dock: 'work',
       windows: ['creatorstudio', 'manager'],
-      note: 'The §17 content pipeline (business-content-store.js) across every business — the dedicated surface (Step C) plus the per-business CONTENT tab in BUSINESS MANAGER.' },
+      note: 'The §17 content pipeline (business-content-store.js) across every business — the dedicated surface (Step C) with PIPELINE · CALENDAR · CREATIONS (the §37 unified index), plus the per-business CONTENT tab in BUSINESS MANAGER.' },
 
     { id: 'opportunity-radar', label: 'OPPORTUNITY RADAR', dock: 'work',
       windows: ['maker'],

@@ -75,6 +75,52 @@ const ROOT = path.join(__dirname, '..');
   A.eq(S.shapeHeader({}).text, '0 pieces', 'an empty read says zero pieces, not a blank');
 }
 
+/* ---------- shapeCreations: the §37 unified index, shaped (content · document · work order · deliverable) ---------- */
+{
+  const raw = {
+    ok: true, types: ['content', 'document', 'workorder', 'deliverable'],
+    counts: { total: 3, byType: { content: 1, document: 1, workorder: 1, deliverable: 0 } },
+    rows: [
+      { type: 'content', id: 'c1', title: 'A video', status: 'script', businessId: 'b', businessName: 'Alpha', updatedAt: NOW - 3600000 },
+      { type: 'workorder', id: 'w1', title: 'Draft the plan', status: 'planned', businessId: 'b', businessName: 'Alpha', updatedAt: NOW },
+      { type: 'deliverable', id: 'd1', title: 'Kept artifact', status: 'kept', businessId: '', businessName: 'Station', updatedAt: null }
+    ],
+    readable: { content: true, document: true, workorder: true, deliverable: true },
+    truncated: false, note: ''
+  };
+  const c = S.shapeCreations(raw, NOW);
+  A.eq(c.ok, true, 'the index reports ok');
+  A.eq(c.rows.length, 3, 'every row is carried through');
+  A.eq(c.rows[0].typeLabel, 'CONTENT', 'the type is labelled');
+  A.eq(c.rows[1].typeLabel, 'WORK ORDER', 'a work order labels as WORK ORDER');
+  A.eq(c.rows[2].updatedRel, '', 'an undated row renders NO relative time (never "1970")');
+  A.eq(c.rows[2].updatedAt, null, 'and its updatedAt stays null');
+  A.eq(c.rows[2].businessName, 'Station', 'a station-level row names the station');
+  A.eq(c.counts.total, 3, 'the count is carried');
+  // no score/rank/percentage in the shaped output
+  A.ok(!/score|rank|%/i.test(JSON.stringify(c)), 'the shaped index carries no score/rank/percent');
+  // a null read is an empty, honest envelope — never a throw
+  A.eq(S.shapeCreations(null, NOW).rows.length, 0, 'a null read shapes to an empty list');
+  A.eq(S.shapeCreations(null, NOW).counts.total, 0, 'with a zero total');
+  // an unreadable source is carried through (the viewer warns; it does not shorten the list silently)
+  const u = S.shapeCreations({ ok: true, rows: [], counts: { total: 0 }, readable: { content: false, document: true } }, NOW);
+  A.eq(u.readable.content, false, 'a source that could not be read is carried as readable:false');
+}
+/* the creations header is a plain count, no verdict */
+{
+  A.ok(/3 creations/.test(S.shapeCreationsHeader({ total: 3 }).text), 'the creations header counts');
+  A.eq(S.shapeCreationsHeader({ total: 1 }).text, '1 creation', 'and singularises');
+  A.ok(!/health|score|%/i.test(S.shapeCreationsHeader({ total: 9 }).text), 'no verdict');
+}
+/* the CREATIONS tab exists in the engine source, and reads the §37 route */
+{
+  const src = fs.readFileSync(path.join(ROOT, 'frontend', 'app', 'creatorstudio.js'), 'utf8');
+  A.ok(/data-tab="creations"/.test(src), 'the console declares a CREATIONS tab');
+  A.ok(/apiFetch\('\/api\/creations'\)/.test(src), 'and reads /api/creations (the §37 index has a viewer)');
+  A.ok(/renderCreations/.test(src), 'with a renderer');
+  A.ok(/\.catch\(fail\('creations'\)\)/.test(src), 'and a guarded read (a dropped fetch is named, not a spinner)');
+}
+
 /* ---------- the console holds NO policy, no mutation ---------- */
 {
   const src = fs.readFileSync(path.join(ROOT, 'frontend', 'app', 'creatorstudio.js'), 'utf8');

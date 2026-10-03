@@ -144,6 +144,56 @@
     return { text: parts.join(' · '), total: total, published: published, inReview: inReview };
   }
 
+  /* ★ THE CREATIONS INDEX (§37), shaped. The sidecar composer (`creations-index.js`) already normalised every
+     made thing to {type,id,title,status,businessId,businessName,updatedAt}; this just labels the type and
+     renders the relative time. It invents NOTHING: no score, no rank — the order is the composer's
+     newest-first, and each row says which store it came from and where it stands. An unreadable source is
+     carried through so the viewer can warn rather than show a shorter list that reads as "you made less". */
+  const TYPE_LABEL = {
+    content: 'CONTENT', document: 'DOCUMENT', workorder: 'WORK ORDER', deliverable: 'DELIVERABLE'
+  };
+  function typeLabel(t) { const k = String(t || ''); return TYPE_LABEL[k] || k.toUpperCase() || 'CREATION'; }
+
+  function shapeCreations(raw, nowMs) {
+    raw = raw || {};
+    const counts = raw.counts || {};
+    const byType = counts.byType || {};
+    return {
+      ok: raw.ok === true,
+      types: (Array.isArray(raw.types) ? raw.types : Object.keys(byType)).map(t => String(t)),
+      rows: (Array.isArray(raw.rows) ? raw.rows : []).map(r => {
+        r = r || {};
+        const type = String(r.type || '');
+        return {
+          type: type,
+          typeLabel: typeLabel(type),
+          id: String(r.id || ''),
+          title: String(r.title || '(untitled)'),
+          status: String(r.status || ''),
+          businessId: String(r.businessId || ''),
+          businessName: String(r.businessName || r.businessId || 'Station'),
+          updatedAt: Number.isFinite(r.updatedAt) ? r.updatedAt : null,
+          updatedRel: relTime(r.updatedAt, nowMs)
+        };
+      }),
+      counts: {
+        total: Number.isFinite(counts.total) ? counts.total : (Array.isArray(raw.rows) ? raw.rows.length : 0),
+        byType: byType
+      },
+      // per-source readability: a false here is "could not read", never "you have none"
+      readable: raw.readable || {},
+      truncated: raw.truncated === true,
+      note: raw.note || ''
+    };
+  }
+
+  /* THE CREATIONS HEADER — a plain count, no verdict. */
+  function shapeCreationsHeader(counts) {
+    counts = counts || {};
+    const total = Number.isFinite(counts.total) ? counts.total : 0;
+    return { text: total + (total === 1 ? ' creation' : ' creations'), total: total };
+  }
+
   // ---------------------------------------------------------------------------------------------
   // DOM HALF
   // ---------------------------------------------------------------------------------------------
@@ -171,14 +221,25 @@
         '<div class="cs-tabs">' +
           '<button class="cs-tab cs-on" data-tab="pipeline" data-hint="creatorstudio">PIPELINE</button>' +
           '<button class="cs-tab" data-tab="calendar" data-hint="creatorstudio">CALENDAR</button>' +
+          // §37: every made thing, not just content — the unified index (content · documents · work orders ·
+          // deliverables) in one place. This is the surface the /api/creations route never had.
+          '<button class="cs-tab" data-tab="creations" data-hint="creatorstudio">CREATIONS</button>' +
         '</div>' +
         '<div class="cs-panels">' +
           '<div class="cs-panel cs-on" id="cs-panel-pipeline"></div>' +
           '<div class="cs-panel" id="cs-panel-calendar"></div>' +
+          '<div class="cs-panel" id="cs-panel-creations"></div>' +
         '</div>' +
       '</div>';
 
-    const state = { tab: 'pipeline', pipeline: null, calendar: null };
+    const state = { tab: 'pipeline', pipeline: null, calendar: null, creations: null };
+
+    /* A tile deep-links with a section (openTerm sets consoleSection['creatorstudio']); honour it when it
+       names a real tab so a "MY CREATIONS" tile lands on CREATIONS. Falls back to the pipeline. */
+    const CTABS = ['pipeline', 'calendar', 'creations'];
+    const H0 = (typeof StationUI !== 'undefined' && StationUI.h) || null;
+    const wantTab = (H0 && H0.consoleSection && H0.consoleSection['creatorstudio']) || '';
+    const startTab = CTABS.indexOf(wantTab) >= 0 ? wantTab : 'pipeline';
 
     function panel(id) { return host.querySelector('#cs-panel-' + id); }
     function say(id, html) { const p = panel(id); if (p) p.innerHTML = html; }
@@ -190,6 +251,7 @@
       for (const t of host.querySelectorAll('.cs-tab')) t.classList.toggle('cs-on', t.getAttribute('data-tab') === tab);
       for (const p of host.querySelectorAll('.cs-panel')) p.classList.toggle('cs-on', p.id === 'cs-panel-' + tab);
       render(tab);
+      renderHeader();
     }
 
     function pieceChip(p) {
@@ -236,15 +298,44 @@
     function render(tab) {
       if (tab === 'pipeline') renderPipeline();
       else if (tab === 'calendar') renderCalendar();
+      else if (tab === 'creations') renderCreations();
+    }
+
+    /* THE CREATIONS TAB — every made thing, newest first. A row names its TYPE, TITLE, the business it
+       belongs to, where it stands, and when it last moved. No score, no rank; the order is the composer's
+       newest-first. A source that could not be read is warned about, so a short list is never mistaken for
+       "you made nothing". */
+    function renderCreations() {
+      const cr = state.creations;
+      if (!cr) return busy('creations');
+      const unreadable = Object.keys(cr.readable).filter(k => cr.readable[k] === false);
+      const warn = unreadable.length
+        ? '<div class="cs-warn">could not read: ' + esc(unreadable.join(', ')) + ' — this list may be incomplete, not empty</div>'
+        : '';
+      const rows = cr.rows.length ? cr.rows.map(r =>
+        '<tr class="cs-crow">' +
+          '<td class="cs-crow-type"><span class="cs-type">' + esc(r.typeLabel) + '</span></td>' +
+          '<td class="cs-crow-title"><b>' + esc(r.title) + '</b></td>' +
+          '<td class="cs-crow-status">' + (r.status ? esc(r.status) : '<span class="cs-none">—</span>') + '</td>' +
+          '<td class="cs-crow-biz">' + esc(r.businessName) + '</td>' +
+          '<td class="cs-crow-moved">' + (r.updatedRel ? esc(r.updatedRel) : '<span class="cs-none">—</span>') + '</td>' +
+        '</tr>').join('') : '<tr><td colspan="5" class="cs-none">nothing made yet</td></tr>';
+      say('creations', warn +
+        '<table class="cs-ctable"><thead><tr><th>type</th><th>title</th><th>status</th><th>business</th><th>last moved</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table>' +
+        (cr.truncated ? '<p class="cs-note">showing the most recent ' + cr.rows.length + ' of ' + cr.counts.total + '</p>' : '') +
+        (cr.note ? '<p class="cs-note">' + esc(cr.note) + '</p>' : ''));
     }
 
     function renderHeader() {
       const el = host.querySelector('#cs-sum');
-      if (el && state.pipeline) el.textContent = shapeHeader(state.pipeline.counts).text;
+      if (!el) return;
+      if (state.tab === 'creations' && state.creations) el.textContent = shapeCreationsHeader(state.creations.counts).text;
+      else if (state.pipeline) el.textContent = shapeHeader(state.pipeline.counts).text;
     }
 
     function loadAll() {
-      busy('pipeline', 'reading the pipeline…'); busy('calendar', 'reading…');
+      busy('pipeline', 'reading the pipeline…'); busy('calendar', 'reading…'); busy('creations', 'reading…');
       // Each read is guarded: a rejected fetch (the sidecar is down, the network dropped) must leave a NAMED
       // error in the panel, never an unhandled rejection and a panel stuck on "reading…" forever.
       const fail = (id) => (e) => { err(id, (e && e.message) ? ('could not read that — ' + e.message) : 'could not read that — the sidecar could not be reached'); };
@@ -254,10 +345,16 @@
       apiFetch('/api/creator/calendar')
         .then(d => { state.calendar = shapeCalendar(d, now()); render('calendar'); })
         .catch(fail('calendar'));
+      apiFetch('/api/creations')
+        .then(d => { state.creations = shapeCreations(d, now()); render('creations'); renderHeader(); })
+        .catch(fail('creations'));
     }
 
     host.querySelector('#cs-refresh').addEventListener('click', loadAll);
     for (const t of host.querySelectorAll('.cs-tab')) t.addEventListener('click', () => showTab(t.getAttribute('data-tab')));
+
+    // honour a tile's section hint: land on the promised tab, not the default (no-op for 'pipeline').
+    if (startTab !== 'pipeline') showTab(startTab);
 
     loadAll();
     return { state: state, reload: loadAll };
@@ -266,7 +363,8 @@
   return {
     esc, relTime, stageLabel, channelLabel,
     shapePiece, shapePipeline, shapeCalendar, shapeHeader,
-    STAGE_LABEL, CHANNEL_LABEL,
+    shapeCreations, shapeCreationsHeader, typeLabel,
+    STAGE_LABEL, CHANNEL_LABEL, TYPE_LABEL,
     mount
   };
 });

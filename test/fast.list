@@ -461,6 +461,7 @@ test/businesssecurity.test.js
 test/mission-control.test.js
 test/mission-routes.test.js
 test/businessmission.test.js
+test/mission-tiles.test.js
 test/creator-studio.test.js
 test/creator-routes.test.js
 test/creations-index.test.js
