@@ -86,3 +86,16 @@
   display: inline-block; font-size: 9.5px; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 3px;
   background: #eef1f5; color: #4a5260; border: 1px solid #dfe4ea; white-space: nowrap;
 }
+
+/* ---- ATTENTION tab (Step B — the attention-first home) -------------------------------------------- */
+/* The calm state: nothing needs you is GOOD NEWS, said quietly — never a "no data" italic. */
+.mssn-quiet { color: #3d6b4a; font-size: 12px; margin: 4px 0 0; }
+/* a clickable attention row: reads its own signals on demand */
+.mssn-row-click { cursor: pointer; }
+.mssn-row-click:hover td { background: #fafbfd; }
+/* the per-business signal chips revealed under a row — quiet facts, not verdicts */
+.mssn-alerts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.mssn-sig {
+  font-size: 10px; padding: 1px 6px; border-radius: 3px; background: #eef4fa; color: #24506b;
+  border: 1px solid #d3e2ef; white-space: nowrap;
+}

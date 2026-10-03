@@ -43,6 +43,7 @@
 <link rel="stylesheet" href="css/businessmission.css"><!-- MISSION CONTROL (Business OS Phase 11, §23): scoped .mssn-* styles for the ranked board, the fleet figures and the cross-business trail (businessmission.js). NOTE: .mc-* was already taken by the station's own stylesheets, so this one is .mssn- — scoped so the consoles cannot collide. The ranking reads as REASONS in place (.mssn-why), never a colour band or a priority number; an unreadable source is styled LOUD. -->
 <link rel="stylesheet" href="css/businessautopilot.css"><!-- GOAL AUTOPILOT (Business OS Phase 12, §9): scoped .ap-* styles (businessautopilot.js). The one line that must not be missed is .ap-staged — "this is a plan, nothing is written yet". A refusal (.ap-refuse) is styled as a calm statement, because the autopilot refusing to invent a plan is a feature, not an error. -->
 <link rel="stylesheet" href="css/businessfactory.css"><!-- SOFTWARE FACTORY (Business OS Phase 12, §22): scoped .fac-* styles (businessfactory.js). There is NO bar/track/fill class anywhere in this sheet — the progress-bar temptation is structurally removed. State reads as a WORD (.fac-state), an unreadable source is LOUD (.fac-cannot) and shows "—" not 0. -->
+<link rel="stylesheet" href="css/creatorstudio.css"><!-- CREATOR STUDIO (§20): scoped .cs-* styles for the §17 pipeline board (stage columns of pieces) and the dated calendar. NOTE: .bc-/.bm-/.tm-/.mg-/.ba-/.wk-/.in-/.dt-/.se-/.mssn-/.ap-/.fac- are taken — this one is .cs- so the consoles cannot collide. An unreadable store is styled LOUD (.cs-warn), never a tidy empty pipeline. -->
 <!-- a11y.css MUST STAY LAST. It answers three OS-level preferences the design had no rules for —
      forced-colors (Windows High Contrast Mode), prefers-contrast and prefers-reduced-transparency —
      and most of what it does is RESTATE a value an earlier sheet already set (.term's border,
@@ -658,7 +659,7 @@
         <!-- BUSINESS OS (Phase 11). MISSION CONTROL (§23): every business on one ranked board — work waiting
              on you first, then anything not operating, then anything gone quiet — with the reasons named. The
              ranking IS the reasons; there is no score. Read-only. Title must stay in step with windows/mission.js. -->
-        <button class="bb" data-term="mission" data-hint="missioncontrol"><span class="bb-i">◎</span><span class="bb-tx"><b>MISSION CONTROL</b><small>everything you run — ranked by what is blocking it</small></span></button>
+        <button class="bb" data-term="mission" data-hint="missioncontrol"><span class="bb-i">◎</span><span class="bb-tx"><b>MISSION CONTROL</b><small>everything you run — ranked by what is blocking it</small></span><span id="mssn-dock-badge" class="badge" hidden></span></button>
         <!-- BUSINESS OS (Phase 12). GOAL AUTOPILOT (§9): one stated objective → the whole plan, with the
              matched words shown and the tasks written into a business only on commit. The goal set is CLOSED;
              an unknown goal is refused with the list of known ones. Title must stay in step with
@@ -683,6 +684,10 @@
              money, metrics, customers, content, documents/knowledge and experiments. Title must stay in step
              with windows/manager.js. -->
         <button class="bb" data-term="manager" data-hint="manager"><span class="bb-i">◱</span><span class="bb-tx"><b>BUSINESS MANAGER</b><small>run a business — money, numbers, customers, content &amp; experiments</small></span></button>
+        <!-- CREATOR STUDIO (§20): the station-level content surface — every piece across every business in
+             the §17 pipeline (idea → … → published) plus a dated calendar. Title must stay in step with
+             windows/creatorstudio.js. -->
+        <button class="bb" data-term="creatorstudio" data-hint="creatorstudio"><span class="bb-i">✎</span><span class="bb-tx"><b>CREATOR STUDIO</b><small>your content pipeline — every piece, from idea to published</small></span></button>
       </div>
     </div>
     <div class="bb-group" data-group="build">
@@ -891,11 +896,14 @@ document.write('<script src="' + ((window.__STARNET_API__ || '') + '/shared/spec
 <script src="app/windows/security.js"></script><!-- SECURITY CENTER — the window slot (overview · who can do what · audit · rules); MUST load after businesssecurity.js and stationui.js. TITLE LAW: the dock reads SECURITY CENTER and this registers 'SECURITY CENTER'. -->
 <script src="app/businessmission.js"></script><!-- BUSINESS OS engine (Phase 11, §23): pure board/header/fleet/trail shaping and the Mission Control console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/mission.js (the window slot) and after stationui.js. -->
 <script src="app/windows/mission.js"></script><!-- MISSION CONTROL — the window slot (board · fleet figures · trail); MUST load after businessmission.js and stationui.js. TITLE LAW: the dock reads MISSION CONTROL and this registers 'MISSION CONTROL'. -->
+<script src="app/creatorstudio.js"></script><!-- BUSINESS OS engine (§20): pure pipeline/calendar shaping and the Creator Studio console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/creatorstudio.js (the window slot) and after stationui.js. -->
+<script src="app/windows/creatorstudio.js"></script><!-- CREATOR STUDIO — the window slot (the §17 pipeline · the dated calendar); MUST load after creatorstudio.js and stationui.js. TITLE LAW: the dock reads CREATOR STUDIO and this registers 'CREATOR STUDIO'. -->
 <script src="app/businessautopilot.js"></script><!-- BUSINESS OS engine (Phase 12, §9): pure goal-catalogue / plan-preview / refusal shaping and the Goal Autopilot console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/autopilot.js (the window slot) and after stationui.js. -->
 <script src="app/windows/autopilot.js"></script><!-- GOAL AUTOPILOT — the window slot (goal catalogue · plan preview · commit); MUST load after businessautopilot.js and stationui.js. TITLE LAW: the dock reads GOAL AUTOPILOT and this registers 'GOAL AUTOPILOT'. -->
 <script src="app/businessfactory.js"></script><!-- BUSINESS OS engine (Phase 12, §22): pure pipeline/stage/state shaping and the Software Factory console mount; Node-loadable, so it is unit-tested headless. MUST load before app/windows/factory.js (the window slot) and after stationui.js. -->
 <script src="app/windows/factory.js"></script><!-- SOFTWARE FACTORY — the window slot (business picker · the eight-stage pipeline); MUST load after businessfactory.js and stationui.js. TITLE LAW: the dock reads SOFTWARE FACTORY and this registers 'SOFTWARE FACTORY'. -->
 <script src="app/navdock.js"></script>
+<script src="app/navgroups.js"></script><!-- the CONCEPTUAL IA (brief §5): maps the 15 AI-COMMAND-CENTER labels onto the REAL window keys, without moving modules or touching the four physical docks. Pure data + pure fns; asserted by test/nav-groups.test.js. -->
 <script src="app/chatresize.js"></script>
 <script src="app/leftrail.js"></script><!-- hide/show the CREW rail (◂ in the rail header · ▸ CREW drawer tab on the stage edge); persisted per machine -->
 

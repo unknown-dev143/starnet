@@ -188,6 +188,20 @@
     };
   }
 
+  /* THE ATTENTION LIST — the narrow "needs a human" read (/api/mission/attention). Same row shape as the
+     board; the composer already filtered to non-quiet rows and ranked them. Shaped through shapeRow so the
+     two tabs can never disagree about how a row renders. */
+  function shapeAttention(raw, nowMs) {
+    raw = raw || {};
+    return {
+      ok: raw.ok === true,
+      count: Number.isFinite(raw.count) ? raw.count : (Array.isArray(raw.rows) ? raw.rows.length : 0),
+      pending: (raw.pending === null || raw.pending === undefined) ? null : raw.pending,
+      // re-use shapeRow: one row-shaper, so BOARD and ATTENTION label a row identically.
+      rows: (Array.isArray(raw.rows) ? raw.rows : []).map(r => shapeRow(r, nowMs))
+    };
+  }
+
   /* AVAILABILITY WARNINGS — one line per unreadable source. Empty = everything read. */
   function availabilityWarnings(board, fleet, trail) {
     const out = [];
@@ -214,6 +228,21 @@
   // DOM HALF
   // ---------------------------------------------------------------------------------------------
 
+  /* THE DOCK BADGE — the attention count on the MISSION CONTROL dock button. This is the §6
+     "attention-first home" made visible where a person already looks (the dock), using the badge
+     helper (attentionBadge) that had no consumer until now. Reads the SAME board the console does, so
+     the badge and the console can never disagree. Never throws when the dock is absent. */
+  function paintDockBadge(board) {
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById('mssn-dock-badge');
+    if (!el) return;
+    const b = attentionBadge(board);
+    // an unknown board must NOT clear the badge to 0 (that would read as "nothing needs you") — leave it.
+    if (!b.known) return;
+    el.textContent = b.text;
+    el.hidden = !b.count;
+  }
+
   function apiFetch(path, init) {
     const H = (typeof StationUI !== 'undefined' && StationUI.h) || {};
     if (typeof H.api === 'function') return H.api(path, init);
@@ -236,18 +265,22 @@
           '<button class="mssn-btn" id="mssn-refresh" data-hint="missioncontrol">REFRESH</button>' +
         '</div>' +
         '<div class="mssn-tabs">' +
-          '<button class="mssn-tab mssn-on" data-tab="board" data-hint="missioncontrol">BOARD</button>' +
+          // ATTENTION-FIRST: the brief's §6 home opens on what needs a human, not the full board. The
+          // /api/mission/attention route existed with no consumer until now (Step B of PHASE0-AUDIT-v4 §8).
+          '<button class="mssn-tab mssn-on" data-tab="attention" data-hint="missioncontrol">ATTENTION</button>' +
+          '<button class="mssn-tab" data-tab="board" data-hint="missioncontrol">BOARD</button>' +
           '<button class="mssn-tab" data-tab="fleet" data-hint="missioncontrol">FLEET FIGURES</button>' +
           '<button class="mssn-tab" data-tab="trail" data-hint="missioncontrol">TRAIL</button>' +
         '</div>' +
         '<div class="mssn-panels">' +
-          '<div class="mssn-panel mssn-on" id="mssn-panel-board"></div>' +
+          '<div class="mssn-panel mssn-on" id="mssn-panel-attention"></div>' +
+          '<div class="mssn-panel" id="mssn-panel-board"></div>' +
           '<div class="mssn-panel" id="mssn-panel-fleet"></div>' +
           '<div class="mssn-panel" id="mssn-panel-trail"></div>' +
         '</div>' +
       '</div>';
 
-    const state = { tab: 'board', board: null, fleet: null, trail: null };
+    const state = { tab: 'attention', board: null, attention: null, fleet: null, trail: null, alerts: {} };
 
     function panel(id) { return host.querySelector('#mssn-panel-' + id); }
     function say(id, html) { const p = panel(id); if (p) p.innerHTML = html; }
@@ -259,6 +292,36 @@
       for (const t of host.querySelectorAll('.mssn-tab')) t.classList.toggle('mssn-on', t.getAttribute('data-tab') === tab);
       for (const p of host.querySelectorAll('.mssn-panel')) p.classList.toggle('mssn-on', p.id === 'mssn-panel-' + tab);
       render(tab);
+    }
+
+    function renderAttention() {
+      const a = state.attention;
+      if (!a) return busy('attention');
+      const warns = [];
+      if (a.pending === null) warns.push('the approval queue could not be read — what is waiting on you is unknown, not zero');
+      if (!a.rows.length) {
+        return say('attention', (warns.length ? '<div class="mssn-warn">' + warns.map(w => esc(w)).join('<br>') + '</div>' : '') +
+          '<p class="mssn-quiet">nothing needs you right now — every business is operating quietly.</p>');
+      }
+      const rows = a.rows.map(r => {
+        const al = state.alerts[r.id];
+        const alRow = al ? '<div class="mssn-alerts">' + (al.signals.length
+          ? al.signals.map(s => '<span class="mssn-sig">' + esc(s.text || s.label || s.metric) + '</span>').join('')
+          : '<span class="mssn-none">' + (al.readable === false ? 'signals could not be read' : 'no signals recorded') + '</span>') + '</div>' : '';
+        return '<tr class="mssn-row mssn-row-needs mssn-row-click" data-biz="' + esc(r.id) + '">' +
+            '<td class="mssn-cell-name"><b>' + esc(r.name) + '</b>' +
+              '<div class="mssn-why">' + esc(r.reasonText) + '</div>' + alRow + '</td>' +
+            '<td class="mssn-cell-stage"><span class="mssn-stage">' + esc(r.stageLabel) + '</span></td>' +
+            '<td class="mssn-cell-pending">' + (r.pending ? String(r.pending) : '<span class="mssn-none">—</span>') + '</td>' +
+            '<td class="mssn-cell-moved">' + esc(r.updatedRel) + '</td>' +
+          '</tr>';
+      }).join('');
+      say('attention', '' +
+        (warns.length ? '<div class="mssn-warn">' + warns.map(w => esc(w)).join('<br>') + '</div>' : '') +
+        '<table class="mssn-table"><thead><tr>' +
+          '<th>business</th><th>stage</th><th class="mssn-th-num">waiting</th><th>last moved</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<p class="mssn-note">click a row to read why it is highlighted — the reasons are the ranking, there is no score</p>');
     }
 
     function renderBoard() {
@@ -319,25 +382,56 @@
     }
 
     function render(tab) {
-      if (tab === 'board') renderBoard();
+      if (tab === 'attention') renderAttention();
+      else if (tab === 'board') renderBoard();
       else if (tab === 'fleet') renderFleet();
       else if (tab === 'trail') renderTrail();
     }
 
+    /* Clicking an ATTENTION row loads that business's own signals (/api/mission/alerts?business=) once and
+       caches them. This is the consumer the /alerts route never had — a read, one POST-free fetch. */
+    function onAttentionClick(ev) {
+      const row = ev.target.closest && ev.target.closest('.mssn-row-click');
+      if (!row) return;
+      const id = row.getAttribute('data-biz');
+      if (!id || state.alerts[id]) return;
+      state.alerts[id] = { signals: [], readable: null };   // mark in-flight so a double-click is a no-op
+      renderAttention();
+      apiFetch('/api/mission/alerts?business=' + encodeURIComponent(id))
+        .then(d => { state.alerts[id] = shapeAlerts(d); renderAttention(); })
+        .catch(() => { state.alerts[id] = { signals: [], readable: false }; renderAttention(); });
+    }
+
     function loadAll() {
-      busy('board', 'reading the board…'); busy('fleet', 'reading…'); busy('trail', 'reading…');
-      apiFetch('/api/mission/board').then(d => { state.board = shapeBoard(d, now()); render('board'); renderHeader(); });
-      apiFetch('/api/mission/fleet').then(d => { state.fleet = shapeFleet(d, now()); render('fleet'); });
-      apiFetch('/api/mission/trail').then(d => { state.trail = shapeTrail(d, now()); render('trail'); });
+      busy('attention', 'reading what needs you…'); busy('board', 'reading the board…');
+      busy('fleet', 'reading…'); busy('trail', 'reading…');
+      // Each read is guarded: a rejected fetch (the sidecar is down, the network dropped) must leave a NAMED
+      // error in the panel, never an unhandled rejection and a panel stuck on "reading…" forever.
+      const fail = (id) => (e) => { err(id, (e && e.message) ? ('could not read that — ' + e.message) : 'could not read that — the sidecar could not be reached'); };
+      apiFetch('/api/mission/attention').then(d => { state.attention = shapeAttention(d, now()); render('attention'); renderHeader(); }).catch(fail('attention'));
+      apiFetch('/api/mission/board').then(d => {
+        state.board = shapeBoard(d, now()); render('board'); renderHeader();
+        // the badge reads the board's counts (needsYou) — the "attention-first" number on the dock.
+        paintDockBadge(state.board);
+      }).catch(fail('board'));
+      apiFetch('/api/mission/fleet').then(d => { state.fleet = shapeFleet(d, now()); render('fleet'); }).catch(fail('fleet'));
+      apiFetch('/api/mission/trail').then(d => { state.trail = shapeTrail(d, now()); render('trail'); }).catch(fail('trail'));
     }
 
     function renderHeader() {
       const el = host.querySelector('#mssn-sum');
-      if (el && state.board) el.textContent = state.board.header.text;
+      // Prefer the ATTENTION count (the console's whole point); fall back to the board's header counts.
+      if (!el) return;
+      if (state.attention) {
+        const n = state.attention.count;
+        el.textContent = n ? (n + (n === 1 ? ' needs you' : ' need you')) : 'nothing needs you';
+      } else if (state.board) el.textContent = state.board.header.text;
     }
 
     host.querySelector('#mssn-refresh').addEventListener('click', loadAll);
     for (const t of host.querySelectorAll('.mssn-tab')) t.addEventListener('click', () => showTab(t.getAttribute('data-tab')));
+    const attPanel = panel('attention');
+    if (attPanel) attPanel.addEventListener('click', onAttentionClick);
 
     loadAll();
     return { state: state, reload: loadAll };
@@ -346,8 +440,8 @@
   return {
     // pure half — the tested surface
     esc, relTime, stageLabel,
-    shapeHeader, shapeRow, shapeBoard, shapeFleet, shapeTrail, shapeAlerts,
-    availabilityWarnings, attentionBadge,
+    shapeHeader, shapeRow, shapeBoard, shapeAttention, shapeFleet, shapeTrail, shapeAlerts,
+    availabilityWarnings, attentionBadge, paintDockBadge,
     STAGE_LABEL,
     // dom
     mount

@@ -1,0 +1,81 @@
+/* frontend/css/creatorstudio.css — the CREATOR STUDIO console (§20).
+   Scoped .cs-* so it cannot collide with the other business consoles:
+     .bc-* = Phase 1 · .bm-* = Phase 2 · .tm-* = Phase 3 · .mg-* = Phase 4 · .ba-* = Phase 5
+     .wk-* = Phase 6 · .in-* = Phase 7 · .dt-* = Phase 9 · .se-* = Phase 10 · .mssn-* = Phase 11
+     .ap-* = Phase 12 autopilot · .fac-* = Phase 12 factory · .cs-* = §20 Creator Studio  ← this file
+
+   LIGHT THEME. Light surfaces with dark text, matching the station's light console.
+
+   THE ONE RULE THIS FILE ENFORCES: the pipeline is a BOARD of what exists, not a progress metre. Stage
+   columns carry a COUNT, never a bar/percentage/readiness. An unreadable store is LOUD (.cs-warn) — a
+   blank pipeline must never pass for "you create nothing". */
+
+.cs-wrap { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 18px; height: 100%; box-sizing: border-box; overflow: hidden; }
+
+.cs-head { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; flex-wrap: wrap; }
+.cs-title { margin: 0; font-size: 13px; letter-spacing: 0.12em; font-weight: 700; color: #1a1d24; }
+.cs-spacer { flex: 1 1 auto; }
+.cs-sum { font-size: 11px; color: #57606e; letter-spacing: 0.02em; }
+
+.cs-banner {
+  font-size: 11px; color: #4a3a6b; background: #f1eefb; border-left: 3px solid #7a6bd4;
+  padding: 3px 9px; border-radius: 3px; letter-spacing: 0.02em;
+}
+
+.cs-btn {
+  font: inherit; font-size: 11px; padding: 4px 9px; border-radius: 4px;
+  border: 1px solid #c8cdd6; background: #fff; color: #1a1d24; cursor: pointer;
+}
+.cs-btn:hover { background: #f2f4f8; }
+
+.cs-tabs { display: flex; gap: 4px; flex: 0 0 auto; flex-wrap: wrap; }
+.cs-tab {
+  font: inherit; font-size: 11px; letter-spacing: 0.06em; padding: 5px 11px; border-radius: 4px 4px 0 0;
+  border: 1px solid #d7dbe2; border-bottom: none; background: #f4f6f9; color: #576070; cursor: pointer;
+}
+.cs-tab.cs-on { background: #fff; color: #1a1d24; font-weight: 700; border-color: #b9c0cc; }
+
+.cs-panels { flex: 1 1 auto; overflow: auto; border: 1px solid #d7dbe2; border-radius: 0 4px 4px 4px; background: #fff; padding: 12px 14px; }
+.cs-panel { display: none; }
+.cs-panel.cs-on { display: block; }
+
+.cs-loading, .cs-empty { color: #6b7280; font-size: 12px; font-style: italic; }
+.cs-none { color: #8a93a1; font-size: 12px; font-style: italic; }
+/* A read that FAILED (the sidecar is unreachable) — distinct from "nothing here", so a dropped fetch never
+   reads as an empty pipeline. */
+.cs-err { color: #a33; font-size: 12px; }
+.cs-note { color: #6b7280; font-size: 11px; margin: 10px 0 0; line-height: 1.5; }
+
+/* UNREADABLE STORE — loud, because a blank pipeline must never pass for a quiet one */
+.cs-warn {
+  font-size: 11px; color: #7a5200; background: #fdf6e3; border-left: 3px solid #d9a400;
+  padding: 6px 10px; border-radius: 3px; margin-bottom: 10px; line-height: 1.5;
+}
+
+/* ---- pipeline board: stage columns ---------------------------------------------------------------- */
+.cs-board { display: flex; gap: 8px; align-items: flex-start; overflow-x: auto; padding-bottom: 4px; }
+.cs-col { flex: 0 0 auto; width: 190px; border: 1px solid #e3e7ee; border-radius: 5px; background: #fafbfd; padding: 8px; }
+.cs-col-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.cs-col-t { font-size: 10px; letter-spacing: 0.1em; font-weight: 700; color: #57606e; }
+.cs-col-n {
+  font-size: 10px; font-variant-numeric: tabular-nums; color: #4a5260; min-width: 16px; text-align: center;
+  background: #eef1f5; border: 1px solid #dfe4ea; border-radius: 8px; padding: 0 5px;
+}
+
+/* one content piece — a quiet card, no verdict, no score */
+.cs-piece { border: 1px solid #e6eaf0; border-radius: 4px; background: #fff; padding: 6px 8px; margin-bottom: 5px; }
+.cs-piece-t { display: block; font-size: 11.5px; font-weight: 600; color: #1a1d24; line-height: 1.35; }
+.cs-piece-m { display: block; font-size: 10px; color: #6b7280; margin-top: 2px; line-height: 1.4; }
+
+/* ---- calendar ------------------------------------------------------------------------------------ */
+.cs-day { margin-bottom: 12px; }
+.cs-day-h {
+  font-size: 10px; letter-spacing: 0.08em; font-weight: 700; color: #57606e;
+  padding-bottom: 4px; border-bottom: 1px solid #eef1f5; margin-bottom: 6px;
+}
+.cs-piece-dated { border-left: 3px solid #7a6bd4; }
+/* which recorded date placed this piece on this day — never implies a schedule that was not set */
+.cs-src {
+  display: inline-block; margin-left: 6px; font-size: 9px; letter-spacing: 0.04em;
+  color: #7a5200; background: #fdf6e3; border: 1px solid #f0e2b8; border-radius: 3px; padding: 0 4px;
+}

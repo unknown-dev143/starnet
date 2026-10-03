@@ -8615,6 +8615,10 @@ const StationUI = typeof document === 'undefined' ? {} : (() => {
     placeGearForSkill,
     // shared window fragments (roster switcher for the per-agent windows; dossier memory loader)
     rosterSwitchHtml, wireRosterSwitch, loadMemoryCore,
+    // the conceptual IA (brief §5) — the 15 AI-COMMAND-CENTER labels mapped onto the real window keys.
+    // Lives in app/navgroups.js (loads just after this file); exposed here so any window builder can read
+    // one owned source for the label→window mapping. Null if the module did not load (honest, never a stub).
+    get navGroups() { return (typeof NavGroups !== 'undefined') ? NavGroups : null; },
     // workstream + persistence seams
     WS, persistWS, save, consoleSection,
     // live core state (read-only views — never reassign through these)

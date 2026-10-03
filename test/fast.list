@@ -461,6 +461,10 @@ test/businesssecurity.test.js
 test/mission-control.test.js
 test/mission-routes.test.js
 test/businessmission.test.js
+test/creator-studio.test.js
+test/creator-routes.test.js
+test/creations-index.test.js
+test/creatorstudio.test.js
 test/business-autopilot.test.js
 test/autopilot-routes.test.js
 test/businessautopilot.test.js
@@ -494,6 +498,7 @@ test/state-truth-overlap.test.js
 test/world-setskin.test.js
 test/capprop-map.contract.test.js
 test/dock-terms-open.test.js
+test/nav-groups.test.js
 test/settings-p1-ui.test.js
 test/dossier-persona-ui.test.js
 test/settings-codex-row.test.js

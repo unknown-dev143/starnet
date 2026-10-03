@@ -241,6 +241,68 @@ const NOW = 1000000000000;
   A.ok(code.toLowerCase().indexOf('"score"') < 0, 'no score field in the CODE');
 }
 
+/* ---------- shapeAttention: the narrow "needs a human" read (Step B) ---------- */
+{
+  const raw = { ok: true, count: 1, pending: 2, rows: [{ id: 'a', name: 'A', stage: 'live', reasons: [{ kind: 'waiting-on-you', text: '2 approvals waiting' }], pending: 2, band: 0 }] };
+  const a = S.shapeAttention(raw, NOW);
+  A.eq(a.ok, true, 'attention ok is carried');
+  A.eq(a.count, 1, 'the attention count comes off the wire');
+  A.eq(a.pending, 2, 'the pending total is carried (null vs 0 kept distinct)');
+  A.eq(a.rows.length, 1, 'the attention rows are shaped');
+  A.eq(a.rows[0].stageLabel, 'LIVE', 'attention rows re-use the ONE row-shaper (stage label resolved identically)');
+  A.ok(a.rows[0].needsHuman, 'an attention row always carries a human reason');
+  // a null pending must survive as null (the composer reports an unreadable queue as null, never 0)
+  A.eq(S.shapeAttention({ ok: true, count: 0, pending: null, rows: [] }, NOW).pending, null, 'an unknown pending stays null');
+  // missing count falls back to the row length, never undefined
+  A.eq(S.shapeAttention({ ok: true, rows: [{ id: 'x', name: 'X' }] }, NOW).count, 1, 'count falls back to the row length');
+  A.eq(S.shapeAttention(null, NOW).rows.length, 0, 'a null attention read shapes to an empty list, not a throw');
+}
+
+/* ---------- ATTENTION-FIRST: the console consumes all four routes (Step B) ----------
+   Before Step B, /api/mission/attention and /api/mission/alerts had NO frontend consumer — two purpose-built
+   routes that could rot green forever. This locks the console to them, so the attention-first home cannot
+   silently regress to a board-only surface. */
+{
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'frontend', 'app', 'businessmission.js'), 'utf8');
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  A.ok(code.indexOf('/api/mission/attention') >= 0, 'the console READS /api/mission/attention (no longer an orphan route)');
+  A.ok(code.indexOf('/api/mission/alerts') >= 0, 'the console READS /api/mission/alerts (per-business signals)');
+  A.ok(code.indexOf('/api/mission/board') >= 0 && code.indexOf('/api/mission/fleet') >= 0 && code.indexOf('/api/mission/trail') >= 0,
+    'and still reads board + fleet + trail — all five reads in one home');
+  // attention is the DEFAULT tab (the console opens on what needs a human).
+  A.ok(/data-tab="attention"[^>]*>\s*ATTENTION/.test(src) && /class="mssn-tab mssn-on" data-tab="attention"/.test(src),
+    'ATTENTION is the first, default tab (attention-first home)');
+  // still a pure read — no mutation added by the new tab.
+  A.ok(!/method:\s*'POST'/.test(src) && !/method:\s*"POST"/.test(src), 'the attention tab adds no POST — still a read');
+}
+
+/* ---------- paintDockBadge: the attention count on the dock (Step B) ---------- */
+{
+  // no document → a silent no-op (this module is Node-loaded in tests; never throw).
+  A.notThrows(() => S.paintDockBadge(S.shapeBoard({ ok: true, counts: { needsYou: 2 } }, NOW)),
+    'paintDockBadge is a no-op with no DOM (never throws in the headless test)');
+  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'frontend', 'index.html'), 'utf8');
+  A.ok(/id="mssn-dock-badge"/.test(html), 'the MISSION CONTROL dock button carries the attention badge element');
+  A.ok(/data-term="mission"[^>]*>[\s\S]{0,600}id="mssn-dock-badge"/.test(html),
+    'and it is inside the mission dock button (the badge shows where a person already looks)');
+  A.ok(typeof S.paintDockBadge === 'function', 'paintDockBadge is exported');
+}
+
+/* ---------- ERROR STATES: a rejected read must be NAMED, not a spinner forever (Step E) ---------- */
+{
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'frontend', 'app', 'businessmission.js'), 'utf8');
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  // every one of the five reads is guarded: 4 loads in loadAll() + the per-business alerts expansion.
+  const catches = (code.match(/\.catch\(/g) || []).length;
+  A.ok(catches >= 5, 'every mission read carries a .catch (a dropped fetch must not leave a spinner forever) — found ' + catches);
+  A.ok(/mssn-err/.test(src), 'the error state is rendered through the .mssn-err surface');
+  A.ok(/\.catch\(fail\('attention'\)\)/.test(code) && /\.catch\(fail\('board'\)\)/.test(code) &&
+    /\.catch\(fail\('fleet'\)\)/.test(code) && /\.catch\(fail\('trail'\)\)/.test(code),
+    'all four boards name their failure panel');
+  A.ok(/state\.alerts\[id\] = \{ signals: \[\], readable: false \}/.test(code),
+    'a failed alerts read is marked unreadable, never left in-flight');
+}
+
 /* ---------- a body-less mount must not throw ---------- */
 {
   A.notThrows(() => { const r = S.mount(null); A.ok(r === null, 'mounting nothing returns null'); }, 'mount(null) does not throw');

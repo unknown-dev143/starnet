@@ -202,6 +202,9 @@ const { makeBusinessSecurity } = require('./business-security.js');             
 const { makeSecurityRoutes } = require('./security-routes.js');                 // Business OS P10: the /api/businesses/:id/security surface (overview + audit + rules), all GET
 const { makeMissionControl } = require('./mission-control.js');                 // Business OS P11: §23 MISSION CONTROL — composes the business list + portfolio + signals + approvals + trail into one ranked board; owns no store
 const { makeMissionRoutes } = require('./mission-routes.js');                   // Business OS P11: the /api/mission surface (board + fleet + attention + alerts + trail), all GET
+const { makeCreatorStudio } = require('./creator-studio.js');                   // §20 CREATOR STUDIO: the station-level content read (pipeline + calendar across every business); owns no store
+const { makeCreatorRoutes } = require('./creator-routes.js');                   // the /api/creator surface (pipeline + calendar), both GET, read-only
+const { makeCreationsIndex } = require('./creations-index.js');                  // §37 MY CREATIONS: one flat index over content+documents+workorders+deliverables; owns no store
 const { makeBusinessAutopilot } = require('./business-autopilot.js');           // Business OS P12: §9 GOAL AUTOPILOT — the single "big objective → whole plan" entry; composes templates + tasks, owns no store
 const { makeAutopilotRoutes } = require('./autopilot-routes.js');               // Business OS P12: the /api/autopilot surface (catalog + plan + commit)
 const { makeSoftwareFactory } = require('./software-factory.js');               // Business OS P12: §22 AI SOFTWARE FACTORY — the Idea→…→Operate pipeline read; composes six stores, owns no store
@@ -3768,6 +3771,37 @@ const missionControl = makeMissionControl({
 
 const missionRoutes = makeMissionRoutes({
   mission: missionControl
+});
+
+/* §20 CREATOR STUDIO. The audit's §6 item: "CREATOR STUDIO is a single store behind a generic window."
+   This composes the EXISTING content store (business-content-store.js, §17) into two station-level reads
+   the per-business tab cannot give: the pipeline across every business, and a dated calendar of pieces. It
+   owns no store and never writes — publishing stays a human action on the existing guarded /content/advance
+   route (a second door here would route around §17's store-level guard). Accessors are lazy so the wiring
+   order below cannot matter. */
+const creatorStudio = makeCreatorStudio({
+  content: contentStore,
+  businesses: () => businessesStore.list(),
+  now: () => Date.now()                           // the ONE clock read, injected (the module reads none itself)
+});
+
+/* §37 MY CREATIONS INDEX. The audit's §6 second gap: "no one place that answers 'show me everything I made'."
+   This composes the FOUR stores that each own one kind of made thing — content pieces (§17), business
+   documents (§15), work orders (a planned run), and station deliverables (what a run actually produced) —
+   into one flat, newest-first index. It owns no store and never writes, exactly like creator-studio.js. Every
+   accessor is lazy so the wiring order below cannot matter; the clock is the ONE read, injected. */
+const creationsIndex = makeCreationsIndex({
+  businesses: () => businessesStore.list(),
+  content: contentStore,
+  documents: documentsStore,
+  workorders: workOrdersStore,
+  deliverables: deliverableStore,
+  now: () => Date.now()
+});
+
+const creatorRoutes = makeCreatorRoutes({
+  creator: creatorStudio,
+  creations: creationsIndex
 });
 
 /* §9 GOAL AUTOPILOT (Phase 12). The audit's §6 item 4: "Worker plans+runs per order; no single 'big
@@ -9368,6 +9402,13 @@ const ROUTES = [
   // fresh /api/mission prefix (board · fleet · attention · trail · alerts), so none can shadow a Phase 1-10
   // path. All GET, all read-only: the composer has no write path by construction.
   ...missionRoutes.rows,
+  // ---- BUSINESS OS (§20). CREATOR STUDIO. Own module, mounted here. TWO GET rows under a fresh
+  // /api/creator prefix (pipeline · calendar), so none can shadow a Phase 1-12 path. Both are `qsplit`
+  // (path-verbatim, query-tolerant) so a ?from/?to window or a cache-buster resolves — `exact` would 404
+  // every ?query variant (the Phase 11 defect, fixed at source). Read-only by construction: the content
+  // CRUD + the human-only publish gate keep their own guarded routes (/api/businesses/:id/content,
+  // /api/content/:id/advance); this surface adds only the cross-business READ.
+  ...creatorRoutes.rows,
   // ---- BUSINESS OS (Phase 12). §9 Goal Autopilot. Own module, mounted here. Three rows under a fresh
   // /api/autopilot prefix (catalog · plan · commit), so none can shadow a Phase 1-11 path. All THREE are
   // `qsplit` (path-verbatim, query-tolerant): the business and goal travel in the BODY, so no id ever appears
