@@ -197,7 +197,8 @@
      carried through so the viewer can warn rather than show a shorter list that reads as "you made less". */
   const TYPE_LABEL = {
     content: 'CONTENT', document: 'DOCUMENT', workorder: 'WORK ORDER', deliverable: 'DELIVERABLE',
-    business: 'BUSINESS', project: 'PROJECT', experiment: 'EXPERIMENT', automation: 'AUTOMATION'
+    business: 'BUSINESS', project: 'PROJECT', experiment: 'EXPERIMENT', automation: 'AUTOMATION',
+    agent: 'AI AGENT'
   };
   function typeLabel(t) { const k = String(t || ''); return TYPE_LABEL[k] || k.toUpperCase() || 'CREATION'; }
 

@@ -3803,6 +3803,7 @@ const creationsIndex = makeCreationsIndex({
   projects: bizProjectsStore,
   experiments: experimentsStore,
   automations: automationStore,
+  agents: agentsStore,                 // §7 AI workforce = §37's "AI systems"
   now: () => Date.now()
 });
 

@@ -131,7 +131,7 @@ this audit re-verified and extends to the brief's new sections (§5, §8, §18, 
 | §34 AI Cost Management | budgets | `cost.js`, `spend.js`, `ledger.js`, `credits.js` |
 | §35 Attention & Intelligence engine | recommendations | `mission-control.js`, `intelligence-engine.js` |
 | §36 Business Digital Twin | scenarios | `business-twin.js`, `twin-routes.js`, `businessdtwin.js` UI |
-| §37 Creation Portfolio | "my creations" | `creations-index.js` (8 types) + `creator-routes.js` + CREATOR STUDIO ▸ CREATIONS |
+| §37 Creation Portfolio | "my creations" | `creations-index.js` (9 types) + `creator-routes.js` + CREATOR STUDIO ▸ CREATIONS |
 | §38 Station Digital Twin | system overview | `business-twin.js` + `/api/mission/fleet` |
 | §39 Verification Engine | run→test→verify | `business-worker-policy.js` verification, `tools/builtin/verify.js` |
 
@@ -329,6 +329,34 @@ the second was never built: the board said only "· N assets" and never showed *
 Sabotage-proven two ways (drop `assets` from the calendar row · let `isImageAsset` accept a bare local path —
 each turns a *named* assertion RED). Live: `GET /api/creator/calendar` + `/api/creator/pipeline` → 200 on an
 empty workspace, `readable:true`, no throw. Mirror re-synced.
+
+### 6f. The §37 index spanned 8 of the types §37 names — "AI systems" was missed (now 9)
+
+Re-checking §37's list against the stores found one more type with a real backing store that the §6c widening
+had **missed**: §37 names **"AI systems"**, and `business-agents-store.js` (§7 AI workforce) is exactly that —
+a store of the workers the owner hired and configured. Added as the **`agent`** type:
+
+| new type | store | title is | status is |
+| --- | --- | --- | --- |
+| `agent` | `business-agents-store.js` | its `name`, else the `specialty` class it fills | its lifecycle (`idle`/`working`/`paused`/`disabled`) |
+
+`creations-index.test.js` 193 → 213 assertions; sabotage-proven two ways (remove the agent read loop · remove
+the `agents:` wiring from `index.js` — the latter is the **wiring lock**: a lock on the core does not prove the
+index is actually fed). Verified live: `GET /api/creations` returns **9** types with `readable.agent:true`.
+
+**Why the rest of §37's list is NOT addable — stated plainly, because it is not "can't be bothered":**
+
+- **`research`** — already represented: the documents store (§15) carries a closed `type` vocabulary that
+  includes **`research-report`**, so a research report IS indexed today, as a `document`. A separate `research`
+  type would be a second door onto the same rows (§45 RULE 4).
+- **`apps` · `websites` · `games`** — there is **no store** whose rows are an app, a website, or a game. The
+  SOFTWARE FACTORY (`software-factory.js`) is a **composer** over six existing stores (opportunities ·
+  validation · businesses · tasks · work orders) that shows a per-business idea→operate pipeline; it records no
+  "app" object. The WORKSHOP produces `deliverable` rows whose `kind` is a file/media kind (`files`, `report`,
+  `video`, `audio`, `document`, …), never `app`/`website`/`game`. A website is *deployed* by a build script
+  (`scripts/stage-website-deploy.mjs`), not stored. So these three are the one genuine remainder — and adding
+  them would mean **inventing a store**, which §45 RULE 1 ("do not rebuild working functionality") and §28
+  ("one door per mutation; never ship two versions of the same feature") forbid. They are **not owed**.
 
 ---
 

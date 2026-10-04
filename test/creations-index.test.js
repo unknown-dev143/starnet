@@ -58,7 +58,10 @@ function mkStores() {
   const automations = fakeList([
     { id: 'a1', businessId: 'biz-a', name: 'Welcome email', enabled: true, updatedAt: NOW - 300 }
   ]);
-  return { content, documents, workorders, deliverables, projects, experiments, automations };
+  const agents = fakeList([
+    { id: 'ag1', businessId: 'biz-a', name: 'Ada', specialty: 'growth-hacker', status: 'idle', updatedAt: NOW - 150 }
+  ]);
+  return { content, documents, workorders, deliverables, projects, experiments, automations, agents };
 }
 
 function mkIndex(over) {
@@ -66,7 +69,7 @@ function mkIndex(over) {
   return makeCreationsIndex(Object.assign({
     businesses: () => BIZ,
     content: s.content, documents: s.documents, workorders: s.workorders, deliverables: s.deliverables,
-    projects: s.projects, experiments: s.experiments, automations: s.automations,
+    projects: s.projects, experiments: s.experiments, automations: s.automations, agents: s.agents,
     now: () => NOW
   }, over || {}));
 }
@@ -75,7 +78,7 @@ function mkIndex(over) {
 {
   const o = mkIndex().index({});
   A.eq(o.ok, true, 'the index reports ok');
-  A.eq(o.counts.total, 10, 'all ten made things across the eight stores are indexed');
+  A.eq(o.counts.total, 11, 'all eleven made things across the nine stores are indexed');
   for (const t of TYPES) {
     A.ok(o.counts.byType[t] >= 1, 'the ' + t + ' type appears');
   }
@@ -86,7 +89,7 @@ function mkIndex(over) {
     A.ok(o.types.indexOf(row.type) >= 0, 'every row type is in the closed vocabulary');
   }
   A.eq(o.types.length, TYPES.length, 'the wire vocabulary matches the module TYPES');
-  A.eq(TYPES.length, 8, 'the index spans eight creation types, not four');
+  A.eq(TYPES.length, 9, 'the index spans nine creation types, not four');
 }
 
 /* ---------- a work order's title IS its intent (the store has no title) ---------- */
@@ -136,6 +139,20 @@ function mkIndex(over) {
   // a PROJECT is titled by its name
   const p = mkIndex().index({ type: 'project' });
   A.eq(p.rows[0].title, 'Launch project', 'a project is titled by its name');
+
+  // an AGENT — §37's "AI systems": a worker the owner hired (§7). Titled by its name; status is its lifecycle.
+  const g = mkIndex().index({ type: 'agent' });
+  A.eq(g.rows.length, 1, 'the hired agent is indexed');
+  A.eq(g.rows[0].title, 'Ada', 'an agent is titled by its name');
+  A.eq(g.rows[0].status, 'idle', 'and its status is the store lifecycle status');
+  A.ok(!('grants' in g.rows[0]), 'no permission grants leak into the creation row');
+  // a nameless agent falls back to its specialty CLASS (a real recorded field), never an invented label
+  const idxAg = makeCreationsIndex({
+    businesses: () => [{ id: 'biz-a', name: 'Alpha' }],
+    agents: fakeList([{ id: 'ag2', businessId: 'biz-a', specialty: 'copywriter', status: 'working', updatedAt: 1 }]),
+    now: () => NOW
+  });
+  A.eq(idxAg.index({ type: 'agent' }).rows[0].title, 'copywriter', 'a nameless agent is titled by its specialty class');
 }
 
 /* ---------- newest first; an undated row sorts LAST ---------- */
@@ -240,7 +257,7 @@ function mkIndex(over) {
   const o = mkIndex({ limit: 2 }).index({});
   A.eq(o.rows.length, 2, 'the limit caps returned rows');
   A.eq(o.truncated, true, 'and truncation is declared');
-  A.eq(o.counts.total, 10, 'while the honest total is still the full count');
+  A.eq(o.counts.total, 11, 'while the honest total is still the full count');
   A.eq(mkIndex({ limit: 2 }).DEFAULT_LIMIT, 500, 'the default limit is exported');
 }
 
@@ -251,6 +268,16 @@ function mkIndex(over) {
   A.ok(!/(^|[^a-z])rank([^a-z]|$)/i.test(CODE), 'no rank');
   A.ok(!/Date\.now|new Date\(/.test(CODE), 'the clock is injected — the module reads none itself');
   A.ok(/readable/.test(SRC), 'per-source readability is part of the contract');
+}
+
+/* ---------- WIRING: index.js actually injects the agents store (a core lock does not prove the wiring) ---------- */
+{
+  const main = fs.readFileSync(path.join(__dirname, '..', 'sidecar', 'index.js'), 'utf8');
+  const at = main.indexOf('makeCreationsIndex({');
+  A.ok(at >= 0, 'index.js calls makeCreationsIndex');
+  const body = main.slice(at, main.indexOf('});', at));
+  const code = body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  A.ok(/agents:\s*agentsStore\b/.test(code), 'index.js wires the §7 agents store in — the agent type is LIVE, not a dead adapter');
 }
 
 A.report('creations-index.test');

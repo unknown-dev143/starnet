@@ -19,8 +19,9 @@
      2. A row with no recorded date carries `updatedAt: null`, never a fabricated now (it sorts last).
      3. No score, no rank, no percentage. The ORDER is by most-recently-updated, which is a fact.
      4. Fields are BOUNDED to what the stores actually hold — a work order's title is its `intent`, an
-        experiment's title is its `hypothesis`, a content piece's status is its §17 `stage`, an automation's
-        status is whether it is enabled; the index does not invent a display field the store lacks.
+        experiment's title is its `hypothesis`, an agent's title is its `name`/`specialty`, a content
+        piece's status is its §17 `stage`, an automation's status is whether it is enabled; the index does
+        not invent a display field the store lacks.
 
    PURE-ish: every source is injected; the clock is injected (determinism lint). UMD. */
 
@@ -35,8 +36,9 @@
   // The closed set of creation TYPES this index spans. Each maps to one store + one adapter. Adding a
   // type is a deliberate edit here — never a silent new kind appearing in the rows.
   //   content · document · workorder · deliverable  — things a business's work PRODUCED
-  //   business · project · experiment · automation  — the STRUCTURES the owner BUILT
-  const TYPES = ['content', 'document', 'workorder', 'deliverable', 'business', 'project', 'experiment', 'automation'];
+  //   business · project · experiment · automation · agent — the STRUCTURES the owner BUILT (an agent is
+  //   §37's "AI systems": a worker the owner hired and configured, §7)
+  const TYPES = ['content', 'document', 'workorder', 'deliverable', 'business', 'project', 'experiment', 'automation', 'agent'];
 
   const MAX_TITLE = 200;
   const MAX_NAME = 120;
@@ -59,6 +61,7 @@
     const projects = opts.projects || null;          // business-projects-store
     const experiments = opts.experiments || null;    // business-experiments-store
     const automations = opts.automations || null;    // business-automation-store
+    const agents = opts.agents || null;              // business-agents-store (§7 AI workforce = "AI systems")
     const now = typeof opts.now === 'function' ? opts.now : (() => null);
     const limit = (Number.isFinite(opts.limit) && opts.limit > 0) ? Math.floor(opts.limit) : DEFAULT_LIMIT;
 
@@ -119,6 +122,16 @@
         status: str(row.enabled ? 'enabled' : 'disabled', 40),
         businessId: str(b.id), businessName: str(b.name || '(unnamed)', MAX_NAME),
         updatedAt: num(row.updatedAt)
+      }),
+      // §37's "AI systems" — a worker the owner hired (§7). Its title is its `name` when set, else the
+      // specialty CLASS it fills (both are real recorded fields; nothing is invented for display).
+      agent: (b, row) => ({
+        type: 'agent', id: str(row.id),
+        title: str(row.name || row.specialty || row.role || '(unnamed agent)'),
+        // the store's own lifecycle status (idle/working/paused/disabled) — not a derived health.
+        status: str(row.status || 'idle', 40),
+        businessId: str(b.id), businessName: str(b.name || '(unnamed)', MAX_NAME),
+        updatedAt: num(row.updatedAt)
       })
     };
 
@@ -138,7 +151,7 @@
         content: !!content, document: !!documents, workorder: !!workorders, deliverable: !!deliverables,
         // `business` is readable iff the business LIST read succeeded — the list is the spine of the index.
         business: businessesReadable,
-        project: !!projects, experiment: !!experiments, automation: !!automations
+        project: !!projects, experiment: !!experiments, automation: !!automations, agent: !!agents
       };
       const rows = [];
 
@@ -178,6 +191,11 @@
         if (automations && readable.automation && (!wantType || wantType === 'automation')) {
           try { for (const r of automations.list(b.id) || []) rows.push(ADAPTERS.automation(b, r)); }
           catch (e) { readable.automation = false; }
+        }
+        // AI workers (§37 "AI systems" — the §7 agent registry)
+        if (agents && readable.agent && (!wantType || wantType === 'agent')) {
+          try { for (const r of agents.list(b.id) || []) rows.push(ADAPTERS.agent(b, r)); }
+          catch (e) { readable.agent = false; }
         }
       }
 
