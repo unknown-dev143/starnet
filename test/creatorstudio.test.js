@@ -65,6 +65,28 @@ const ROOT = path.join(__dirname, '..');
   A.eq(cal.undated, 2, 'the undated count is carried (never binned into a day)');
 }
 
+/* ---------- shapePublished: what a human sent, with who signed it ---------- */
+{
+  const raw = {
+    ok: true, readable: true, count: 1,
+    rows: [{ id: 'p1', title: 'Shipped', stage: 'publish', channel: 'blog', publishedAt: NOW, publishedBy: 'Commander' }],
+    note: 'a piece appears here only if a HUMAN published it'
+  };
+  const pub = S.shapePublished(raw, NOW);
+  A.eq(pub.ok, true, 'the published read shapes ok');
+  A.eq(pub.count, 1, 'the count is carried');
+  A.eq(pub.rows.length, 1, 'and its rows');
+  A.eq(pub.rows[0].publishedBy, 'Commander', 'the human who signed it is carried through');
+  A.eq(pub.rows[0].published, true, 'and the row reads as published');
+  A.ok(pub.rows[0].publishedRel.length > 0, 'with a relative "sent" time');
+
+  // a null read is an empty, honest envelope — never a throw
+  A.eq(S.shapePublished(null, NOW).rows.length, 0, 'a null read shapes to an empty list');
+  A.eq(S.shapePublished(null, NOW).count, 0, 'with a zero count');
+  // count falls back to the row count when the wire omits it
+  A.eq(S.shapePublished({ ok: true, rows: [{ id: 'x', title: 'X' }] }, NOW).count, 1, 'a missing count falls back to the row length');
+}
+
 /* ---------- shapeHeader: a quote of counts, no verdict ---------- */
 {
   const h = S.shapeHeader({ total: 4, published: 1, byStage: { review: 2 } });

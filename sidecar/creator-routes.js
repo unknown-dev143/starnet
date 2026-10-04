@@ -1,9 +1,10 @@
 /* sidecar/creator-routes.js — the HTTP surface for §20 CREATOR STUDIO + §37 MY CREATIONS.
 
-   THREE ROUTES, ALL GET, NONE WRITES.
+   FOUR ROUTES, ALL GET, NONE WRITES.
 
      GET /api/creator/pipeline            every content piece, grouped by §17 stage, across all businesses
      GET /api/creator/calendar?from=&to=  pieces placed on the day they are dated, within a window
+     GET /api/creator/published           what a HUMAN actually sent, newest first, with who signed it
      GET /api/creations?type=&business=   EVERY made thing (content · documents · work orders · deliverables)
 
    NAMESPACING. /api/creator and /api/creations are fresh prefixes — none can shadow a Phase 1-12 path. The
@@ -77,6 +78,13 @@ function makeCreatorRoutes(deps) {
     if (o) json(res, 200, o);
   }
 
+  // GET /api/creator/published — what a HUMAN actually sent, newest first, with who signed it. Keyed on the
+  // `publishedAt` fact, not the §17 stage name (see creator-studio.js's header for why those differ).
+  function handlePublished(req, res) {
+    const o = guard(() => creator.published({}), res, 'published list');
+    if (o) json(res, 200, o);
+  }
+
   /* GET /api/creations?type=&business= — the §37 unified index. Optional filters narrow the read; an
      unknown type is refused (never silently ignored, which would return EVERYTHING under a bad filter). */
   function handleCreations(req, res) {
@@ -93,6 +101,7 @@ function makeCreatorRoutes(deps) {
   const rows = [
     { m: 'GET', qsplit: '/api/creator/pipeline', h: handlePipeline },
     { m: 'GET', qsplit: '/api/creator/calendar', h: handleCalendar },
+    { m: 'GET', qsplit: '/api/creator/published', h: handlePublished },
     { m: 'GET', qsplit: '/api/creations', h: handleCreations }
   ];
 

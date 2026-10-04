@@ -80,6 +80,11 @@
       stageLabel: stageLabel(stage),
       updatedRel: relTime(p.updatedAt, nowMs),
       published: Number.isFinite(p.publishedAt),
+      publishedAt: Number.isFinite(p.publishedAt) ? p.publishedAt : null,
+      // WHO signed it — set only by a human publish. The per-business MANAGER tab shows this; carrying it
+      // here keeps the station read from being the one place it is missing.
+      publishedBy: String(p.publishedBy || ''),
+      publishedRel: Number.isFinite(p.publishedAt) ? relTime(p.publishedAt, nowMs) : '',
       // which recorded date a calendar cell is using — 'published' | 'updated' | 'created' | 'none'
       dateSource: String(p.dateSource || 'none'),
       datedAt: Number.isFinite(p.datedAt) ? p.datedAt : null,
@@ -127,6 +132,19 @@
         rows: (Array.isArray(d.rows) ? d.rows : []).map(p => shapePiece(p, nowMs))
       })),
       undated: Number.isFinite(raw.undated) ? raw.undated : 0,
+      note: raw.note || ''
+    };
+  }
+
+  /* THE PUBLISHED LIST, shaped: what a human actually sent, newest first, with who + when. Keyed on the
+     `publishedAt` FACT, not the §17 stage — the store draws that distinction itself. */
+  function shapePublished(raw, nowMs) {
+    raw = raw || {};
+    return {
+      ok: raw.ok === true,
+      readable: raw.readable !== false,
+      count: Number.isFinite(raw.count) ? raw.count : (Array.isArray(raw.rows) ? raw.rows.length : 0),
+      rows: (Array.isArray(raw.rows) ? raw.rows : []).map(p => shapePiece(p, nowMs)),
       note: raw.note || ''
     };
   }
@@ -222,6 +240,9 @@
         '<div class="cs-tabs">' +
           '<button class="cs-tab cs-on" data-tab="pipeline" data-hint="creatorstudio">PIPELINE</button>' +
           '<button class="cs-tab" data-tab="calendar" data-hint="creatorstudio">CALENDAR</button>' +
+          // §17's terminal outcome, made first-class: what a HUMAN actually sent, with who signed it. A
+          // separate read from the pipeline because "at the publish stage" and "was actually sent" differ.
+          '<button class="cs-tab" data-tab="published" data-hint="creatorstudio">PUBLISHED</button>' +
           // §37: every made thing, not just content — the unified index (content · documents · work orders ·
           // deliverables) in one place. This is the surface the /api/creations route never had.
           '<button class="cs-tab" data-tab="creations" data-hint="creatorstudio">CREATIONS</button>' +
@@ -229,15 +250,16 @@
         '<div class="cs-panels">' +
           '<div class="cs-panel cs-on" id="cs-panel-pipeline"></div>' +
           '<div class="cs-panel" id="cs-panel-calendar"></div>' +
+          '<div class="cs-panel" id="cs-panel-published"></div>' +
           '<div class="cs-panel" id="cs-panel-creations"></div>' +
         '</div>' +
       '</div>';
 
-    const state = { tab: 'pipeline', pipeline: null, calendar: null, creations: null };
+    const state = { tab: 'pipeline', pipeline: null, calendar: null, published: null, creations: null };
 
     /* A tile deep-links with a section (openTerm sets consoleSection['creatorstudio']); honour it when it
        names a real tab so a "MY CREATIONS" tile lands on CREATIONS. Falls back to the pipeline. */
-    const CTABS = ['pipeline', 'calendar', 'creations'];
+    const CTABS = ['pipeline', 'calendar', 'published', 'creations'];
     const H0 = (typeof StationUI !== 'undefined' && StationUI.h) || null;
     const wantTab = (H0 && H0.consoleSection && H0.consoleSection['creatorstudio']) || '';
     const startTab = CTABS.indexOf(wantTab) >= 0 ? wantTab : 'pipeline';
@@ -296,9 +318,33 @@
         (cal.note ? '<p class="cs-note">' + esc(cal.note) + '</p>' : ''));
     }
 
+    /* THE PUBLISHED TAB — what a HUMAN actually sent, newest first. A row names the piece, the business and
+       channel it went out under, when it went out, and WHO signed it. It is keyed on the `publishedAt` fact,
+       not the §17 stage: a piece can sit in the "publish" column unsigned, and a sent piece can move on to
+       "analytics" — this list shows what was actually sent, and nothing here can publish (that stays a human
+       action on the advance route). */
+    function renderPublished() {
+      const pub = state.published;
+      if (!pub) return busy('published');
+      const warn = pub.readable ? '' : '<div class="cs-warn">the content store could not be read — this list may be incomplete, not empty</div>';
+      const rows = pub.rows.length ? pub.rows.map(p =>
+        '<tr class="cs-prow">' +
+          '<td class="cs-prow-title"><b>' + esc(p.title) + '</b></td>' +
+          '<td class="cs-prow-biz">' + esc(p.businessName) + '</td>' +
+          '<td class="cs-prow-ch">' + esc(p.channelLabel) + '</td>' +
+          '<td class="cs-prow-when">' + (p.publishedRel ? esc(p.publishedRel) : '<span class="cs-none">—</span>') + '</td>' +
+          '<td class="cs-prow-by">' + esc(p.publishedBy || 'you') + '</td>' +
+        '</tr>').join('') : '<tr><td colspan="5" class="cs-none">nothing published yet — publishing is a human action, so a piece stays here empty until you send one</td></tr>';
+      say('published', warn +
+        '<table class="cs-ptable"><thead><tr><th>title</th><th>business</th><th>channel</th><th>sent</th><th>signed by</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table>' +
+        (pub.note ? '<p class="cs-note">' + esc(pub.note) + '</p>' : ''));
+    }
+
     function render(tab) {
       if (tab === 'pipeline') renderPipeline();
       else if (tab === 'calendar') renderCalendar();
+      else if (tab === 'published') renderPublished();
       else if (tab === 'creations') renderCreations();
     }
 
@@ -332,11 +378,15 @@
       const el = host.querySelector('#cs-sum');
       if (!el) return;
       if (state.tab === 'creations' && state.creations) el.textContent = shapeCreationsHeader(state.creations.counts).text;
+      else if (state.tab === 'published' && state.published) {
+        const n = state.published.count;
+        el.textContent = n + ' published';
+      }
       else if (state.pipeline) el.textContent = shapeHeader(state.pipeline.counts).text;
     }
 
     function loadAll() {
-      busy('pipeline', 'reading the pipeline…'); busy('calendar', 'reading…'); busy('creations', 'reading…');
+      busy('pipeline', 'reading the pipeline…'); busy('calendar', 'reading…'); busy('published', 'reading…'); busy('creations', 'reading…');
       // Each read is guarded: a rejected fetch (the sidecar is down, the network dropped) must leave a NAMED
       // error in the panel, never an unhandled rejection and a panel stuck on "reading…" forever.
       const fail = (id) => (e) => { err(id, (e && e.message) ? ('could not read that — ' + e.message) : 'could not read that — the sidecar could not be reached'); };
@@ -346,6 +396,9 @@
       apiFetch('/api/creator/calendar')
         .then(d => { state.calendar = shapeCalendar(d, now()); render('calendar'); })
         .catch(fail('calendar'));
+      apiFetch('/api/creator/published')
+        .then(d => { state.published = shapePublished(d, now()); render('published'); renderHeader(); })
+        .catch(fail('published'));
       apiFetch('/api/creations')
         .then(d => { state.creations = shapeCreations(d, now()); render('creations'); renderHeader(); })
         .catch(fail('creations'));
@@ -363,7 +416,7 @@
 
   return {
     esc, relTime, stageLabel, channelLabel,
-    shapePiece, shapePipeline, shapeCalendar, shapeHeader,
+    shapePiece, shapePipeline, shapeCalendar, shapePublished, shapeHeader,
     shapeCreations, shapeCreationsHeader, typeLabel,
     STAGE_LABEL, CHANNEL_LABEL, TYPE_LABEL,
     mount

@@ -8,13 +8,16 @@
    this the second genuine gap.
 
    THIS MODULE OWNS NO STORE. It composes the facts that already exist:
-     • business-content-store.js — every piece, its stage, channel, assets, history, publishedAt
+     • business-content-store.js — every piece, its stage, channel, assets, history, publishedAt, publishedBy
      • businesses-store.js       — the business each piece belongs to (name, stage)
-   and answers the two questions a per-business tab cannot:
+   and answers the three questions a per-business tab cannot:
      1. THE PIPELINE — every piece in the system, grouped by §17 stage, across all businesses.
      2. THE CALENDAR — pieces placed on the day they are DATED. The one honest date is what is recorded:
         `publishedAt` for a piece that went out, else `updatedAt`. There is NO invented "scheduled for"
         field — a calendar built on a fabricated date would be a lie about what is planned.
+     3. THE PUBLISHED LIST — what a HUMAN actually sent, newest first, with who signed it. Keyed on the
+        `publishedAt` FACT, not the stage name: the store draws that distinction itself, and the per-business
+        MANAGER tab already shows `publishedBy` — the station read was the one dropping it.
 
    HONESTY RULES (P1/P2/P7), the same as mission-control.js:
      1. Counts are counts. There is no "content score", no readiness, no percentage.
@@ -114,6 +117,10 @@
           channel: CHANNELS.indexOf(piece.channel) >= 0 ? piece.channel : 'other',
           stage: stage,
           publishedAt: Number.isFinite(piece.publishedAt) ? piece.publishedAt : null,
+          // WHO signed it. The store sets this ONLY on a human publish, so it is the fact that makes
+          // "was this actually sent, and by whom" answerable — the per-business MANAGER tab shows it, and
+          // the station read dropped it, which is the gap this carries across.
+          publishedBy: str(piece.publishedBy || '', MAX_NAME),
           updatedAt: Number.isFinite(piece.updatedAt) ? piece.updatedAt : null,
           datedAt: at,
           dateSource: dateSource,
@@ -192,7 +199,44 @@
       };
     }
 
-    return { pipeline: pipeline, calendar: calendar, STAGES: STAGES, PUBLISH_STAGES: PUBLISH_STAGES, CHANNELS: CHANNELS, DAY_MS: DAY_MS };
+    /* THE PUBLISHED LIST — what actually went OUT, newest first. Keyed on the `publishedAt` FACT the store
+       sets only for a human publish, NOT on the §17 stage NAME: a piece that was sent and then moved on to
+       'analytics' is still published, and a piece sitting in the 'publish' column that nobody has signed is
+       NOT. The store's own header draws exactly this distinction ("set ONLY by a human publish, so 'was this
+       actually sent' is a fact on the row rather than a guess from the stage name"), and this read carries it
+       — which is why it exists alongside the pipeline rather than being a filter on it. */
+    function published() {
+      const { pieces, contentReadable } = allPieces();
+      const rows = [];
+      for (const { piece, businessId, businessName } of pieces) {
+        if (!Number.isFinite(piece.publishedAt)) continue;
+        rows.push({
+          id: str(piece.id),
+          title: str(piece.title || '(untitled)', MAX_TITLE),
+          businessId: str(businessId),
+          businessName: str(businessName),
+          channel: CHANNELS.indexOf(piece.channel) >= 0 ? piece.channel : 'other',
+          stage: STAGES.indexOf(piece.stage) >= 0 ? piece.stage : 'idea',
+          publishedAt: piece.publishedAt,
+          publishedBy: str(piece.publishedBy || '', MAX_NAME),
+          assets: (Array.isArray(piece.assets) ? piece.assets : []).slice(0, MAX_ASSETS).map(a => str(a, 200))
+        });
+      }
+      // Newest first; ties break on id so two reads never disagree (deterministic).
+      rows.sort((a, b) => (b.publishedAt - a.publishedAt) || (a.id < b.id ? -1 : (a.id > b.id ? 1 : 0)));
+
+      return {
+        ok: true,
+        generatedAt: now(),
+        count: rows.length,
+        rows: rows,
+        readable: contentReadable,
+        note: 'a piece appears here only if a HUMAN published it — being at the "publish" stage is not the same '
+          + 'as having been sent, and this list shows the fact, not the stage'
+      };
+    }
+
+    return { pipeline: pipeline, calendar: calendar, published: published, STAGES: STAGES, PUBLISH_STAGES: PUBLISH_STAGES, CHANNELS: CHANNELS, DAY_MS: DAY_MS };
   }
 
   return { makeCreatorStudio, pieceDate, STAGES, PUBLISH_STAGES, CHANNELS, DAY_MS };

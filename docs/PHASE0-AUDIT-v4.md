@@ -283,6 +283,32 @@ filesystem path-grants as "creations". Verified live: `GET /api/creations` retur
 `creations-index.test.js` 121 → 193 assertions; `creator-routes` 54 · `creatorstudio` 62 → 69; sabotage-proven
 (invented experiment title · business rows never emitted).
 
+### 6d. The station CREATOR STUDIO dropped `publishedBy` and had no "what actually shipped" view
+
+A comparison of the two surfaces that read the content store found a real asymmetry. The per-business MANAGER
+tab shows `publishedBy`; the **station-level** CREATOR STUDIO did not — and had no view keyed on what a human
+actually **sent**. The store's own header is explicit that this is a distinct fact: `publishedAt`/`publishedBy`
+are "set ONLY by a human publish, so 'was this actually sent' is a fact on the row rather than a guess from the
+stage name".
+
+Added a third station read — **PUBLISHED** (`creator-studio.js` `published()` · `GET /api/creator/published` ·
+the PUBLISHED tab) — plus carried `publishedBy` onto the pipeline rows. It is keyed on the `publishedAt` **fact**,
+not the §17 stage:
+
+- a piece sitting in the `publish` column that **nobody signed** is **not** listed (a stage-keyed list would
+  show it as sent);
+- a piece that was **sent and then moved on** (to `editing`/`analytics`) **is** listed (a stage-keyed list would
+  silently drop it).
+
+That distinction is the whole reason it exists alongside the pipeline rather than being a filter on it, and it
+is the case the tests pin directly ("a piece sent and then moved back is STILL published — the list keys on the
+fact, not the stage"). Publishing stays a human action; this read writes nothing.
+
+`creator-studio` 42 → 56 · `creatorstudio` 69 → 78 · `creator-routes` 62 → 68 assertions; sabotage-proven four
+ways (drop the `publishedBy` carry · key on stage instead of fact · remove the route row · drop the frontend
+carry — each turns a *named* assertion RED). Verified live: `GET /api/creator/published` → 200 with the payload
+shape, a `?t=1` tail tolerated (qsplit), a `/published/extra` suffix 404.
+
 ---
 
 ## 7. The ten Phase-0 questions, answered

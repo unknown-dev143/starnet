@@ -9409,12 +9409,13 @@ const ROUTES = [
   // fresh /api/mission prefix (board · fleet · attention · trail · alerts), so none can shadow a Phase 1-10
   // path. All GET, all read-only: the composer has no write path by construction.
   ...missionRoutes.rows,
-  // ---- BUSINESS OS (§20). CREATOR STUDIO. Own module, mounted here. TWO GET rows under a fresh
-  // /api/creator prefix (pipeline · calendar), so none can shadow a Phase 1-12 path. Both are `qsplit`
-  // (path-verbatim, query-tolerant) so a ?from/?to window or a cache-buster resolves — `exact` would 404
-  // every ?query variant (the Phase 11 defect, fixed at source). Read-only by construction: the content
-  // CRUD + the human-only publish gate keep their own guarded routes (/api/businesses/:id/content,
-  // /api/content/:id/advance); this surface adds only the cross-business READ.
+  // ---- BUSINESS OS (§20 + §37). CREATOR STUDIO + MY CREATIONS. Own module, mounted here. FOUR GET rows
+  // under fresh prefixes — /api/creator (pipeline · calendar · published) and /api/creations — so none can
+  // shadow a Phase 1-12 path. All are `qsplit` (path-verbatim, query-tolerant) so a ?from/?to window, a
+  // ?type filter, or a cache-buster resolves — `exact` would 404 every ?query variant (the Phase 11 defect,
+  // fixed at source). Read-only by construction: the content CRUD + the human-only publish gate keep their
+  // own guarded routes (/api/businesses/:id/content, /api/content/:id/advance); this surface adds only the
+  // cross-business READs.
   ...creatorRoutes.rows,
   // ---- BUSINESS OS (Phase 12). §9 Goal Autopilot. Own module, mounted here. Three rows under a fresh
   // /api/autopilot prefix (catalog · plan · commit), so none can shadow a Phase 1-11 path. All THREE are

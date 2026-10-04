@@ -118,6 +118,48 @@ function mkStudio() {
   A.ok(at.days.length >= 1, 'a window around now includes them');
 }
 
+/* ---------- published: only what a HUMAN actually sent, with who signed it ---------- */
+{
+  const s = mkStudio();
+  const pub = s.published({});
+  A.eq(pub.ok, true, 'the published list answers ok');
+  A.eq(pub.count, 1, 'exactly the one piece a human published appears');
+  A.eq(pub.rows.length, 1, 'and it is carried in rows');
+  const row = pub.rows[0];
+  A.eq(row.title, 'Shipped it', 'the sent piece is the one that was published');
+  A.eq(row.publishedBy, 'Commander', 'and it names WHO signed it — the fact the station read used to drop');
+  A.ok(Number.isFinite(row.publishedAt), 'with the recorded publishedAt');
+  A.eq(row.businessName, 'Beta', 'and its business');
+  A.ok(/human/i.test(pub.note), 'the note says publishing is a human action');
+
+  // A piece that was published and then moved BACK out of the publish stages still has `publishedAt` set —
+  // and it is still a thing that went out. This is the case that makes "the FACT, not the stage" a real
+  // distinction rather than a slogan: a stage-keyed list would silently drop it.
+  {
+    const content = makeBusinessContentStore({ now: () => NOW, persist: () => {} });
+    const made = content.addPiece('biz-a', { title: 'Sent then revised', channel: 'blog', stage: 'review' });
+    content.advance(made.piece.id, 'publish', { kind: 'user', name: 'Commander' });   // it went out
+    content.advance(made.piece.id, 'editing', { kind: 'user', name: 'Commander' });   // then came back for a fix
+    const s2 = makeCreatorStudio({ content, businesses: () => [{ id: 'biz-a', name: 'Alpha' }], now: () => NOW });
+    const p2 = s2.published({});
+    A.eq(p2.count, 1, 'a piece sent and then moved back is STILL published — the list keys on the fact, not the stage');
+    A.eq(p2.rows[0].stage, 'editing', 'even though its current stage is not a publish stage');
+    A.eq(p2.rows[0].publishedBy, 'Commander', 'and it still names who sent it');
+  }
+}
+
+/* ---------- the pipeline row now carries publishedBy (the fact MANAGER shows) ---------- */
+{
+  const s = mkStudio();
+  const pl = s.pipeline({});
+  const all = Object.keys(pl.byStage).reduce((a, k) => a.concat(pl.byStage[k]), []);
+  const sent = all.filter(r => r.publishedAt != null);
+  A.eq(sent.length, 1, 'one piece in the pipeline is published');
+  A.eq(sent[0].publishedBy, 'Commander', 'and the pipeline row names who published it — no longer dropped at the station level');
+  const unsent = all.filter(r => r.publishedAt == null);
+  A.ok(unsent.every(r => r.publishedBy === ''), 'an unpublished row carries an empty publishedBy, never a guess');
+}
+
 /* ---------- NO STORE, NO WRITE (source-lock the discipline) ---------- */
 {
   const CODE = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');

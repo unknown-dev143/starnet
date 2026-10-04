@@ -51,7 +51,7 @@ function mkRoutes() {
 /* ---------- the rows are well-formed and namespaced ---------- */
 {
   const routes = mkRoutes();
-  A.eq(routes.rows.length, 3, 'three rows');
+  A.eq(routes.rows.length, 4, 'four rows');
   for (const r of routes.rows) {
     A.eq(r.m, 'GET', 'every row is GET — the surface is read-only');
     A.ok(typeof r.h === 'function', 'every row has a handler');
@@ -60,11 +60,11 @@ function mkRoutes() {
     A.eq(r.exact, undefined, 'no row uses `exact` — it would reject every query variant');
     A.eq(r.rx, undefined, 'no row uses rx — all are plain paths');
   }
-  for (const url of ['/api/creator/pipeline', '/api/creator/calendar', '/api/creations']) {
+  for (const url of ['/api/creator/pipeline', '/api/creator/calendar', '/api/creator/published', '/api/creations']) {
     A.eq(routes.rows.filter(r => url === r.qsplit).length, 1, 'exactly one row matches ' + url);
   }
   // no stray suffix resolves
-  for (const url of ['/api/creator/pipeline/extra', '/api/creator/calendarx', '/api/creator/x', '/api/creations/x']) {
+  for (const url of ['/api/creator/pipeline/extra', '/api/creator/calendarx', '/api/creator/x', '/api/creator/published/extra', '/api/creations/x']) {
     A.eq(find(routes.rows, url), null, url + ' matches no row');
   }
   // but a query tail IS still the path
@@ -108,6 +108,28 @@ function mkRoutes() {
   const routes = mkRoutes();
   const r = call(routes, '/api/creator/calendar?from=abc');
   A.eq(r.code, 200, 'a junk from is ignored (no bound), not a 400');
+}
+
+/* ---------- GET /api/creator/published ---------- */
+{
+  // an empty store: the route still answers 200 with an honest empty list (publishing is a human action)
+  const routes = mkRoutes();
+  const r = call(routes, '/api/creator/published');
+  A.eq(r.code, 200, 'the published route answers 200');
+  A.eq(r.json.count, 0, 'with nothing published yet');
+  A.ok(Array.isArray(r.json.rows), 'and an empty rows array, never a throw');
+
+  // and a real publish shows up with who signed it
+  const content = makeBusinessContentStore({ now: () => NOW, persist: () => {} });
+  const made = content.addPiece('biz-a', { title: 'Sent piece', channel: 'blog', stage: 'editing' });
+  content.advance(made.piece.id, 'publish', { kind: 'user', name: 'Commander' });
+  const creator = makeCreatorStudio({ content, businesses: () => [{ id: 'biz-a', name: 'Alpha' }], now: () => NOW });
+  const withPub = makeCreatorRoutes({ creator: creator });
+  const r2 = call(withPub, '/api/creator/published');
+  A.eq(r2.code, 200, 'the published route answers 200 with a publish present');
+  A.eq(r2.json.count, 1, 'the one sent piece is listed');
+  A.eq(r2.json.rows[0].publishedBy, 'Commander', 'and the human who signed it is on the wire');
+  A.eq(call(withPub, '/api/creator/published?t=1').code, 200, 'a query tail is tolerated (qsplit)');
 }
 
 /* ---------- GET /api/creations (§37 unified index) ---------- */
