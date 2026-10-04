@@ -105,6 +105,10 @@ function mkStudio() {
   const all = cal.days.reduce((a, d) => a.concat(d.rows), []);
   A.ok(all.some(r => r.dateSource === 'published' && r.published), 'the published piece sits on its publish day');
   A.ok(all.every(r => r.stage && r.channel), 'every calendar row carries stage + channel');
+  // assets ride on the calendar row too — a piece must not report a different asset set per read
+  const withAssets = all.filter(r => Array.isArray(r.assets) && r.assets.length);
+  A.eq(withAssets.length, 1, 'the calendar row carries the piece assets (the review piece has two)');
+  A.eq(withAssets[0].assets.length, 2, 'so a piece reports the SAME asset set on every read, not just the pipeline');
   A.ok(/no separate "scheduled" date|could not be read|published/i.test(cal.note), 'the note tells the truth about the date basis');
 }
 

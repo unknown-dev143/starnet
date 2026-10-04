@@ -309,6 +309,27 @@ ways (drop the `publishedBy` carry · key on stage instead of fact · remove the
 carry — each turns a *named* assertion RED). Verified live: `GET /api/creator/published` → 200 with the payload
 shape, a `?t=1` tail tolerated (qsplit), a `/published/extra` suffix 404.
 
+### 6e. The last named piece of §20 — "assets · thumbnails" — made visible
+
+§6 named CREATOR STUDIO's genuinely-missing pieces as **calendar, thumbnails**. The calendar shipped in Step C;
+the second was never built: the board said only "· N assets" and never showed **which**. This closes it.
+
+- **Sidecar (a latent inconsistency fixed):** the CALENDAR rows did not carry `assets` at all, while the
+  PIPELINE and PUBLISHED rows did — so the same piece reported `0` assets on one read and `2` on another. The
+  file's own invariant is "a piece can never render two different ways", so the calendar row now carries the
+  same bounded `assets` list. (`creator-studio` 56 → 58.)
+- **Frontend — an ASSET STRIP.** A pure `assetPreview(a)` classifies each free-text asset reference for
+  RENDERING only: a `data:image/…` URI, or an `http(s)://` URL whose path ends in a known image extension,
+  becomes a real thumbnail; **everything else becomes a named chip**. It deliberately does **not** invent a
+  local file URL for a bare path — a content asset is **business**-scoped, not agent-scoped, so there is no
+  honest fs jail to resolve it against, and a guessed `/api/file` src would paint a broken image over a real
+  reference. The strip renders under the piece meta in the pipeline chip and on the calendar row, from one
+  classified list. (`creatorstudio` 78 → 92.)
+
+Sabotage-proven two ways (drop `assets` from the calendar row · let `isImageAsset` accept a bare local path —
+each turns a *named* assertion RED). Live: `GET /api/creator/calendar` + `/api/creator/pipeline` → 200 on an
+empty workspace, `readable:true`, no throw. Mirror re-synced.
+
 ---
 
 ## 7. The ten Phase-0 questions, answered

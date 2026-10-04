@@ -31,10 +31,35 @@ const ROOT = path.join(__dirname, '..');
   A.eq(p.stageLabel, 'REVIEW', 'the stage label is resolved on the shaped row');
   A.eq(p.channelLabel, 'YOUTUBE', 'the channel label too');
   A.eq(p.assetCount, 2, 'the asset count is derived');
+  A.eq(p.assetPreviews.length, 2, 'every asset gets a preview classification');
+  A.eq(p.assetPreviews[0].kind, 'ref', 'a bare label is a named chip, never a guessed image');
   A.eq(p.published, false, 'published is false when there is no publishedAt');
   A.eq(p.updatedRel, '1h', 'the relative time is shaped');
   // a published piece reports published:true
   A.eq(S.shapePiece({ publishedAt: NOW, datedAt: NOW, dateSource: 'published' }, NOW).published, true, 'a publishedAt flips published');
+}
+
+/* ---------- assetPreview: render only what is PROVABLY an image (§20 assets · thumbnails) ---------- */
+{
+  // a data: image URI is an image
+  A.eq(S.assetPreview('data:image/png;base64,AAAA').kind, 'image', 'a data: image URI is a thumbnail');
+  // an http(s) URL ending in a known image extension is an image
+  A.eq(S.assetPreview('https://cdn.example.com/thumb.jpg').kind, 'image', 'a remote .jpg URL is a thumbnail');
+  A.eq(S.assetPreview('https://cdn.example.com/t.png?v=2').kind, 'image', 'a query string does not hide the extension');
+  // a bare local path is NOT guessed into a file URL — it stays a named chip
+  const local = S.assetPreview('assets/cover.png');
+  A.eq(local.kind, 'ref', 'a bare local path is a chip, never a guessed /api/file src (business-scoped, no honest jail)');
+  A.eq(local.src, '', 'and carries no src at all');
+  A.eq(local.label, 'cover.png', 'the chip shows the filename, not the whole path');
+  // a non-image URL is a chip
+  A.eq(S.assetPreview('https://example.com/script.md').kind, 'ref', 'a non-image URL is a chip');
+  // a remote URL with NO extension is conservative — a chip
+  A.eq(S.assetPreview('https://example.com/asset').kind, 'ref', 'an extension-less URL is a chip (never assumed an image)');
+  // empty / junk never throws and never becomes an image
+  A.eq(S.assetPreview('').kind, 'ref', 'an empty asset is a chip');
+  A.eq(S.assetPreview(null).kind, 'ref', 'a null asset is a chip, not a throw');
+  A.eq(S.isImageAsset('javascript:alert(1)'), false, 'a javascript: URI is never an image');
+  A.eq(S.isImageAsset('data:text/html,<b>x</b>'), false, 'a non-image data: URI is never an image');
 }
 
 /* ---------- shapePipeline: ordered stages, counts, no score ---------- */

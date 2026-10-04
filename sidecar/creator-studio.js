@@ -174,7 +174,10 @@
           stage: STAGES.indexOf(piece.stage) >= 0 ? piece.stage : 'idea',
           datedAt: at,
           dateSource: dateSource,
-          published: Number.isFinite(piece.publishedAt)
+          published: Number.isFinite(piece.publishedAt),
+          // assets ride along HERE too, exactly as on the pipeline/published rows — a piece must not report
+          // a different asset set depending on which read carried it (the frontend renders one piece one way).
+          assets: (Array.isArray(piece.assets) ? piece.assets : []).slice(0, MAX_ASSETS).map(a => str(a, 200))
         });
       }
 

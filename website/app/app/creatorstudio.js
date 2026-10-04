@@ -63,12 +63,37 @@
   function stageLabel(s) { const k = String(s || ''); return STAGE_LABEL[k] || k.toUpperCase() || 'UNKNOWN'; }
   function channelLabel(c) { const k = String(c || ''); return CHANNEL_LABEL[k] || k.toUpperCase() || 'OTHER'; }
 
+  /* ASSET PREVIEW — §20's "assets · thumbnails". A content piece carries free-text asset REFERENCES (a
+     filename, a path, or a URL); the store never says which are images. We render what we can PROVE is an
+     image — a `data:image/…` URI, or an `http(s)://` URL whose path ends in a known image extension — as a
+     real thumbnail, and everything else as a NAMED CHIP. We deliberately do NOT invent a local file URL for
+     a bare path: a content asset is BUSINESS-scoped, not agent-scoped, so there is no honest fs jail to
+     resolve it against, and a guessed `/api/file` src would paint a broken image over a real reference. */
+  const IMG_EXT = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif'];
+  function isImageAsset(a) {
+    const s = String(a == null ? '' : a).trim();
+    if (!s) return false;
+    if (/^data:image\//i.test(s)) return true;
+    if (/^https?:\/\//i.test(s)) {
+      const p = s.split(/[?#]/, 1)[0];
+      return IMG_EXT.indexOf(p.split('.').pop().toLowerCase()) >= 0;
+    }
+    return false;
+  }
+  function assetPreview(a) {
+    const s = String(a == null ? '' : a).trim();
+    const label = s.split(/[\\/]/).pop() || s;
+    if (isImageAsset(s)) return { kind: 'image', src: s, label: label };
+    return { kind: 'ref', src: '', label: label || s };
+  }
+
   /* ONE PIECE ROW, shaped. Shared by the pipeline columns and the calendar so a piece can never render two
      different ways. */
   function shapePiece(p, nowMs) {
     p = p || {};
     const stage = String(p.stage || 'idea');
     const channel = String(p.channel || 'other');
+    const assets = (Array.isArray(p.assets) ? p.assets : []).map(a => String(a));
     return {
       id: String(p.id || ''),
       title: String(p.title || '(untitled)'),
@@ -88,8 +113,11 @@
       // which recorded date a calendar cell is using — 'published' | 'updated' | 'created' | 'none'
       dateSource: String(p.dateSource || 'none'),
       datedAt: Number.isFinite(p.datedAt) ? p.datedAt : null,
-      assets: (Array.isArray(p.assets) ? p.assets : []).map(a => String(a)),
-      assetCount: (Array.isArray(p.assets) ? p.assets : []).length
+      assets: assets,
+      assetCount: assets.length,
+      // the same assets, classified for rendering (image thumbnail vs named chip) — one source, so the
+      // pipeline, the calendar and the published list show a piece's assets identically.
+      assetPreviews: assets.map(assetPreview)
     };
   }
 
@@ -277,11 +305,27 @@
       renderHeader();
     }
 
+    /* THE ASSET STRIP — a piece's assets, made visible (the board used to say only "· N assets"). An image
+       reference renders as a real thumbnail; anything else as a named chip; a piece with more than the cap
+       gets a "+N" tail. Same strip in the pipeline chip and on the calendar row, from one classified list. */
+    function thumbStrip(p) {
+      const list = (p.assetPreviews || []).slice(0, 6);
+      if (!list.length) return '';
+      return '<span class="cs-thumbs">' + list.map(a =>
+        a.kind === 'image'
+          ? '<img class="cs-thumb" src="' + esc(a.src) + '" alt="' + esc(a.label) + '" loading="lazy" title="' + esc(a.label) + '">'
+          : '<span class="cs-thumb cs-thumb-ref" title="' + esc(a.label) + '">' + esc(a.label) + '</span>'
+      ).join('') +
+        (p.assetCount > list.length ? '<span class="cs-thumb-more">+' + (p.assetCount - list.length) + '</span>' : '') +
+        '</span>';
+    }
+
     function pieceChip(p) {
       return '<div class="cs-piece">' +
           '<span class="cs-piece-t">' + esc(p.title) + '</span>' +
           '<span class="cs-piece-m">' + esc(p.businessName) + ' · ' + esc(p.channelLabel) +
             (p.assetCount ? ' · ' + p.assetCount + ' asset' + (p.assetCount === 1 ? '' : 's') : '') + '</span>' +
+          thumbStrip(p) +
         '</div>';
     }
 
@@ -310,6 +354,7 @@
             '<span class="cs-piece-m">' + esc(p.businessName) + ' · ' + esc(p.channelLabel) + ' · ' + esc(p.stageLabel) +
               '<span class="cs-src">' + (p.dateSource === 'published' ? 'published' : p.dateSource === 'created' ? 'created' : 'last moved') + '</span>' +
             '</span>' +
+            thumbStrip(p) +
           '</div>').join('');
         return '<div class="cs-day"><div class="cs-day-h">' + esc(d.day) + '</div>' + rows + '</div>';
       }).join('') : '<p class="cs-none">nothing dated in this window</p>';
@@ -416,6 +461,7 @@
 
   return {
     esc, relTime, stageLabel, channelLabel,
+    isImageAsset, assetPreview,
     shapePiece, shapePipeline, shapeCalendar, shapePublished, shapeHeader,
     shapeCreations, shapeCreationsHeader, typeLabel,
     STAGE_LABEL, CHANNEL_LABEL, TYPE_LABEL,

@@ -109,3 +109,18 @@
 .cs-prow-title b { color: #1a1d24; }
 .cs-prow-biz, .cs-prow-ch, .cs-prow-when { color: #57606e; white-space: nowrap; }
 .cs-prow-by { color: #3a5266; white-space: nowrap; font-weight: 600; }
+
+/* THE ASSET STRIP (§20 "assets · thumbnails"). A piece's assets made visible: image references as small
+   real thumbnails, everything else as a named chip. It sits under the piece meta line so the board and the
+   calendar show the SAME strip. A thumbnail is capped so a piece with many assets can't flood a column. */
+.cs-thumbs { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; align-items: center; }
+.cs-thumb {
+  width: 26px; height: 20px; object-fit: cover; border-radius: 2px;
+  border: 1px solid #d7dbe2; background: #eef1f5; display: block;
+}
+.cs-thumb-ref {
+  width: auto; max-width: 96px; height: 20px; padding: 0 5px; display: inline-flex; align-items: center;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font-size: 9px; color: #57606e; background: #eef1f5; border: 1px solid #dfe4ea;
+}
+.cs-thumb-more { font-size: 9px; color: #6b7280; padding: 0 2px; }
