@@ -22,13 +22,35 @@ assert.equal(
   '^1.7.3',
   'the packaged sidecar carries an in-process Telegram Ogg/Opus decoder'
 );
-assert.equal(pkg.overrides && pkg.overrides.sharp, '0.35.3',
-  'both Transformers copies are forced onto the patched Sharp runtime');
+// Sharp's CVE floor is 0.35.4 (libheif GHSA-g89c-p67h-r497 / GHSA-2jg2-4ch7-h545, advisory range `<0.35.4`).
+// The guard's intent is "cannot restore a vulnerable Sharp", so it enforces the FLOOR, not a frozen patch:
+// a future 0.35.x bump that stays >= 0.35.4 is allowed, and a regression below it still goes RED by name.
+const SHARP_CVE_FLOOR = [0, 35, 4];
+const cmpVer = (a, b) => {
+  const pa = String(a).split('.').map(Number), pb = b.map(Number);
+  for (let i = 0; i < 3; i++) { if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0); }
+  return 0;
+};
+const sharpOverride = pkg.overrides && pkg.overrides.sharp;
+assert.ok(sharpOverride && cmpVer(sharpOverride, SHARP_CVE_FLOOR) >= 0,
+  'both Transformers copies are forced onto a patched Sharp runtime (>= 0.35.4); got ' + sharpOverride);
 const lockedSharp = Object.entries(lock.packages || {})
   .filter(([name]) => /(?:^|\/)node_modules\/sharp$/.test(name))
   .map(([, meta]) => meta && meta.version);
-assert.ok(lockedSharp.length > 0 && lockedSharp.every(version => version === '0.35.3'),
-  'the lockfile cannot restore a vulnerable Sharp below 0.35');
+assert.ok(lockedSharp.length > 0 && lockedSharp.every(version => cmpVer(version, SHARP_CVE_FLOOR) >= 0),
+  'the lockfile cannot restore a vulnerable Sharp below 0.35.4 — got ' + JSON.stringify(lockedSharp));
+
+// adm-zip: every adm-zip CVE is fixed in 0.6.1 (advisory range `<=0.6.0`), and the override is what stops
+// onnxruntime-node's `^0.5.16` spec resolving back below the fix. Assert the FLOOR for the same reason.
+const ADM_ZIP_CVE_FLOOR = [0, 6, 1];
+const admZipOverride = pkg.overrides && pkg.overrides['adm-zip'];
+assert.ok(admZipOverride && cmpVer(admZipOverride, ADM_ZIP_CVE_FLOOR) >= 0,
+  'the build-only ZIP parser is forced onto a patched adm-zip (>= 0.6.1); got ' + admZipOverride);
+const lockedAdmZip = Object.entries(lock.packages || {})
+  .filter(([name]) => /(?:^|\/)node_modules\/adm-zip$/.test(name))
+  .map(([, meta]) => meta && meta.version);
+assert.ok(lockedAdmZip.length > 0 && lockedAdmZip.every(version => cmpVer(version, ADM_ZIP_CVE_FLOOR) >= 0),
+  'the lockfile cannot restore a vulnerable adm-zip below 0.6.1 — got ' + JSON.stringify(lockedAdmZip));
 
 assert.match(
   pkg.scripts['desktop:build'],
