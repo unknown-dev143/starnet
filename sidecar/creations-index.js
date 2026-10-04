@@ -1,12 +1,14 @@
 /* sidecar/creations-index.js — the MY CREATIONS index (§37: one place that spans every made thing).
 
    WHAT THIS IS. The station records work in several stores, each honest on its own: content pieces
-   (§17 pipeline), business documents, work orders (an agent's planned run), and station deliverables
-   (what a run actually produced). But there is no ONE place that answers "show me everything I have made,
-   and where each thing stands" — the audit (docs/PHASE0-AUDIT-v4.md §6) named this the second genuine gap.
+   (§17 pipeline), business documents, work orders (an agent's planned run), station deliverables (what a
+   run actually produced), and the STRUCTURES the owner built — the ventures themselves, their projects,
+   their experiments, and their automation rules. But there is no ONE place that answers "show me everything
+   I have made, and where each thing stands" — the audit (docs/PHASE0-AUDIT-v4.md §6) named this the second
+   genuine gap.
 
-   THIS MODULE OWNS NO STORE. It COMPOSES the four via injected accessors into one flat index, the way
-   business-remote.js composes its snapshot. It reads; it never writes. Every row carries the four facts a
+   THIS MODULE OWNS NO STORE. It COMPOSES every one via injected accessors into one flat index, the way
+   business-remote.js composes its snapshot. It reads; it never writes. Every row carries the facts a
    person actually scans for:
 
        type · id · title · status · businessId · businessName · updatedAt
@@ -16,8 +18,9 @@
         rendered as "you made nothing".
      2. A row with no recorded date carries `updatedAt: null`, never a fabricated now (it sorts last).
      3. No score, no rank, no percentage. The ORDER is by most-recently-updated, which is a fact.
-     4. Fields are BOUNDED to what the stores actually hold — a work order's title is its `intent`, a
-        content piece's status is its §17 `stage`; the index does not invent a display field the store lacks.
+     4. Fields are BOUNDED to what the stores actually hold — a work order's title is its `intent`, an
+        experiment's title is its `hypothesis`, a content piece's status is its §17 `stage`, an automation's
+        status is whether it is enabled; the index does not invent a display field the store lacks.
 
    PURE-ish: every source is injected; the clock is injected (determinism lint). UMD. */
 
@@ -31,7 +34,9 @@
 
   // The closed set of creation TYPES this index spans. Each maps to one store + one adapter. Adding a
   // type is a deliberate edit here — never a silent new kind appearing in the rows.
-  const TYPES = ['content', 'document', 'workorder', 'deliverable'];
+  //   content · document · workorder · deliverable  — things a business's work PRODUCED
+  //   business · project · experiment · automation  — the STRUCTURES the owner BUILT
+  const TYPES = ['content', 'document', 'workorder', 'deliverable', 'business', 'project', 'experiment', 'automation'];
 
   const MAX_TITLE = 200;
   const MAX_NAME = 120;
@@ -51,6 +56,9 @@
     const documents = opts.documents || null;        // business-documents-store
     const workorders = opts.workorders || null;      // business-workorders-store
     const deliverables = opts.deliverables || null;  // deliverable-store (station-level, no businessId)
+    const projects = opts.projects || null;          // business-projects-store
+    const experiments = opts.experiments || null;    // business-experiments-store
+    const automations = opts.automations || null;    // business-automation-store
     const now = typeof opts.now === 'function' ? opts.now : (() => null);
     const limit = (Number.isFinite(opts.limit) && opts.limit > 0) ? Math.floor(opts.limit) : DEFAULT_LIMIT;
 
@@ -79,6 +87,38 @@
         status: str(row.status || 'planned', 40),
         businessId: str(b.id), businessName: str(b.name || '(unnamed)', MAX_NAME),
         updatedAt: num(row.updatedAt) != null ? num(row.updatedAt) : num(row.createdAt)
+      }),
+      // THE VENTURE ITSELF. §37 counts a business as a creation, and it is the container every other row
+      // belongs to — so the index shows it alongside its own contents. A business's `stage` is its status.
+      business: (b) => ({
+        type: 'business', id: str(b.id),
+        title: str(b.name || '(unnamed)'),
+        status: str(b.stage || 'idea', 40),
+        businessId: str(b.id), businessName: str(b.name || '(unnamed)', MAX_NAME),
+        updatedAt: num(b.updatedAt)
+      }),
+      project: (b, row) => ({
+        type: 'project', id: str(row.id),
+        title: str(row.name || '(untitled project)'),
+        status: str(row.status || 'planned', 40),
+        businessId: str(b.id), businessName: str(b.name || '(unnamed)', MAX_NAME),
+        updatedAt: num(row.updatedAt)
+      }),
+      experiment: (b, row) => ({
+        type: 'experiment', id: str(row.id),
+        // an experiment has no title; its `hypothesis` is what a person reads. No invented field.
+        title: str(row.hypothesis || '(no hypothesis recorded)'),
+        status: str(row.status || 'planned', 40),
+        businessId: str(b.id), businessName: str(b.name || '(unnamed)', MAX_NAME),
+        updatedAt: num(row.updatedAt)
+      }),
+      automation: (b, row) => ({
+        type: 'automation', id: str(row.id),
+        title: str(row.name || '(unnamed rule)'),
+        // a rule's status is whether it is ENABLED — the store's own fact, not a derived health.
+        status: str(row.enabled ? 'enabled' : 'disabled', 40),
+        businessId: str(b.id), businessName: str(b.name || '(unnamed)', MAX_NAME),
+        updatedAt: num(row.updatedAt)
       })
     };
 
@@ -94,12 +134,20 @@
       try { list = businesses() || []; }
       catch (e) { list = []; businessesReadable = false; }
 
-      const readable = { content: !!content, document: !!documents, workorder: !!workorders, deliverable: !!deliverables };
+      const readable = {
+        content: !!content, document: !!documents, workorder: !!workorders, deliverable: !!deliverables,
+        // `business` is readable iff the business LIST read succeeded — the list is the spine of the index.
+        business: businessesReadable,
+        project: !!projects, experiment: !!experiments, automation: !!automations
+      };
       const rows = [];
 
       for (const b of list) {
         if (!b || !b.id) continue;
         if (wantBiz && b.id !== wantBiz) continue;
+
+        // the venture itself (its row IS the business)
+        if (readable.business && (!wantType || wantType === 'business')) rows.push(ADAPTERS.business(b));
 
         // content pieces
         if (content && readable.content && (!wantType || wantType === 'content')) {
@@ -115,6 +163,21 @@
         if (workorders && readable.workorder && (!wantType || wantType === 'workorder')) {
           try { for (const r of workorders.list(b.id) || []) rows.push(ADAPTERS.workorder(b, r)); }
           catch (e) { readable.workorder = false; }
+        }
+        // projects
+        if (projects && readable.project && (!wantType || wantType === 'project')) {
+          try { for (const r of projects.list(b.id) || []) rows.push(ADAPTERS.project(b, r)); }
+          catch (e) { readable.project = false; }
+        }
+        // experiments
+        if (experiments && readable.experiment && (!wantType || wantType === 'experiment')) {
+          try { for (const r of experiments.experiments(b.id) || []) rows.push(ADAPTERS.experiment(b, r)); }
+          catch (e) { readable.experiment = false; }
+        }
+        // automation rules
+        if (automations && readable.automation && (!wantType || wantType === 'automation')) {
+          try { for (const r of automations.list(b.id) || []) rows.push(ADAPTERS.automation(b, r)); }
+          catch (e) { readable.automation = false; }
         }
       }
 

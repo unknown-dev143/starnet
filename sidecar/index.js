@@ -3786,16 +3786,23 @@ const creatorStudio = makeCreatorStudio({
 });
 
 /* §37 MY CREATIONS INDEX. The audit's §6 second gap: "no one place that answers 'show me everything I made'."
-   This composes the FOUR stores that each own one kind of made thing — content pieces (§17), business
-   documents (§15), work orders (a planned run), and station deliverables (what a run actually produced) —
-   into one flat, newest-first index. It owns no store and never writes, exactly like creator-studio.js. Every
-   accessor is lazy so the wiring order below cannot matter; the clock is the ONE read, injected. */
+   This composes the stores that each own one kind of made thing — content pieces (§17), business documents
+   (§15), work orders (a planned run), station deliverables (what a run actually produced), and the STRUCTURES
+   the owner built (the ventures themselves, their projects, experiments and automation rules) — into one flat,
+   newest-first index. It owns no store and never writes, exactly like creator-studio.js. Every accessor is
+   lazy so the wiring order below cannot matter; the clock is the ONE read, injected.
+   ⚠️ `projects` is `bizProjectsStore` (business-projects-store.js, §9 PROJECTS) — NOT `projectsStore`, which
+   is projects-store.js, the blessed-ROOT trust store. Same name, different subject: the wrong one would read
+   the path-grant list and index filesystem roots as "creations". */
 const creationsIndex = makeCreationsIndex({
   businesses: () => businessesStore.list(),
   content: contentStore,
   documents: documentsStore,
   workorders: workOrdersStore,
   deliverables: deliverableStore,
+  projects: bizProjectsStore,
+  experiments: experimentsStore,
+  automations: automationStore,
   now: () => Date.now()
 });
 

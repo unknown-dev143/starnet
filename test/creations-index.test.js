@@ -27,8 +27,13 @@ const NOW = 1000000000000;
 function fakeDeliverables(rows) {
   return { list: () => rows.slice() };
 }
+/* Stand-ins for the three per-business structure stores — only their list accessor is read by the index.
+   They honour the businessId filter the way the real stores do (isolation by key), so a fixture row is not
+   counted once per business. */
+function fakeList(rows) { return { list: (bizId) => rows.filter(r => !bizId || r.businessId === bizId).slice() }; }
+function fakeExperiments(rows) { return { experiments: (bizId) => rows.filter(r => !bizId || r.businessId === bizId).slice() }; }
 
-const BIZ = [{ id: 'biz-a', name: 'Alpha' }, { id: 'biz-b', name: 'Beta' }];
+const BIZ = [{ id: 'biz-a', name: 'Alpha', stage: 'operating' }, { id: 'biz-b', name: 'Beta', stage: 'building' }];
 
 function mkStores() {
   const content = makeBusinessContentStore({ now: () => NOW, persist: () => {} });
@@ -44,7 +49,16 @@ function mkStores() {
   const deliverables = fakeDeliverables([
     { id: 'd1', title: 'Kept artifact', status: 'kept', updatedAt: NOW - 500 }
   ]);
-  return { content, documents, workorders, deliverables };
+  const projects = fakeList([
+    { id: 'p1', businessId: 'biz-a', name: 'Launch project', status: 'active', updatedAt: NOW - 100 }
+  ]);
+  const experiments = fakeExperiments([
+    { id: 'x1', businessId: 'biz-a', hypothesis: 'A bigger button lifts signups', status: 'running', updatedAt: NOW - 200 }
+  ]);
+  const automations = fakeList([
+    { id: 'a1', businessId: 'biz-a', name: 'Welcome email', enabled: true, updatedAt: NOW - 300 }
+  ]);
+  return { content, documents, workorders, deliverables, projects, experiments, automations };
 }
 
 function mkIndex(over) {
@@ -52,16 +66,17 @@ function mkIndex(over) {
   return makeCreationsIndex(Object.assign({
     businesses: () => BIZ,
     content: s.content, documents: s.documents, workorders: s.workorders, deliverables: s.deliverables,
+    projects: s.projects, experiments: s.experiments, automations: s.automations,
     now: () => NOW
   }, over || {}));
 }
 
-/* ---------- the four types all appear, each with the seven scannable facts ---------- */
+/* ---------- every type appears, each with the seven scannable facts ---------- */
 {
   const o = mkIndex().index({});
   A.eq(o.ok, true, 'the index reports ok');
-  A.eq(o.counts.total, 5, 'all five made things across the four stores are indexed');
-  for (const t of ['content', 'document', 'workorder', 'deliverable']) {
+  A.eq(o.counts.total, 10, 'all ten made things across the eight stores are indexed');
+  for (const t of TYPES) {
     A.ok(o.counts.byType[t] >= 1, 'the ' + t + ' type appears');
   }
   for (const row of o.rows) {
@@ -71,6 +86,7 @@ function mkIndex(over) {
     A.ok(o.types.indexOf(row.type) >= 0, 'every row type is in the closed vocabulary');
   }
   A.eq(o.types.length, TYPES.length, 'the wire vocabulary matches the module TYPES');
+  A.eq(TYPES.length, 8, 'the index spans eight creation types, not four');
 }
 
 /* ---------- a work order's title IS its intent (the store has no title) ---------- */
@@ -87,6 +103,39 @@ function mkIndex(over) {
   const titles = o.rows.map(r => r.title).sort();
   A.eq(titles.join(','), 'Launch video,Newsletter', 'both pieces indexed');
   for (const r of o.rows) A.ok(['idea', 'script'].indexOf(r.status) >= 0, 'status is the real §17 stage');
+}
+
+/* ---------- the structures the owner BUILT appear, each named by the store's own field ---------- */
+{
+  // a BUSINESS: title is its name, status is its stage
+  const b = mkIndex().index({ type: 'business' });
+  A.eq(b.rows.length, 2, 'both ventures appear as creations');
+  A.eq(b.rows.map(r => r.title).sort().join(','), 'Alpha,Beta', 'a business row is titled by its name');
+  A.ok(b.rows.every(r => ['operating', 'building'].indexOf(r.status) >= 0), 'and its status is its real stage');
+
+  // an EXPERIMENT: the store has no title — its hypothesis is what a person reads
+  const x = mkIndex().index({ type: 'experiment' });
+  A.eq(x.rows.length, 1, 'the experiment is indexed');
+  A.eq(x.rows[0].title, 'A bigger button lifts signups', 'an experiment is titled by its hypothesis (no invented field)');
+  A.eq(x.rows[0].status, 'running', 'and its status is the real experiment status');
+
+  // an AUTOMATION: status is whether it is enabled — the store's own fact
+  const a = mkIndex().index({ type: 'automation' });
+  A.eq(a.rows.length, 1, 'the automation rule is indexed');
+  A.eq(a.rows[0].title, 'Welcome email', 'an automation is titled by its name');
+  A.eq(a.rows[0].status, 'enabled', 'and its status reflects enabled');
+
+  // a disabled rule reads as disabled, not as a health verdict
+  const idx = makeCreationsIndex({
+    businesses: () => [{ id: 'biz-a', name: 'Alpha' }],
+    automations: fakeList([{ id: 'a2', businessId: 'biz-a', name: 'Old rule', enabled: false, updatedAt: 1 }]),
+    now: () => NOW
+  });
+  A.eq(idx.index({ type: 'automation' }).rows[0].status, 'disabled', 'a disabled rule reads "disabled"');
+
+  // a PROJECT is titled by its name
+  const p = mkIndex().index({ type: 'project' });
+  A.eq(p.rows[0].title, 'Launch project', 'a project is titled by its name');
 }
 
 /* ---------- newest first; an undated row sorts LAST ---------- */
@@ -138,7 +187,8 @@ function mkIndex(over) {
 {
   const idx = mkIndex();
   A.eq(idx.index({ type: 'document' }).counts.total, 1, 'type filter narrows to documents');
-  A.eq(idx.index({ businessId: 'biz-b' }).counts.total, 1, 'business filter narrows to Beta');
+  // Beta owns one content piece AND is itself a creation row — the venture is counted under its own filter.
+  A.eq(idx.index({ businessId: 'biz-b' }).counts.total, 2, 'business filter narrows to Beta (its piece + the venture itself)');
   const both = idx.index({ businessId: 'biz-a' });
   A.ok(both.rows.every(r => r.businessId === 'biz-a'), 'every row under a business filter belongs to it');
 }
@@ -190,7 +240,7 @@ function mkIndex(over) {
   const o = mkIndex({ limit: 2 }).index({});
   A.eq(o.rows.length, 2, 'the limit caps returned rows');
   A.eq(o.truncated, true, 'and truncation is declared');
-  A.eq(o.counts.total, 5, 'while the honest total is still the full count');
+  A.eq(o.counts.total, 10, 'while the honest total is still the full count');
   A.eq(mkIndex({ limit: 2 }).DEFAULT_LIMIT, 500, 'the default limit is exported');
 }
 

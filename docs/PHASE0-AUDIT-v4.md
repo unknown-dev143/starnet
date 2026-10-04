@@ -131,7 +131,7 @@ this audit re-verified and extends to the brief's new sections (§5, §8, §18, 
 | §34 AI Cost Management | budgets | `cost.js`, `spend.js`, `ledger.js`, `credits.js` |
 | §35 Attention & Intelligence engine | recommendations | `mission-control.js`, `intelligence-engine.js` |
 | §36 Business Digital Twin | scenarios | `business-twin.js`, `twin-routes.js`, `businessdtwin.js` UI |
-| §37 Creation Portfolio | "my creations" | portfolio route + business/project stores |
+| §37 Creation Portfolio | "my creations" | `creations-index.js` (8 types) + `creator-routes.js` + CREATOR STUDIO ▸ CREATIONS |
 | §38 Station Digital Twin | system overview | `business-twin.js` + `/api/mission/fleet` |
 | §39 Verification Engine | run→test→verify | `business-worker-policy.js` verification, `tools/builtin/verify.js` |
 
@@ -256,6 +256,32 @@ with no runner. Two real consequences, both now fixed:
 All 11 are now listed (green/skip ones in `fast.list`; the two that `spawnSync` in `http.list`), and
 `test/test-list-runner.test.js` gained the **reverse assertion** — every `test/*.test.js` must appear in a
 manifest — sabotage-proven with a planted orphan (red by name, green after removal).
+
+### 6c. The §37 index spanned 4 of the types the brief names — widened to 8
+
+The §37 index (`creations-index.js`) originally composed only what a business's WORK **produced** — content,
+documents, work orders, deliverables. The brief's §37 lists the **structures the owner BUILT** as creations
+too ("businesses … automations … experiments …"). Widened with four more types, each over a store that already
+exists (no new store, no new write path):
+
+| new type | store | title is | status is |
+| --- | --- | --- | --- |
+| `business` | `businesses-store.js` | the venture's name | its stage |
+| `project` | `business-projects-store.js` | its name | its status |
+| `experiment` | `business-experiments-store.js` | its **hypothesis** (the store has no title) | its status |
+| `automation` | `business-automation-store.js` | its name | **enabled / disabled** |
+
+The CREATIONS tab of CREATOR STUDIO renders them with no change beyond a label map — the viewer was already
+type-agnostic, which is why this was a composer edit rather than a UI build.
+
+⚠️ **A trap this walked into and out of:** the business projects store is `bizProjectsStore`
+(`business-projects-store.js`), NOT `projectsStore` — which is `projects-store.js`, the **blessed-ROOT trust
+store**. Two similarly-named stores with unrelated subjects; wiring the wrong one would have indexed
+filesystem path-grants as "creations". Verified live: `GET /api/creations` returns all 8 types and a real
+`business` row, `readable` all-true.
+
+`creations-index.test.js` 121 → 193 assertions; `creator-routes` 54 · `creatorstudio` 62 → 69; sabotage-proven
+(invented experiment title · business rows never emitted).
 
 ---
 

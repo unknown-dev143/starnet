@@ -105,6 +105,20 @@ const ROOT = path.join(__dirname, '..');
   // an unreadable source is carried through (the viewer warns; it does not shorten the list silently)
   const u = S.shapeCreations({ ok: true, rows: [], counts: { total: 0 }, readable: { content: false, document: true } }, NOW);
   A.eq(u.readable.content, false, 'a source that could not be read is carried as readable:false');
+
+  // THE STRUCTURES THE OWNER BUILT (§37) also label — the index spans eight types, not four.
+  for (const [t, label] of [['business', 'BUSINESS'], ['project', 'PROJECT'], ['experiment', 'EXPERIMENT'], ['automation', 'AUTOMATION']]) {
+    A.eq(S.typeLabel(t), label, 'the ' + t + ' type labels as ' + label);
+  }
+  const built = S.shapeCreations({
+    ok: true,
+    rows: [{ type: 'business', id: 'b1', title: 'Alpha', status: 'operating', businessId: 'b1', businessName: 'Alpha', updatedAt: NOW }],
+    counts: { total: 1, byType: { business: 1 } }
+  }, NOW);
+  A.eq(built.rows[0].typeLabel, 'BUSINESS', 'a shaped business row carries its label');
+  A.eq(built.rows[0].status, 'operating', 'and its real stage as the status');
+  // an unknown future type still labels (never a blank cell), just upper-cased
+  A.eq(S.typeLabel('gadget'), 'GADGET', 'an unknown type upper-cases rather than rendering blank');
 }
 /* the creations header is a plain count, no verdict */
 {

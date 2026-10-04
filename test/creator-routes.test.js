@@ -116,7 +116,7 @@ function mkRoutes() {
   const r = call(routes, '/api/creations');
   A.eq(r.code, 200, 'the creations index answers 200');
   A.ok(Array.isArray(r.json.rows), 'and returns rows');
-  A.eq(r.json.counts.total, 1, 'the one content piece is indexed');
+  A.eq(r.json.counts.total, 2, 'the one content piece and the venture itself are indexed');
   A.ok(r.json.types.indexOf('content') >= 0 && r.json.types.indexOf('deliverable') >= 0, 'the type vocabulary is on the wire');
 }
 /* an unknown type is refused, never silently ignored (which would return EVERYTHING) */
